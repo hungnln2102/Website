@@ -1,0 +1,52 @@
+{
+  "name": "my-store",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:web",
+    "dev:all": "npm-run-all --parallel dev:server dev:web",
+    "build": "npm run build --workspaces",
+    "check-types": "npm run check-types --workspaces",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "test": "npm run test --workspaces --if-present",
+    "dev:native": "npm run dev --workspace native",
+    "dev:web": "npm run dev --workspace web",
+    "dev:server": "npm run dev --workspace server",
+    "db:push": "npm run db:push --workspace @my-store/db",
+    "db:studio": "npm run db:studio --workspace @my-store/db",
+    "db:generate": "npm run db:generate --workspace @my-store/db",
+    "db:migrate": "npm run db:migrate --workspace @my-store/db",
+    "db:start": "npm run db:start --workspace @my-store/db",
+    "db:watch": "npm run db:watch --workspace @my-store/db",
+    "db:stop": "npm run db:stop --workspace @my-store/db",
+    "db:down": "npm run db:down --workspace @my-store/db"
+  },
+  "packageManager": "npm@11.7.0",
+  "dependencies": {
+    "@my-store/env": "*",
+    "dotenv": "^17.2.2",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@my-store/config": "*",
+    "@types/node": "^22.13.14",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.3",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "npm-run-all": "^4.1.5",
+    "pg": "^8.17.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "typescript": "^5"
+  }
+}

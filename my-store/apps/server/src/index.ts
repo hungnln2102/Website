@@ -1,0 +1,489 @@
+import { createContext } from "@my-store/api/context";
+import { appRouter } from "@my-store/api/routers/index";
+import prisma from "@my-store/db";
+import pool from "./config/database";
+import { env } from "@my-store/env/server";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import compression from "compression";
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+
+import { DB_SCHEMA } from "./config/db.config";
+import { errorHandler } from "./middleware/errorHandler";
+import { requestLogger, responseTimeLogger } from "./middleware/logger";
+import { generalLimiter, strictLimiter } from "./middleware/rateLimiter";
+import paymentRouter from "./routes/payment.route";
+import variantDetailRouter from "./routes/variant-detail.route";
+
+// Import cron job for auto-refresh materialized views
+import "./jobs/refresh-variant-sold-count.job";
+
+const app = express();
+
+app.get("/", (_req, res) => {
+  console.log("DEBUG: Root request received at top level");
+  res.status(200).send("OK - TOP LEVEL");
+});
+
+type RawProductRow = {
+  id: number | bigint;
+  id_product: string | number | bigint | null;
+  package: string | null;
+  package_product: string | null;
+  pct_ctv: string | null;
+  pct_khach: string | null;
+  pct_promo: string | null;
+  has_promo: boolean;
+  is_active: boolean;
+  price_max: string | null;
+  sale_price: string | null;
+  promo_price: string | null;
+  package_count: number | bigint | null;
+  sales_count: number | bigint | null;
+  description: string | null;
+  image_url: string | null;
+};
+
+type CategoryRow = {
+  id: number;
+  name: string;
+  created_at: Date | string | null;
+  color: string | null;
+  product_ids: Array<number | bigint> | null;
+};
+
+type PackageProductRow = {
+  id: number | bigint;
+  package: string | null;
+  package_product: string | null;
+  id_product: string | null;
+  cost: string | null;
+};
+
+const slugify = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const stripHtml = (value: string | null) => {
+  if (!value) return "";
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+};
+
+const toNumber = (value: unknown) => {
+  if (typeof value === "bigint") return Number(value);
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
+
+// const withSchema = (key: keyof typeof DB_SCHEMA) =>
+//   Prisma.raw(`${DB_SCHEMA[key].SCHEMA}.${DB_SCHEMA[key].TABLE}`);
+
+const TABLES = {
+  SUPPLIER_COST: `${DB_SCHEMA.SUPPLIER_COST.SCHEMA}.${DB_SCHEMA.SUPPLIER_COST.TABLE}`,
+  PRICE_CONFIG: `${DB_SCHEMA.PRICE_CONFIG.SCHEMA}.${DB_SCHEMA.PRICE_CONFIG.TABLE}`,
+  PRODUCT_DESC: `${DB_SCHEMA.PRODUCT_DESC.SCHEMA}.${DB_SCHEMA.PRODUCT_DESC.TABLE}`,
+  CATEGORY: `${DB_SCHEMA.CATEGORY.SCHEMA}.${DB_SCHEMA.CATEGORY.TABLE}`,
+  PRODUCT_CATEGORY: `${DB_SCHEMA.PRODUCT_CATEGORY.SCHEMA}.${DB_SCHEMA.PRODUCT_CATEGORY.TABLE}`,
+  VARIANT: `${DB_SCHEMA.VARIANT.SCHEMA}.${DB_SCHEMA.VARIANT.TABLE}`,
+  PRODUCT: `${DB_SCHEMA.PRODUCT.SCHEMA}.${DB_SCHEMA.PRODUCT.TABLE}`,
+  ORDER_LIST: `${DB_SCHEMA.ORDER_LIST.SCHEMA}.${DB_SCHEMA.ORDER_LIST.TABLE}`,
+  ORDER_EXPIRED: `${DB_SCHEMA.ORDER_EXPIRED.SCHEMA}.${DB_SCHEMA.ORDER_EXPIRED.TABLE}`,
+} as const;
+
+// Security headers
+/*
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", env.CORS_ORIGIN || "*"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+    },
+  }),
+);
+*/
+
+/*
+// Response compression
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+    level: 6, // Balance between speed and compression
+  }),
+);
+*/
+
+// CORS configuration
+app.use(
+  cors({
+    origin: process.env.NODE_ENV === 'production'
+      ? [env.CORS_ORIGIN]
+      : ['http://localhost:3001', 'http://localhost:4001', env.CORS_ORIGIN || '*'],
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+    maxAge: 86400, // 24 hours
+  }),
+);
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Request/response logging
+app.use(requestLogger);
+app.use(responseTimeLogger);
+
+// Apply general rate limiting to all routes
+// app.use(generalLimiter);
+
+// tRPC middleware
+app.use(
+  "/trpc",
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  }),
+);
+
+// Payment routes
+app.use("/api/payment", paymentRouter);
+
+// Variant detail routes
+app.use("/api/variants", variantDetailRouter);
+
+
+app.get("/products", async (_req, res) => {
+  try {
+    const startedAt = Date.now();
+    const query = `
+      WITH supply_max AS (
+        SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+        FROM ${TABLES.SUPPLIER_COST} sc
+        GROUP BY sc.product_id
+      ),
+      priced AS (
+        SELECT
+          p.id AS id,
+          v.display_name AS id_product,
+          p.package_name AS package,
+          v.variant_name AS package_product,
+          v.is_active AS is_active,
+          COALESCE(pc.pct_ctv, 0) AS pct_ctv,
+          COALESCE(pc.pct_khach, 0) AS pct_khach,
+          pc.pct_promo AS pct_promo,
+          (pc.pct_promo IS NOT NULL) AS has_promo,
+          COALESCE(sm.price_max, 0) AS price_max,
+          COALESCE(vsc.sales_count, 0) AS sales_count,
+          pd.description,
+          pd.image_url
+        FROM ${TABLES.VARIANT} v
+        LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+        LEFT JOIN LATERAL (
+          SELECT
+            pc.pct_ctv,
+            pc.pct_khach,
+            pc.pct_promo
+          FROM ${TABLES.PRICE_CONFIG} pc
+          WHERE pc.variant_id = v.id
+          ORDER BY pc.updated_at DESC NULLS LAST
+          LIMIT 1
+        ) pc ON TRUE
+        LEFT JOIN supply_max sm ON sm.product_id = v.id
+        LEFT JOIN product.variant_sold_count vsc
+          ON vsc.variant_id = v.id
+        LEFT JOIN ${TABLES.PRODUCT_DESC} pd
+          ON TRIM(pd.product_id::text) = TRIM(v.display_name::text)
+        WHERE p.package_name IS NOT NULL
+          AND v.is_active = true
+          AND EXISTS (
+            SELECT 1
+            FROM ${TABLES.PRODUCT_CATEGORY} pcg
+            WHERE pcg.product_id = p.id
+          )
+      ),
+      ranked AS (
+        SELECT
+          priced.*,
+          (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
+            AS sale_price,
+          (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
+            * (1 - COALESCE(priced.pct_promo::numeric, 0)) AS promo_price,
+          COALESCE(psc.total_sales_count, 0) AS package_sales_count,
+          ROW_NUMBER() OVER (
+            PARTITION BY priced.package
+            ORDER BY (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)) ASC
+          ) AS rn,
+          COUNT(*) OVER (PARTITION BY priced.package) AS package_count
+        FROM priced
+        LEFT JOIN product.product_sold_count psc
+          ON psc.package_name = priced.package
+      )
+      SELECT
+        id,
+        id_product,
+        package,
+        package_product,
+        pct_ctv,
+        pct_khach,
+        pct_promo,
+        has_promo,
+        is_active,
+        price_max,
+        sale_price,
+        promo_price,
+        package_count,
+        package_sales_count AS sales_count,
+        description,
+        image_url
+      FROM ranked
+      WHERE rn = 1
+      ORDER BY package
+      LIMIT 20;
+    `;
+    const { rows } = await pool.query<RawProductRow>(query);
+    console.log(`[products] rows=${rows.length} duration=${Date.now() - startedAt}ms`);
+
+    const products = rows.map((row) => {
+      const name = row.package ?? row.id_product ?? "San pham";
+      const basePrice = toNumber(row.sale_price);
+      const discountPctRaw = toNumber(row.pct_promo);
+      const discountPct = discountPctRaw > 1 ? discountPctRaw : discountPctRaw * 100;
+      const packageCount = toNumber(row.package_count) || 1;
+      const hasPromo = row.has_promo === true;
+
+      return {
+        id: toNumber(row.id),
+        slug: slugify(name || `${row.id_product ?? row.id}`),
+        name,
+        package: row.package ?? "",
+        package_product: row.package_product ?? null,
+        description: stripHtml(row.description) || "Chưa có mô tả",
+        image_url: row.image_url || "https://placehold.co/600x400?text=No+Image",
+        base_price: basePrice,
+        discount_percentage: discountPct,
+        has_promo: hasPromo,
+        sales_count: toNumber(row.sales_count),
+        average_rating: 0,
+        package_count: packageCount,
+      };
+    });
+
+    res.json({ data: products });
+  } catch (err) {
+    console.error("Fetch products error:", err);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+app.get("/categories", async (_req, res) => {
+  try {
+    const startedAt = Date.now();
+    const query = `
+      SELECT
+        c.id,
+        c.name,
+        c.created_at,
+        c.color,
+        COALESCE(
+          ARRAY_AGG(DISTINCT p.id ORDER BY p.id)
+            FILTER (WHERE p.package_name IS NOT NULL),
+          ARRAY[]::int[]
+        ) AS product_ids
+      FROM ${TABLES.CATEGORY} c
+      LEFT JOIN ${TABLES.PRODUCT_CATEGORY} pc ON pc.category_id = c.id
+      LEFT JOIN ${TABLES.PRODUCT} p ON p.id = pc.product_id
+      GROUP BY c.id, c.name, c.created_at, c.color
+      ORDER BY c.id;
+    `;
+
+    const { rows } = await pool.query<CategoryRow>(query);
+    console.log(`[categories] rows=${rows.length} duration=${Date.now() - startedAt}ms`);
+    res.json({ data: rows });
+  } catch (err) {
+    console.error("Fetch categories error:", err);
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
+});
+
+const productPackagesHandler = async (req: express.Request, res: express.Response) => {
+  const packageParam = (req.params.package as string | undefined)?.trim();
+  const packageQuery = (req.query.package as string | undefined)?.trim();
+  const packageName = packageParam || packageQuery;
+  if (!packageName) {
+    return res.status(400).json({ error: "Missing package parameter" });
+  }
+
+  try {
+    const rows = await prisma.$queryRaw<PackageProductRow[]>`
+      WITH supply_max AS (
+        SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+        FROM ${TABLES.SUPPLIER_COST} sc
+        GROUP BY sc.product_id
+      ),
+      priced AS (
+        SELECT
+          v.id,
+          p.package_name AS package,
+          v.variant_name AS package_product,
+          v.display_name AS id_product,
+          COALESCE(pc.pct_ctv, 0) AS pct_ctv,
+          COALESCE(pc.pct_khach, 0) AS pct_khach,
+          COALESCE(sm.price_max, 0) AS price_max
+        FROM ${TABLES.VARIANT} v
+        LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+        LEFT JOIN LATERAL (
+          SELECT
+            pc.pct_ctv,
+            pc.pct_khach
+          FROM ${TABLES.PRICE_CONFIG} pc
+          WHERE pc.variant_id = v.id
+          ORDER BY pc.updated_at DESC NULLS LAST
+          LIMIT 1
+        ) pc ON TRUE
+        LEFT JOIN supply_max sm ON sm.product_id = v.id
+        WHERE p.package_name = ${packageName}
+          AND v.is_active = true
+      )
+      SELECT
+        id,
+        package,
+        package_product,
+        id_product,
+        (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) AS cost
+      FROM priced
+      WHERE package_product IS NOT NULL;
+    `;
+
+    // Deduplicate exact duplicates while keeping distinct duration variants.
+    const dedup = new Map<string, PackageProductRow>();
+    rows.forEach((row) => {
+      const packageProductKey = (row.package_product ?? "").trim().toLowerCase();
+      const idProductKey = (row.id_product ?? "").trim().toLowerCase();
+      const costValue = toNumber(row.cost);
+      const key = `${packageProductKey}-${idProductKey}-${costValue}`;
+      if (!dedup.has(key)) {
+        dedup.set(key, { ...row, cost: String(costValue) });
+      }
+    });
+
+    res.json({ data: Array.from(dedup.values()) });
+  } catch (err) {
+    console.error("Fetch product-packages error:", err);
+    res.status(500).json({ error: "Failed to fetch product packages" });
+  }
+};
+
+app.get("/product-packages/:package", strictLimiter, productPackagesHandler);
+app.get("/product-packages", strictLimiter, productPackagesHandler);
+
+// Debug endpoint to test database connection
+app.get("/debug/db", async (_req, res) => {
+  try {
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    res.json({ status: "ok", result });
+  } catch (err) {
+    console.error("Database test error:", err);
+    res.status(500).json({ status: "error", error: String(err) });
+  }
+});
+
+// Simple categories test without aggregation
+app.get("/debug/categories-simple", async (_req, res) => {
+  try {
+    const rows = await prisma.$queryRaw<CategoryRow[]>`
+      SELECT c.id, c.name, c.created_at, c.color
+      FROM product.category c
+      ORDER BY c.id
+      LIMIT 10;
+    `;
+    res.json({ status: "ok", count: rows.length, data: rows });
+  } catch (err) {
+    console.error("Simple categories test error:", err);
+    res.status(500).json({ status: "error", error: String(err) });
+  }
+});
+
+// Check database connections
+app.get("/debug/connections", async (_req, res) => {
+  try {
+    const connections = await prisma.$queryRaw<any[]>`
+      SELECT 
+        count(*) as total_connections,
+        count(*) FILTER (WHERE state = 'active') as active_connections,
+        count(*) FILTER (WHERE state = 'idle') as idle_connections
+      FROM pg_stat_activity
+      WHERE datname = current_database();
+    `;
+    res.json({ status: "ok", data: connections[0] });
+  } catch (err) {
+    console.error("Check connections error:", err);
+    res.status(500).json({ status: "error", error: String(err) });
+  }
+});
+
+// Check table locks
+app.get("/debug/locks", async (_req, res) => {
+  try {
+    const locks = await prisma.$queryRaw<any[]>`
+      SELECT 
+        l.locktype,
+        l.relation::regclass as table_name,
+        l.mode,
+        l.granted,
+        a.usename,
+        a.query,
+        a.state
+      FROM pg_locks l
+      LEFT JOIN pg_stat_activity a ON l.pid = a.pid
+      WHERE l.relation IS NOT NULL
+      ORDER BY l.granted, l.relation
+      LIMIT 20;
+    `;
+    res.json({ status: "ok", count: locks.length, data: locks });
+  } catch (err) {
+    console.error("Check locks error:", err);
+    res.status(500).json({ status: "error", error: String(err) });
+  }
+});
+
+app.get("/", (_req, res) => {
+  res.status(200).send("OK");
+});
+
+// Error handler middleware (must be last)
+app.use(errorHandler);
+
+const PORT = Number(process.env.PORT) || 4000;
+
+function start() {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+
+  prisma
+    .$connect()
+    .then(() => {
+      console.log("Database connected");
+    })
+    .catch((err) => {
+      console.error("Database connection error:", err);
+    });
+}
+
+start();

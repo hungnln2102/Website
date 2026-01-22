@@ -1,0 +1,11 @@
+{
+  "name": "Website",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix my-store run dev",
+    "dev:web": "npm --prefix my-store run dev:web",
+    "dev:server": "npm --prefix my-store run dev:server",
+    "build": "npm --prefix my-store run build",
+    "check-types": "npm --prefix my-store run check-types"
+  }
+}
