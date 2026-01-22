@@ -9,6 +9,7 @@ ENV_FILE="${ENV_FILE:-.env}"
 SKIP_GIT_PULL="${SKIP_GIT_PULL:-0}"
 USE_LOCAL_BUILD="${USE_LOCAL_BUILD:-0}"
 SKIP_CADDY="${SKIP_CADDY:-0}"
+POSTGRES_PORT="${POSTGRES_PORT:-}"
 
 if command -v docker >/dev/null 2>&1; then
   if docker compose version >/dev/null 2>&1; then
@@ -91,6 +92,12 @@ fi
 if [ "$SKIP_CADDY" != "1" ] && port_in_use 443; then
   echo "Port 443 is already in use. Skipping Caddy service."
   SKIP_CADDY=1
+fi
+
+if [ -z "$POSTGRES_PORT" ] && port_in_use 5432; then
+  POSTGRES_PORT=5433
+  export POSTGRES_PORT
+  echo "Port 5432 is in use. Using POSTGRES_PORT=5433."
 fi
 
 if [ "$USE_LOCAL_BUILD" = "1" ]; then
