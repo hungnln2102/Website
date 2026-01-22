@@ -8,6 +8,7 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.deploy.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
 SKIP_GIT_PULL="${SKIP_GIT_PULL:-0}"
 USE_LOCAL_BUILD="${USE_LOCAL_BUILD:-0}"
+SKIP_CADDY="${SKIP_CADDY:-0}"
 
 if command -v docker >/dev/null 2>&1; then
   if docker compose version >/dev/null 2>&1; then
@@ -38,6 +39,19 @@ can_resolve_host() {
     return $?
   fi
   return 0
+}
+
+port_in_use() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn | awk '{print $4}' | grep -q ":${port}$"
+    return $?
+  fi
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -iTCP:"${port}" -sTCP:LISTEN -n -P >/dev/null 2>&1
+    return $?
+  fi
+  return 1
 }
 
 if [ "$USE_LOCAL_BUILD" != "1" ] && ! can_resolve_host "github.com"; then
@@ -74,6 +88,11 @@ if [ -f "$ENV_FILE" ]; then
   COMPOSE_ARGS+=(--env-file "$ENV_FILE")
 fi
 
+if [ "$SKIP_CADDY" != "1" ] && port_in_use 443; then
+  echo "Port 443 is already in use. Skipping Caddy service."
+  SKIP_CADDY=1
+fi
+
 if [ "$USE_LOCAL_BUILD" = "1" ]; then
   export BUILD_CONTEXT="."
   export SERVER_DOCKERFILE="my-store/apps/server/Dockerfile"
@@ -81,5 +100,9 @@ if [ "$USE_LOCAL_BUILD" = "1" ]; then
 fi
 
 echo "Deploying with ${COMPOSE_FILE}..."
-"${DOCKER_COMPOSE[@]}" "${COMPOSE_ARGS[@]}" up -d --build --remove-orphans
+SERVICES=()
+if [ "$SKIP_CADDY" = "1" ]; then
+  SERVICES=(postgres api web)
+fi
+"${DOCKER_COMPOSE[@]}" "${COMPOSE_ARGS[@]}" up -d --build --remove-orphans "${SERVICES[@]}"
 "${DOCKER_COMPOSE[@]}" "${COMPOSE_ARGS[@]}" ps
