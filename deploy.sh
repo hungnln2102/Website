@@ -6,6 +6,8 @@ cd "$ROOT_DIR"
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.deploy.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
+SKIP_GIT_PULL="${SKIP_GIT_PULL:-0}"
+USE_LOCAL_BUILD="${USE_LOCAL_BUILD:-0}"
 
 if command -v docker >/dev/null 2>&1; then
   if docker compose version >/dev/null 2>&1; then
@@ -21,12 +23,42 @@ else
   exit 1
 fi
 
-if [ -d ".git" ]; then
+can_resolve_host() {
+  local host="$1"
+  if command -v getent >/dev/null 2>&1; then
+    getent hosts "$host" >/dev/null 2>&1
+    return $?
+  fi
+  if command -v nslookup >/dev/null 2>&1; then
+    nslookup "$host" >/dev/null 2>&1
+    return $?
+  fi
+  if command -v ping >/dev/null 2>&1; then
+    ping -c1 -W1 "$host" >/dev/null 2>&1
+    return $?
+  fi
+  return 0
+}
+
+if [ "$USE_LOCAL_BUILD" != "1" ] && ! can_resolve_host "github.com"; then
+  echo "github.com not reachable, switching to local build context."
+  USE_LOCAL_BUILD=1
+  SKIP_GIT_PULL=1
+fi
+
+if [ "$SKIP_GIT_PULL" != "1" ] && [ -d ".git" ]; then
   echo "Updating repository..."
-  git fetch --all --prune
+  if ! git fetch --all --prune; then
+    echo "git fetch failed, skipping git pull and using local build context."
+    USE_LOCAL_BUILD=1
+    SKIP_GIT_PULL=1
+  fi
   CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   if git show-ref --verify --quiet "refs/remotes/origin/${CURRENT_BRANCH}"; then
-    git pull --ff-only
+    if ! git pull --ff-only; then
+      echo "git pull failed, using local build context."
+      USE_LOCAL_BUILD=1
+    fi
   else
     echo "No upstream for ${CURRENT_BRANCH}, skipping git pull."
   fi
@@ -40,6 +72,12 @@ fi
 COMPOSE_ARGS=(-f "$COMPOSE_FILE")
 if [ -f "$ENV_FILE" ]; then
   COMPOSE_ARGS+=(--env-file "$ENV_FILE")
+fi
+
+if [ "$USE_LOCAL_BUILD" = "1" ]; then
+  export BUILD_CONTEXT="."
+  export SERVER_DOCKERFILE="my-store/apps/server/Dockerfile"
+  export WEB_DOCKERFILE="my-store/apps/web/Dockerfile"
 fi
 
 echo "Deploying with ${COMPOSE_FILE}..."
