@@ -2,6 +2,8 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/package.json
 COPY apps/web/package.json apps/web/package.json
@@ -14,11 +16,16 @@ RUN npm ci
 
 COPY . .
 
+RUN DATABASE_URL=postgresql://postgres:password@localhost:5432/postgres \
+  npm run db:generate --workspace @my-store/db
+
 RUN npm run build --workspace server
 
 FROM node:20-alpine AS runtime
 
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 ENV PORT=4000
