@@ -3,6 +3,11 @@ mavrykpremium.store {
   encode gzip
 }
 
+admin.mavrykpremium.store {
+  reverse_proxy web:80
+  encode gzip
+}
+
 api.mavrykpremium.store {
   reverse_proxy api:4000
   encode gzip
