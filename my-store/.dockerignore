@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/build
+**/.env
+**/.env.*
+.git
+.vscode
+.DS_Store
+coverage
+logs
+tmp
+temp
