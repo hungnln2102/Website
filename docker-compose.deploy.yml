@@ -1,6 +1,21 @@
 name: website
 
 services:
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: website-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: website-postgres
@@ -51,3 +66,5 @@ services:
 
 volumes:
   website_postgres_data:
+  caddy_data:
+  caddy_config:
