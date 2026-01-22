@@ -101,9 +101,9 @@ if [ -z "$POSTGRES_PORT" ] && port_in_use 5432; then
 fi
 
 if [ "$USE_LOCAL_BUILD" = "1" ]; then
-  export BUILD_CONTEXT="."
-  export SERVER_DOCKERFILE="my-store/apps/server/Dockerfile"
-  export WEB_DOCKERFILE="my-store/apps/web/Dockerfile"
+  export BUILD_CONTEXT="my-store"
+  export SERVER_DOCKERFILE="apps/server/Dockerfile"
+  export WEB_DOCKERFILE="apps/web/Dockerfile"
 fi
 
 echo "Deploying with ${COMPOSE_FILE}..."
