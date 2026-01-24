@@ -50,44 +50,43 @@ echo ""
 
 # Step 4: Check configuration
 COMPOSE_FILE="docker-compose.yml"
-ENV_FILE=".env"
+ENV_FILE=""
 
-# Function to check if a file has DATABASE_URL
-has_db_url() {
-    [ -f "$1" ] && grep -q "DATABASE_URL" "$1"
+# Function to check if a file has an ACTIVE (uncommented) DATABASE_URL
+is_valid_env() {
+    [ -f "$1" ] && grep -vq '^#' "$1" | grep -q "DATABASE_URL="
 }
 
-# Find the best .env file
-if has_db_url ".env"; then
+echo "Searching for valid .env file..."
+
+if is_valid_env ".env"; then
     ENV_FILE=".env"
-elif has_db_url "my-store/apps/server/.env"; then
+elif is_valid_env "my-store/apps/server/.env"; then
     ENV_FILE="my-store/apps/server/.env"
-    echo "💡 Using .env from my-store/apps/server/.env"
-elif has_db_url "my-store/.env"; then
+elif is_valid_env "my-store/.env"; then
     ENV_FILE="my-store/.env"
-    echo "💡 Using .env from my-store/.env"
-elif [ -f ".env" ]; then
-    ENV_FILE=".env"
-    echo "⚠️  Found .env but it's missing DATABASE_URL"
+fi
+
+if [ -z "$ENV_FILE" ]; then
+    if [ -f ".env" ]; then
+        echo "❌ Found .env at root, but it is missing an active DATABASE_URL."
+    fi
+    echo "❌ Error: Could not find a valid .env file with DATABASE_URL."
+    echo "Searched in:"
+    echo "  - ./.env"
+    echo "  - ./my-store/apps/server/.env"
+    echo "  - ./my-store/.env"
+    echo ""
+    echo "Please ensure DATABASE_URL=postgresql://... is present and NOT commented out."
+    exit 1
 fi
 
 if [ ! -f "$COMPOSE_FILE" ]; then
-    echo "❌ Error: File not found: $COMPOSE_FILE"
+    echo "❌ Error: Docker compose file not found: $COMPOSE_FILE"
     exit 1
 fi
 
-if [ -f "$ENV_FILE" ]; then
-    echo "✅ Using env file: $ENV_FILE"
-    if ! grep -q "DATABASE_URL" "$ENV_FILE"; then
-        echo "❌ Error: DATABASE_URL not found in $ENV_FILE"
-        echo "Please make sure your .env file contains: DATABASE_URL=postgresql://..."
-        exit 1
-    fi
-else
-    echo "❌ Error: .env file not found!"
-    echo "Please create a .env file with DATABASE_URL."
-    exit 1
-fi
+echo "✅ Using env file: $ENV_FILE"
 echo ""
 
 # Step 5: Stop and Restart

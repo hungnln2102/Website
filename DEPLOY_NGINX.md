@@ -51,8 +51,10 @@ cd /root/Website
 
 ### 3.1. Copy cấu hình vào Nginx Host
 
+**Lưu ý:** File `nginx-server.conf` hiện tại chỉ có port 80 để giúp Nginx khởi động được khi chưa có SSL.
+
 ```bash
-# Tạo file proxy_params nếu chưa có (thường có sẵn trên Ubuntu)
+# Tạo file proxy_params nếu chưa có
 sudo bash -c 'cat > /etc/nginx/proxy_params << EOF
 proxy_set_header Host \$host;
 proxy_set_header X-Real-IP \$remote_addr;
@@ -60,18 +62,18 @@ proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto \$scheme;
 EOF'
 
-# Copy file cấu hình tổng hợp
+# Copy file cấu hình (đã được sửa thành port 80 tạm thời)
 sudo cp nginx-server.conf /etc/nginx/sites-available/mavryk-unified.conf
 sudo ln -s /etc/nginx/sites-available/mavryk-unified.conf /etc/nginx/sites-enabled/
-
-# Xóa config mặc định
 sudo rm /etc/nginx/sites-enabled/default 2>/dev/null
+
+# Restart Nginx để nhận domain mới
+sudo systemctl restart nginx
 ```
 
-### 3.2. Chạy Certbot để lấy SSL cho TẤT CẢ domain
+### 3.2. Chạy Certbot để tạo SSL và tự động cấu hình HTTPS
 
 ```bash
-# Lần đầu tiên chạy, nó sẽ tự động thêm các dòng cấu hình SSL vào file của bạn
 sudo certbot --nginx -d mavrykpremium.store -d api.mavrykpremium.store -d admin.mavrykpremium.store
 ```
 
