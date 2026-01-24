@@ -52,15 +52,32 @@ echo ""
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
+# Tự động tìm file .env nếu ở root không có
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f "my-store/apps/server/.env" ]; then
+        ENV_FILE="my-store/apps/server/.env"
+        echo "💡 Found .env in my-store/apps/server/.env"
+    elif [ -f "my-store/.env" ]; then
+        ENV_FILE="my-store/.env"
+        echo "💡 Found .env in my-store/.env"
+    fi
+fi
+
 if [ ! -f "$COMPOSE_FILE" ]; then
-    echo "Error: File not found: $COMPOSE_FILE"
+    echo "❌ Error: File not found: $COMPOSE_FILE"
     exit 1
 fi
 
 if [ -f "$ENV_FILE" ]; then
-    echo "Using .env file found."
+    echo "✅ Using env file: $ENV_FILE"
+    # Kiểm tra DATABASE_URL
+    if ! grep -q "DATABASE_URL" "$ENV_FILE"; then
+        echo "❌ Error: DATABASE_URL not found in $ENV_FILE"
+        exit 1
+    fi
 else
-    echo "Warning: .env file not found, using defaults."
+    echo "❌ Error: .env file not found! Please create a .env file with DATABASE_URL."
+    exit 1
 fi
 echo ""
 
