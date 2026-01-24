@@ -54,7 +54,7 @@ ENV_FILE=""
 
 # Function to check if a file has an ACTIVE (uncommented) DATABASE_URL
 is_valid_env() {
-    [ -f "$1" ] && grep -vq '^#' "$1" | grep -q "DATABASE_URL="
+    [ -f "$1" ] && grep -v '^#' "$1" | grep -q "DATABASE_URL="
 }
 
 echo "Searching for valid .env file..."
