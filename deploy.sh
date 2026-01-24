@@ -52,15 +52,23 @@ echo ""
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
-# Tự động tìm file .env nếu ở root không có
-if [ ! -f "$ENV_FILE" ]; then
-    if [ -f "my-store/apps/server/.env" ]; then
-        ENV_FILE="my-store/apps/server/.env"
-        echo "💡 Found .env in my-store/apps/server/.env"
-    elif [ -f "my-store/.env" ]; then
-        ENV_FILE="my-store/.env"
-        echo "💡 Found .env in my-store/.env"
-    fi
+# Function to check if a file has DATABASE_URL
+has_db_url() {
+    [ -f "$1" ] && grep -q "DATABASE_URL" "$1"
+}
+
+# Find the best .env file
+if has_db_url ".env"; then
+    ENV_FILE=".env"
+elif has_db_url "my-store/apps/server/.env"; then
+    ENV_FILE="my-store/apps/server/.env"
+    echo "💡 Using .env from my-store/apps/server/.env"
+elif has_db_url "my-store/.env"; then
+    ENV_FILE="my-store/.env"
+    echo "💡 Using .env from my-store/.env"
+elif [ -f ".env" ]; then
+    ENV_FILE=".env"
+    echo "⚠️  Found .env but it's missing DATABASE_URL"
 fi
 
 if [ ! -f "$COMPOSE_FILE" ]; then
@@ -70,13 +78,14 @@ fi
 
 if [ -f "$ENV_FILE" ]; then
     echo "✅ Using env file: $ENV_FILE"
-    # Kiểm tra DATABASE_URL
     if ! grep -q "DATABASE_URL" "$ENV_FILE"; then
         echo "❌ Error: DATABASE_URL not found in $ENV_FILE"
+        echo "Please make sure your .env file contains: DATABASE_URL=postgresql://..."
         exit 1
     fi
 else
-    echo "❌ Error: .env file not found! Please create a .env file with DATABASE_URL."
+    echo "❌ Error: .env file not found!"
+    echo "Please create a .env file with DATABASE_URL."
     exit 1
 fi
 echo ""
