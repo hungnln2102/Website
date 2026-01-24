@@ -49,7 +49,7 @@ fi
 echo ""
 
 # Step 4: Check configuration
-COMPOSE_FILE="docker-compose.deploy.yml"
+COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
 if [ ! -f "$COMPOSE_FILE" ]; then
@@ -69,7 +69,11 @@ echo "Stopping old containers..."
 $DOCKER_COMPOSE -f "$COMPOSE_FILE" down 2>/dev/null || true
 echo ""
 
-echo "Building and starting containers..."
+# Step 5: Build and start application containers
+echo "🚀 Building and starting application containers..."
+echo "   (This may take a few minutes...)"
+echo ""
+
 if [ -f "$ENV_FILE" ]; then
     $DOCKER_COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
 else
@@ -77,7 +81,11 @@ else
 fi
 
 echo ""
-echo "Deployment Finished Successfully!"
+echo "✅ Deployment Finished Successfully!"
 echo "========================================="
 $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
 echo "========================================="
+echo ""
+echo "Tips:"
+echo "- To view logs: docker compose logs -f"
+echo "- To restart:   docker compose restart"

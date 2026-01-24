@@ -1,0 +1,32 @@
+name: website
+
+services:
+  api:
+    build:
+      context: ${BUILD_CONTEXT:-https://github.com/hungnln2102/Website.git#main:my-store}
+      dockerfile: ${SERVER_DOCKERFILE:-apps/server/Dockerfile}
+    container_name: website-api
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://mavrykpremium.store}
+      FRONTEND_URL: ${FRONTEND_URL:-https://mavrykpremium.store}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:4000:4000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ${BUILD_CONTEXT:-https://github.com/hungnln2102/Website.git#main:my-store}
+      dockerfile: ${WEB_DOCKERFILE:-apps/web/Dockerfile}
+      args:
+        VITE_SERVER_URL: ${VITE_SERVER_URL:-https://api.mavrykpremium.store}
+    container_name: website-web
+    ports:
+      - "127.0.0.1:4001:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
