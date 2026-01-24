@@ -156,124 +156,96 @@ export default function ProductDetailPage({ slug, onBack, onProductClick }: Prod
   const packages = useMemo(() => {
     if (!product) return [];
 
+    // 1. Ưu tiên dữ liệu thật từ database
     if (packageData.length > 0) {
-      const dedup = new Map<string, ProductPackageDto>();
-      packageData.forEach((pkg, idx) => {
-        const packageKey = normalizePackageKey(pkg.package_product ?? pkg.package);
-        if (!packageKey) return;
+      const dedup = new Map<string, any>();
+      packageData.forEach((pkg) => {
+        const variantName = pkg.package_product?.trim() || pkg.package?.trim() || "Gói";
+        const packageKey = variantName.toLowerCase();
+        
         const costValue = Number(pkg.cost) || 0;
         const existing = dedup.get(packageKey);
-        if (!existing) {
-          dedup.set(packageKey, pkg);
-          return;
+        
+        if (!existing || (costValue > 0 && (existing.price === 0 || costValue < existing.price))) {
+          dedup.set(packageKey, {
+            id: variantName, 
+            product_id: product.id,
+            name: variantName,
+            price: roundToNearestThousand(pkg.cost),
+            features: [],
+            duration_months: null,
+            created_at: new Date().toISOString(),
+          });
         }
-        const existingCost = Number(existing.cost) || 0;
-        if (costValue > 0 && (existingCost === 0 || costValue < existingCost)) {
-          dedup.set(packageKey, pkg);
-        }
-      });
-      return Array.from(dedup.entries()).map(([packageKey, pkg], idx) => ({
-        id: packageKey,
-        product_id: product.id,
-        name: pkg.package_product?.trim() || pkg.package?.trim() || "Gói",
-        price: roundToNearestThousand(pkg.cost),
-        features: [],
-        duration_months: null,
-        created_at: new Date().toISOString(),
-      }));
-    }
-
-    if (packagesFromMock.length > 0) {
-      const dedup = new Map<string, (typeof packagesFromMock)[number]>();
-      packagesFromMock.forEach((pkg) => {
-        const key = `${pkg.name}-${pkg.duration_months ?? "na"}-${pkg.price}`;
-        if (!dedup.has(key)) dedup.set(key, pkg);
       });
       return Array.from(dedup.values());
     }
 
+    // 2. Nếu không có DB, thử lấy từ Mock data
+    if (packagesFromMock.length > 0) {
+      return packagesFromMock;
+    }
+
+    // 3. Fallback: Tự tạo gói mặc định để không hỏng UI
     const base = Math.max(0, roundToNearestThousand(product.base_price));
-    const now = new Date().toISOString();
-    const generated = [
+    return [
       {
-        id: `pkg-${product.id}-12`,
+        id: `pkg-${product.id}-default`,
         product_id: product.id,
-        name: "1 Năm",
+        name: "Gói chuẩn",
         price: base,
-        features: ["Kích hoạt & hỗ trợ cơ bản"],
+        features: ["Bản quyền vĩnh viễn", "Hỗ trợ 24/7"],
         duration_months: 12,
-        created_at: now,
-      },
-      {
-        id: `pkg-${product.id}-24`,
-        product_id: product.id,
-        name: "2 Năm",
-        price: roundToNearestThousand(base * 1.9),
-        features: ["Tiết kiệm 5%"],
-        duration_months: 24,
-        created_at: now,
-      },
-      {
-        id: `pkg-${product.id}-36`,
-        product_id: product.id,
-        name: "3 Năm",
-        price: roundToNearestThousand(base * 2.7),
-        features: ["Tiết kiệm 10%"],
-        duration_months: 36,
-        created_at: now,
-      },
+        created_at: new Date().toISOString(),
+      }
     ];
-    return generated;
   }, [packageData, product, packagesFromMock]);
 
   const durationOptions = useMemo<DurationOption[]>(() => {
     if (!product) return [];
 
+    // 1. Dữ liệu thật từ database
     if (packageData.length > 0) {
-      const activePackageKey = normalizePackageKey(selectedPackage);
+      const activePackageKey = (selectedPackage || "").toLowerCase();
       if (!activePackageKey) return [];
-      const options = new Map<string, DurationOption>();
+
+      const options = new Map<string, DurationOption & { pct_promo?: number }>();
       packageData.forEach((pkg, idx) => {
-        const packageKey = normalizePackageKey(pkg.package_product ?? pkg.package);
-        if (!packageKey || packageKey !== activePackageKey) return;
+        const packageKey = (pkg.package_product ?? (pkg.package ?? "")).trim().toLowerCase();
+        if (packageKey !== activePackageKey) return;
+
         const duration = parseDurationToken(pkg.id_product);
         const price = roundToNearestThousand(pkg.cost);
-        const key = duration?.key ?? `unknown-${pkg.id ?? idx}`;
+        const key = duration?.key ?? (pkg.id_product?.trim() || `opt-${idx}`);
         const label = duration?.label ?? (pkg.id_product?.trim() || "Gói");
         const sortValue = duration?.sortValue ?? Number.MAX_SAFE_INTEGER;
+
         const existing = options.get(key);
         if (!existing || (price > 0 && (existing.price === 0 || price < existing.price))) {
-          options.set(key, {
-            key,
-            label,
-            price,
+          options.set(key, { 
+            key, 
+            label, 
+            price, 
             sortValue,
-          });
+            pct_promo: pkg.pct_promo // Pass down pct_promo
+          } as any);
         }
       });
+
       return Array.from(options.values()).sort(
         (a, b) => a.sortValue - b.sortValue || a.price - b.price,
       );
     }
+    // ... rest same
 
-    if (packagesFromMock.length > 0) {
-      return packagesFromMock
-        .map((pkg, idx) => ({
-          key: String(pkg.id ?? `mock-${idx}`),
-          label: pkg.name,
-          price: roundToNearestThousand(pkg.price),
-          sortValue: pkg.duration_months ?? Number.MAX_SAFE_INTEGER,
-        }))
-        .sort((a, b) => a.sortValue - b.sortValue || a.price - b.price);
-    }
-
+    // 2. Fallback cho Mock hoặc sản phẩm không có duration trong DB
     const base = Math.max(0, roundToNearestThousand(product.base_price));
     return [
       { key: "12m", label: "12 tháng", price: base, sortValue: 12 },
-      { key: "24m", label: "24 tháng", price: roundToNearestThousand(base * 1.9), sortValue: 24 },
-      { key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.7), sortValue: 36 },
+      { key: "24m", label: "24 tháng", price: roundToNearestThousand(base * 1.8), sortValue: 24 },
+      { key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.5), sortValue: 36 },
     ];
-  }, [packageData, product, packagesFromMock, selectedPackage]);
+  }, [packageData, product, selectedPackage]);
 
   useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -497,7 +469,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick }: Prod
                     >
                       <div className="mb-1 font-semibold text-gray-900 dark:text-white">{pkg.name}</div>
                       <ul className="space-y-0.5">
-                        {(pkg.features ?? []).slice(0, 2).map((feature, idx) => (
+                        {(pkg.features ?? []).slice(0, 2).map((feature: string, idx: number) => (
                           <li key={idx} className="flex items-center gap-1 text-xs text-gray-600 dark:text-slate-300">
                             <Check className="h-3 w-3 flex-shrink-0 text-green-500 dark:text-green-400" />
                             <span>{feature}</span>
@@ -520,37 +492,72 @@ export default function ProductDetailPage({ slug, onBack, onProductClick }: Prod
                     <Package className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Chọn thời gian sử dụng</h3>
                   </div>
-                  <div className="space-y-3">
-                    {durationOptions.map((option) => (
-                      <button
-                        key={option.key}
-                        onClick={() => {
-                          setSelectedDuration(option.key);
-                          updateURL(selectedPackage, option.key);
-                        }}
-                        className={`w-full rounded-xl border-2 p-4 text-left transition-all ${
-                          selectedDuration === option.key
-                            ? "border-cyan-600 bg-cyan-50 dark:bg-cyan-950 dark:border-cyan-500"
-                            : "border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-slate-500"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-900 dark:text-white">{option.label}</span>
-                          <span className="text-lg font-bold text-cyan-600 dark:text-cyan-400">
-                            {formatCurrency(option.price)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {durationOptions.map((option: any) => {
+                      const discountPctRaw = Number(option.pct_promo) || 0;
+                      const hasPromo = discountPctRaw > 0;
+                      const promoPrice = hasPromo 
+                        ? roundToNearestThousand(option.price * (1 - (discountPctRaw > 1 ? discountPctRaw/100 : discountPctRaw)))
+                        : option.price;
+
+                      return (
+                        <button
+                          key={option.key}
+                          onClick={() => {
+                            setSelectedDuration(option.key);
+                            updateURL(selectedPackage, option.key);
+                          }}
+                          className={`relative flex flex-col justify-between rounded-xl border-2 p-4 text-left transition-all duration-300 ${
+                            selectedDuration === option.key
+                              ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-100 dark:border-blue-500 dark:bg-blue-900/20 dark:ring-blue-900/20"
+                              : "border-gray-100 bg-white hover:border-blue-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
+                          }`}
+                        >
+                          {hasPromo && (
+                            <div className="absolute -right-1 -top-1 z-10">
+                              <span className="flex h-6 items-center rounded-full bg-red-500 px-2 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-800">
+                                SALE {discountPctRaw > 1 ? Math.round(discountPctRaw) : Math.round(discountPctRaw * 100)}%
+                              </span>
+                            </div>
+                          )}
+                          
+                          <div className="mb-3 flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${selectedDuration === option.key ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'}`} />
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{option.label}</span>
+                          </div>
+
+                          <div className="mt-auto">
+                            {hasPromo && (
+                              <div className="text-[10px] font-medium text-gray-400 line-through">
+                                {formatCurrency(option.price)}
+                              </div>
+                            )}
+                            <div className={`text-lg font-bold ${hasPromo ? 'text-red-500 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                              {formatCurrency(promoPrice)}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 py-4 text-lg font-semibold text-white transition-all hover:shadow-lg">
-                <ShoppingCart className="h-5 w-5" />
-                Mua ngay
+              <button className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 py-5 text-xl font-bold text-white transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]">
+                <div className="absolute inset-0 bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                <ShoppingCart className="h-6 w-6" />
+                <span>Mua ngay</span>
                 {selectedDurationData && (
-                  <span>- {formatCurrency(selectedDurationData.price)}</span>
+                  <span className="ml-1 text-blue-100/90">
+                    - {(() => {
+                        const discountPctRaw = Number((selectedDurationData as any).pct_promo) || 0;
+                        const hasPromo = discountPctRaw > 0;
+                        const finalPrice = hasPromo 
+                          ? roundToNearestThousand(selectedDurationData.price * (1 - (discountPctRaw > 1 ? discountPctRaw/100 : discountPctRaw)))
+                          : selectedDurationData.price;
+                        return formatCurrency(finalPrice);
+                      })()}
+                  </span>
                 )}
               </button>
             </div>
@@ -568,7 +575,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick }: Prod
                 />
               ) : (
                 <div className="whitespace-pre-line leading-relaxed text-gray-600 dark:text-slate-300">
-                  {product.full_description || "Chưa có mô tả chi tiết."}
+                  {product.description || "Chưa có mô tả chi tiết."}
                 </div>
               )}
             </div>
@@ -602,10 +609,10 @@ export default function ProductDetailPage({ slug, onBack, onProductClick }: Prod
           <div className="lg:col-span-1">
             <div className="sticky top-24 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <h3 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Quy tắc mua hàng</h3>
-              {productInfo?.description ? (
+              {productInfo?.purchase_rules ? (
                 <div 
                   className="text-sm leading-relaxed text-gray-600 dark:text-slate-300"
-                  dangerouslySetInnerHTML={{ __html: productInfo.description }}
+                  dangerouslySetInnerHTML={{ __html: productInfo.purchase_rules }}
                 />
               ) : (
                 <div className="whitespace-pre-line text-sm leading-relaxed text-gray-600 dark:text-slate-300">

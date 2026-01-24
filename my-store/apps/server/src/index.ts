@@ -211,11 +211,6 @@ app.get("/products", async (_req, res) => {
           ON TRIM(pd.product_id::text) = TRIM(v.display_name::text)
         WHERE p.package_name IS NOT NULL
           AND v.is_active = true
-          AND EXISTS (
-            SELECT 1
-            FROM ${TABLES.PRODUCT_CATEGORY} pcg
-            WHERE pcg.product_id = p.id
-          )
       ),
       ranked AS (
         SELECT
@@ -253,11 +248,11 @@ app.get("/products", async (_req, res) => {
         image_url
       FROM ranked
       WHERE rn = 1
-      ORDER BY package
-      LIMIT 20;
+      ORDER BY package;
     `;
     const { rows } = await pool.query<RawProductRow>(query);
     console.log(`[products] rows=${rows.length} duration=${Date.now() - startedAt}ms`);
+    console.log(`[products] promo_count=${rows.filter(r => r.has_promo).length}`);
 
     const products = rows.map((row) => {
       const name = row.package ?? row.id_product ?? "San pham";
@@ -288,6 +283,97 @@ app.get("/products", async (_req, res) => {
   } catch (err) {
     console.error("Fetch products error:", err);
     res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+app.get("/promotions", async (_req, res) => {
+  try {
+    const startedAt = Date.now();
+    const query = `
+      WITH supply_max AS (
+        SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+        FROM ${TABLES.SUPPLIER_COST} sc
+        GROUP BY sc.product_id
+      ),
+      priced AS (
+        SELECT
+          p.id AS product_id,
+          p.package_name AS package,
+          v.id AS variant_id,
+          v.variant_name AS package_product,
+          v.display_name AS id_product,
+          v.is_active AS is_active,
+          COALESCE(pc.pct_ctv, 0) AS pct_ctv,
+          COALESCE(pc.pct_khach, 0) AS pct_khach,
+          pc.pct_promo AS pct_promo,
+          COALESCE(sm.price_max, 0) AS price_max,
+          COALESCE(vsc.sales_count, 0) AS sales_count,
+          pd.description,
+          pd.image_url
+        FROM ${TABLES.VARIANT} v
+        LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+        INNER JOIN LATERAL (
+          SELECT
+            pc.pct_ctv,
+            pc.pct_khach,
+            pc.pct_promo
+          FROM ${TABLES.PRICE_CONFIG} pc
+          WHERE pc.variant_id = v.id AND pc.pct_promo IS NOT NULL AND pc.pct_promo > 0
+          ORDER BY pc.updated_at DESC NULLS LAST
+          LIMIT 1
+        ) pc ON TRUE
+        LEFT JOIN supply_max sm ON sm.product_id = v.id
+        LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
+        LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON TRIM(pd.product_id::text) = TRIM(v.display_name::text)
+        WHERE v.is_active = true
+    )
+    SELECT
+      product_id,
+      variant_id,
+      package,
+      package_product,
+      id_product,
+      pct_ctv,
+      pct_khach,
+      pct_promo,
+      (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) AS sale_price,
+      (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) * (1 - COALESCE(pct_promo::numeric, 0)) AS promo_price,
+      sales_count,
+      description,
+      image_url
+    FROM priced
+    ORDER BY pct_promo DESC;
+    `;
+    const { rows } = await pool.query<any>(query);
+    console.log(`[promotions] rows=${rows.length} duration=${Date.now() - startedAt}ms`);
+
+    const promotions = rows.map((rowSummary: any) => {
+      const name = rowSummary.package_product || rowSummary.package || "Khuyen mai";
+      const basePrice = toNumber(rowSummary.sale_price);
+      const discountPctRaw = toNumber(rowSummary.pct_promo);
+      const discountPct = discountPctRaw > 1 ? discountPctRaw : discountPctRaw * 100;
+
+      return {
+        id: toNumber(rowSummary.product_id),
+        variant_id: toNumber(rowSummary.variant_id),
+        slug: slugify(rowSummary.package || String(rowSummary.product_id)),
+        name,
+        package: rowSummary.package ?? "",
+        id_product: rowSummary.id_product,
+        description: stripHtml(rowSummary.description) || "Khuyến mãi đặc biệt",
+        image_url: rowSummary.image_url || "https://placehold.co/600x400?text=Hot+Deal",
+        base_price: basePrice,
+        discount_percentage: discountPct,
+        has_promo: true,
+        sales_count: toNumber(rowSummary.sales_count),
+        average_rating: 0,
+      };
+    });
+
+    res.json({ data: promotions });
+  } catch (err) {
+    console.error("Fetch promotions error:", err);
+    res.status(500).json({ error: "Failed to fetch promotions" });
   }
 });
 
@@ -330,10 +416,10 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
   }
 
   try {
-    const rows = await prisma.$queryRaw<PackageProductRow[]>`
+    const rows = await prisma.$queryRaw<any[]>`
       WITH supply_max AS (
         SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
-        FROM ${TABLES.SUPPLIER_COST} sc
+        FROM product.supplier_cost sc
         GROUP BY sc.product_id
       ),
       priced AS (
@@ -344,27 +430,27 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           v.display_name AS id_product,
           COALESCE(pc.pct_ctv, 0) AS pct_ctv,
           COALESCE(pc.pct_khach, 0) AS pct_khach,
-          COALESCE(sm.price_max, 0) AS price_max
-        FROM ${TABLES.VARIANT} v
-        LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+          pc.pct_promo,
+          COALESCE(sm.price_max, 0) AS price_max,
+          pd.description,
+          pd.image_url,
+          pd.rules as purchase_rules
+        FROM product.variant v
+        LEFT JOIN product.product p ON p.id = v.product_id
         LEFT JOIN LATERAL (
-          SELECT
-            pc.pct_ctv,
-            pc.pct_khach
-          FROM ${TABLES.PRICE_CONFIG} pc
+          SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
+          FROM product.price_config pc
           WHERE pc.variant_id = v.id
           ORDER BY pc.updated_at DESC NULLS LAST
           LIMIT 1
         ) pc ON TRUE
         LEFT JOIN supply_max sm ON sm.product_id = v.id
-        WHERE p.package_name = ${packageName}
+        LEFT JOIN product.product_desc pd ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
+        WHERE p.package_name ILIKE ${packageName}
           AND v.is_active = true
       )
       SELECT
-        id,
-        package,
-        package_product,
-        id_product,
+        *,
         (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) AS cost
       FROM priced
       WHERE package_product IS NOT NULL;

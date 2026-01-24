@@ -9,7 +9,7 @@ import Pagination from "@/components/Pagination";
 import ProductCard from "@/components/ProductCard";
 import PromotionCarousel from "@/components/PromotionCarousel";
 import { ProductCardSkeleton, CategorySkeleton, CategorySkeletonGrid } from "@/components/ui/skeleton";
-import { fetchCategories, fetchProducts, type CategoryDto, type ProductDto } from "@/lib/api";
+import { fetchCategories, fetchProducts, fetchPromotions, type CategoryDto, type ProductDto, type PromotionDto } from "@/lib/api";
 import { categoriesMock } from "@/lib/mockData";
 
 const slugify = (value: string) =>
@@ -37,6 +37,14 @@ export default function HomePage({ onProductClick }: HomePageProps) {
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
+  });
+
+  const {
+    data: promotions = [] as PromotionDto[],
+    isLoading: loadingPromotions
+  } = useQuery({
+    queryKey: ["promotions"],
+    queryFn: fetchPromotions,
   });
 
   const { 
@@ -104,7 +112,31 @@ export default function HomePage({ onProductClick }: HomePageProps) {
     [products],
   );
 
-  const promotionProducts = normalizedProducts.filter((p) => p.has_promo);
+  const promotionProducts = useMemo(() => 
+    promotions.map(p => ({
+      ...p,
+      id: String(p.id),
+      category_id: null,
+      full_description: null,
+      is_featured: false,
+      purchase_rules: null,
+      created_at: new Date().toISOString(),
+    }))
+  , [promotions]);
+
+  const handlePromotionClick = (p: any) => {
+    const params = new URLSearchParams();
+    params.set("package", p.name);
+    
+    const durationMatch = p.id_product.match(/--\s*(\d+[md])\b/i);
+    if (durationMatch) {
+      params.set("duration", durationMatch[1].toLowerCase());
+    }
+
+    const url = `/${encodeURIComponent(p.slug)}?${params.toString()}`;
+    window.history.pushState({}, "", url);
+    window.dispatchEvent(new Event("popstate"));
+  };
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === null) return normalizedProducts;
@@ -140,7 +172,7 @@ export default function HomePage({ onProductClick }: HomePageProps) {
           <BannerSlider />
         </section>
 
-        {promotionProducts.length > 0 && (
+        {(!loadingPromotions && promotionProducts.length > 0) && (
           <section className="mb-12">
             <div className="mb-8 flex items-center gap-3">
               <div className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 p-2 text-white">
@@ -149,7 +181,14 @@ export default function HomePage({ onProductClick }: HomePageProps) {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Khuyến mãi hôm nay</h2>
               <div className="h-1 flex-1 rounded bg-gradient-to-r from-red-500 to-transparent"></div>
             </div>
-            <PromotionCarousel products={promotionProducts} onProductClick={onProductClick} />
+            <PromotionCarousel 
+              products={promotionProducts as any} 
+              onProductClick={(slug) => {
+                const p = promotionProducts.find((x: any) => x.slug === slug);
+                if (p) handlePromotionClick(p);
+                else onProductClick(slug);
+              }} 
+            />
           </section>
         )}
 

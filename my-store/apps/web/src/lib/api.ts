@@ -13,12 +13,21 @@ export type ProductDto = {
   package_count?: number;
 };
 
+export type PromotionDto = ProductDto & {
+  variant_id: number;
+  id_product: string;
+};
+
 export type ProductPackageDto = {
   id: number;
   package: string | null;
   package_product?: string | null;
   id_product?: string | null;
   cost: number;
+  pct_promo?: number;
+  description?: string | null;
+  image_url?: string | null;
+  purchase_rules?: string | null;
 };
 
 export type CategoryDto = {
@@ -37,6 +46,15 @@ export async function fetchProducts(): Promise<ProductDto[]> {
   }
   const body = await res.json();
   return (body?.data ?? []) as ProductDto[];
+}
+
+export async function fetchPromotions(): Promise<PromotionDto[]> {
+  const res = await fetch(`${API_BASE}/promotions`);
+  if (!res.ok) {
+    throw new Error(`Fetch promotions failed: ${res.status}`);
+  }
+  const body = await res.json();
+  return (body?.data ?? []) as PromotionDto[];
 }
 
 export async function fetchCategories(): Promise<CategoryDto[]> {
@@ -83,8 +101,9 @@ export type ProductInfoDto = {
   base_name: string;
   description: string | null;
   image_url: string | null;
+  purchase_rules: string | null;
   total_sold_count: number;
-  variants: VariantDetailDto[];
+  variants: any[];
 };
 
 export async function fetchVariantDetail(variantId: number): Promise<VariantDetailDto | null> {

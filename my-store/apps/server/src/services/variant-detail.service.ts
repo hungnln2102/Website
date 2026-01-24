@@ -70,8 +70,13 @@ export class VariantDetailService {
   /**
    * Get all variants for a product (by base_name)
    */
-  async getVariantsByBaseName(baseName: string): Promise<VariantDetailInfo[]> {
+  async getVariantsByBaseName(baseName: string): Promise<any[]> {
     const query = `
+      WITH supply_max AS (
+        SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+        FROM product.supplier_cost sc
+        GROUP BY sc.product_id
+      )
       SELECT 
         v.id as variant_id,
         v.display_name,
@@ -81,12 +86,25 @@ export class VariantDetailService {
         SPLIT_PART(v.display_name, '--', 2) as duration,
         pd.description,
         pd.image_url,
-        COALESCE(vsc.sales_count, 0) as sold_count
+        pd.rules as purchase_rules,
+        COALESCE(vsc.sales_count, 0) as sold_count,
+        COALESCE(pc.pct_ctv, 0) as pct_ctv,
+        COALESCE(pc.pct_khach, 0) as pct_khach,
+        pc.pct_promo,
+        COALESCE(sm.price_max, 0) as price_max
       FROM product.variant v
       LEFT JOIN product.product_desc pd 
         ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
       LEFT JOIN product.variant_sold_count vsc
         ON vsc.variant_id = v.id
+      LEFT JOIN LATERAL (
+        SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
+        FROM product.price_config pc
+        WHERE pc.variant_id = v.id
+        ORDER BY pc.updated_at DESC NULLS LAST
+        LIMIT 1
+      ) pc ON TRUE
+      LEFT JOIN supply_max sm ON sm.product_id = v.id
       WHERE SPLIT_PART(v.display_name, '--', 1) = $1
       ORDER BY 
         CASE 
@@ -96,7 +114,7 @@ export class VariantDetailService {
         END ASC
     `;
 
-    return await prisma.$queryRawUnsafe<VariantDetailInfo[]>(query, baseName);
+    return await prisma.$queryRawUnsafe<any[]>(query, baseName);
   }
 
   /**
@@ -106,8 +124,9 @@ export class VariantDetailService {
     base_name: string;
     description: string | null;
     image_url: string | null;
+    purchase_rules: string | null;
     total_sold_count: number;
-    variants: VariantDetailInfo[];
+    variants: any[];
   } | null> {
     const variants = await this.getVariantsByBaseName(baseName);
     
@@ -116,12 +135,13 @@ export class VariantDetailService {
     }
 
     // Get total sold count for all variants
-    const totalSoldCount = variants.reduce((sum, v) => sum + v.sold_count, 0);
+    const totalSoldCount = variants.reduce((sum, v) => sum + (v.sold_count || 0), 0);
 
     return {
       base_name: baseName,
       description: variants[0].description,
       image_url: variants[0].image_url,
+      purchase_rules: variants[0].purchase_rules,
       total_sold_count: totalSoldCount,
       variants: variants,
     };
