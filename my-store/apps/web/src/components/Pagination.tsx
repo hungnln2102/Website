@@ -36,12 +36,12 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   };
 
   const btnBase =
-    "min-w-14 rounded-xl px-5 py-2.5 text-base font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-  const btnDefault = `${btnBase} border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600`;
+    "min-w-10 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed";
+  const btnDefault = `${btnBase} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-400 hover:shadow-sm dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600`;
   const btnActive = `${btnBase} border border-blue-600 bg-blue-600 text-white font-bold dark:border-blue-500 dark:bg-blue-500`;
 
   return (
-    <div className="mt-10 flex flex-wrap items-center justify-center gap-2 text-slate-900">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-1.5 text-slate-900">
       <button className={btnDefault} onClick={() => goTo(1)} disabled={currentPage === 1}>
         {"<<"}
       </button>

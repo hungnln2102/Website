@@ -57,9 +57,9 @@ export default function PromotionCarousel({ products, onProductClick }: Promotio
   const visibleProducts = products.slice(currentIndex, currentIndex + itemsPerView);
 
   return (
-    <div className="relative">
-      <div className="overflow-hidden">
-        <div className="grid grid-cols-1 gap-6 transition-all duration-500 md:grid-cols-2 lg:grid-cols-3">
+    <div className="group/carousel relative">
+      <div className="overflow-hidden px-1 py-2">
+        <div className="grid grid-cols-1 gap-6 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3">
           {visibleProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -75,7 +75,7 @@ export default function PromotionCarousel({ products, onProductClick }: Promotio
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-16 rounded-full bg-blue-600 p-2.5 text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="absolute -left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/80 text-gray-900 shadow-lg backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 disabled:opacity-0 disabled:cursor-not-allowed cursor-pointer group-hover/carousel:translate-x-0 sm:-translate-x-3"
             aria-label="Sản phẩm trước"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -84,21 +84,21 @@ export default function PromotionCarousel({ products, onProductClick }: Promotio
           <button
             onClick={handleNext}
             disabled={currentIndex >= maxIndex}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 rounded-full bg-blue-600 p-2.5 text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="absolute -right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/80 text-gray-900 shadow-lg backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 disabled:opacity-0 disabled:cursor-not-allowed cursor-pointer group-hover/carousel:translate-x-0 sm:translate-x-3"
             aria-label="Sản phẩm tiếp theo"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
 
           <div className="mt-6 flex justify-center gap-2">
-            {[...Array(Math.ceil(products.length / itemsPerView))].map((_, i) => (
+            {[...Array(maxIndex + 1)].map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}
-                className={`h-2.5 rounded-full transition-all ${
-                  i === Math.floor(currentIndex / itemsPerView)
-                    ? "w-6 bg-blue-600"
-                    : "w-2.5 bg-gray-300 hover:bg-gray-400"
+                className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
+                  i === currentIndex
+                    ? "w-8 bg-blue-600 shadow-lg shadow-blue-500/50"
+                    : "w-1.5 bg-gray-300 hover:bg-gray-400"
                 }`}
               />
             ))}
