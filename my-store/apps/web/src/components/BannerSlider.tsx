@@ -40,18 +40,18 @@ export default function BannerSlider() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-lg dark:shadow-slate-700/30">
-      <div className="grid items-center gap-6 p-6 md:grid-cols-2 md:p-8">
-        <div className="space-y-3">
-          <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100">
+      <div className="grid items-center gap-4 p-4 md:grid-cols-2 md:gap-6 md:p-6 text-center md:text-left">
+        <div className="space-y-2 md:space-y-3">
+          <div className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-3 md:py-1 md:text-sm">
             Ưu đãi đặc biệt
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{active.title}</h2>
-          <p className="text-gray-600 dark:text-slate-200">{active.description}</p>
-          <button className="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow transition hover:bg-blue-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">{active.title}</h2>
+          <p className="hidden text-sm text-gray-600 dark:text-slate-200 md:block">{active.description}</p>
+          <button className="mx-auto mt-1 cursor-pointer inline-flex w-fit items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-2 md:px-4 md:py-2 md:text-sm">
             {active.cta}
           </button>
         </div>
-        <div className="relative h-56 md:h-64">
+        <div className="relative h-40 sm:h-48 md:h-56">
           <div
             className="absolute inset-0 rounded-xl bg-cover bg-center shadow-inner"
             style={{
@@ -67,7 +67,7 @@ export default function BannerSlider() {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`h-2.5 rounded-full transition-all ${
+            className={`h-2.5 cursor-pointer rounded-full transition-all ${
               i === current
                 ? "w-6 bg-blue-600 dark:bg-blue-400"
                 : "w-2.5 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 dark:hover:bg-slate-500"

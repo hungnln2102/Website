@@ -111,6 +111,23 @@ echo "========================================="
 $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
 echo "========================================="
 echo ""
+
+# Optional: Sync Unified Nginx config to Host (admin + website on port 80)
+if [ "${SYNC_NGINX:-0}" = "1" ] && [ -f "nginx-server.conf" ]; then
+    echo "Syncing nginx-server.conf to Host Nginx..."
+    if sudo cp nginx-server.conf /etc/nginx/sites-available/mavryk-unified.conf 2>/dev/null; then
+        if sudo nginx -t 2>/dev/null; then
+            sudo systemctl reload nginx 2>/dev/null && echo "✅ Host Nginx reloaded (mavryk-unified)." || echo "⚠️  Nginx reload failed."
+        else
+            echo "⚠️  nginx -t failed; config not applied."
+        fi
+    else
+        echo "⚠️  Could not copy nginx config (sudo?). Sync manually: sudo cp nginx-server.conf /etc/nginx/sites-available/mavryk-unified.conf && sudo systemctl reload nginx"
+    fi
+    echo ""
+fi
+
 echo "Tips:"
 echo "- To view logs: docker compose logs -f"
 echo "- To restart:   docker compose restart"
+echo "- Sync Nginx:   SYNC_NGINX=1 ./deploy.sh  (copy nginx-server.conf → Host & reload)"

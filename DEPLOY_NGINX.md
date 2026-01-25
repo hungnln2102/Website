@@ -6,14 +6,14 @@ Tài liệu này hướng dẫn cách chuyển đổi từ việc dùng Nginx tr
 
 ### 1.1. Dừng các container Nginx đang chiếm port 80/443
 
-Bạn cần tìm và dừng các container đang chiếm port 80/443 (ví dụ dự án `admin_orderlist`).
+`admin_orderlist` **không còn chạy Nginx trong Docker**. Nếu vẫn còn container `admin_orderlist-nginx` cũ, cần dừng/xóa:
 
 ```bash
-# Vào thư mục dự án cũ
-cd /root/admin_orderlist
-# Dừng container nginx (hoàn toàn hoặc chỉ service nginx)
-docker compose stop nginx
+docker stop admin_orderlist-nginx 2>/dev/null || true
+docker rm admin_orderlist-nginx 2>/dev/null || true
 ```
+
+Hoặc chạy `./deploy.sh` trong `admin_orderlist` — script sẽ tự dừng container nginx cũ.
 
 ### 1.2. Cài đặt các thành phần cần thiết trên Host
 
@@ -24,20 +24,14 @@ sudo apt install nginx certbot python3-certbot-nginx -y
 
 ## Bước 2: Cấu hình Dự án
 
-### 2.1. Cập nhật admin_orderlist (Dự án cũ)
+### 2.1. admin_orderlist (không dùng Nginx trong Docker)
 
-Mở file `admin_orderlist/docker-compose.yml` và đảm bảo port 5000 được expose để Host Nginx có thể gọi vào:
+- `admin_orderlist` chỉ chạy **postgres, backend, frontend**. Backend expose **3001** (API) và **5000** (webhook Sepay).
+- Host Nginx (`nginx-server.conf`) proxy:
+  - `admin.mavrykpremium.store` → frontend **8081**, `/api/` → **3001**, `/image/` → **3001**
+  - `/webhook`, `/bot/payment_sepay/` → **5000**
 
-```yaml
-# admin_orderlist/docker-compose.yml
-services:
-  backend:
-    ports:
-      - "3001:3001"
-      - "5000:5000" # Thêm dòng này
-```
-
-Sau đó restart dự án đó: `docker compose up -d`
+Deploy: `cd admin_orderlist && ./deploy.sh`
 
 ### 2.2. Deploy dự án mới này
 
@@ -100,3 +94,16 @@ Tất cả đều chạy chung qua Nginx Host và có HTTPS! 🚀
 - **Xem log Nginx Host:** `sudo tail -f /var/log/nginx/*.log`
 - **Restart Nginx Host:** `sudo systemctl restart nginx`
 - **Renew SSL:** Certbot tự làm, nhưng có thể test bằng `sudo certbot renew --dry-run`
+
+### Đồng bộ lại Nginx sau khi sửa `nginx-server.conf`
+
+Mỗi khi cập nhật `nginx-server.conf` (vd. thêm route, đổi upstream), cần copy lên Host và reload:
+
+```bash
+# Cách 1: Dùng deploy script (trong thư mục Website)
+SYNC_NGINX=1 ./deploy.sh
+
+# Cách 2: Làm tay
+sudo cp nginx-server.conf /etc/nginx/sites-available/mavryk-unified.conf
+sudo nginx -t && sudo systemctl reload nginx
+```

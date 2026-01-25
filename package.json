@@ -7,5 +7,8 @@
     "dev:server": "npm --prefix my-store run dev:server",
     "build": "npm --prefix my-store run build",
     "check-types": "npm --prefix my-store run check-types"
+  },
+  "dependencies": {
+    "@sentry/react": "^10.36.0"
   }
 }
