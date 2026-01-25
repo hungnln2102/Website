@@ -20,6 +20,7 @@ export default function App() {
   const initialRoute = parsePath();
   const [view, setView] = useState<View>(initialRoute.view);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(initialRoute.slug);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Keep UI state in sync with browser navigation
   useEffect(() => {
@@ -43,25 +44,28 @@ export default function App() {
     window.history.pushState({}, "", `/`);
     setView("home");
     setSelectedSlug(null);
+    setSearchQuery(""); // Clear search when going back home manually
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   if (view === "product" && !selectedSlug) {
-    return <HomePage onProductClick={handleProductClick} />;
+    return <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />;
   }
 
   return (
     <ErrorBoundary>
-      <div className="fixed right-4 top-4 z-50">
-        <ModeToggle />
-      </div>
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950"><Loader /></div>}>
-        {view === "home" && <HomePage onProductClick={handleProductClick} />}
+        {view === "home" && <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
         {view === "product" && selectedSlug && (
           <ProductDetailPage
             slug={selectedSlug}
             onBack={handleBack}
             onProductClick={handleProductClick}
+            searchQuery={searchQuery}
+            setSearchQuery={(q: string) => {
+              setSearchQuery(q);
+              if (q) handleBack(); // Go home if searching from detail page
+            }}
           />
         )}
       </Suspense>
