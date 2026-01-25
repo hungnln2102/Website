@@ -1,8 +1,27 @@
 "use client";
+<<<<<<< HEAD
 
 import { useMemo, useState, useCallback } from "react";
 import { Flame, Search, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+=======
+
+import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Flame, Search, X, TrendingUp } from "lucide-react";
+
+import BannerSlider from "@/components/BannerSlider";
+import CategoryFilter from "@/components/CategoryFilter";
+import Footer from "@/components/Footer";
+import Pagination from "@/components/Pagination";
+import ProductCard from "@/components/ProductCard";
+import PromotionCarousel from "@/components/PromotionCarousel";
+import { ProductCardSkeleton, CategorySkeleton, CategorySkeletonGrid } from "@/components/ui/skeleton";
+import { fetchCategories, fetchProducts, fetchPromotions, type CategoryDto, type ProductDto, type PromotionDto } from "@/lib/api";
+import { categoriesMock } from "@/lib/mockData";
+import { ModeToggle } from "@/components/mode-toggle";
+import MenuBar from "@/components/MenuBar";
+>>>>>>> f932458
 
 import { BannerSlider, PromotionCarousel, NewProductsCarousel } from "@/features/home/components";
 import { Footer, MenuBar } from "@/components/layout";
@@ -33,14 +52,19 @@ interface HomePageProps {
 export default function HomePage({ onProductClick, searchQuery, setSearchQuery }: HomePageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+<<<<<<< HEAD
   const [searchError, setSearchError] = useState<string | null>(null);
   const isScrolled = useScroll();
+=======
+  const [isScrolled, setIsScrolled] = useState(false);
+>>>>>>> f932458
 
   // Custom hooks for data fetching
   const { products: normalizedProducts, isLoading: loading, error } = useProducts();
   const { categories: categoriesUi, categoryProductsMap, isLoading: loadingCategories } = useCategories();
   const { promotions: promotionProducts, isLoading: loadingPromotions } = usePromotions();
 
+<<<<<<< HEAD
   // SEO Metadata
   const pageMetadata = useMemo(
     () => ({
@@ -59,6 +83,89 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       type: "website" as const,
     }),
     [searchQuery, selectedCategory, categoriesUi]
+=======
+  // Optimized Fetching with React Query
+  const { 
+    data: products = [], 
+    isLoading: loading, 
+    error: fetchError 
+  } = useQuery({
+    queryKey: ["products"],
+    queryFn: fetchProducts,
+  });
+
+  const {
+    data: promotions = [] as PromotionDto[],
+    isLoading: loadingPromotions
+  } = useQuery({
+    queryKey: ["promotions"],
+    queryFn: fetchPromotions,
+  });
+
+  const { 
+    data: categories = [], 
+    isLoading: loadingCategories 
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
+
+  const error = fetchError ? "Không lấy được danh sách sản phẩm" : null;
+  const categoryError = null; 
+
+  const categoriesUi = useMemo(() => {
+    if (loadingCategories && categories.length === 0) {
+      return []; 
+    }
+    if (categories.length === 0) {
+      return categoriesMock;
+    }
+    return categories.map((c) => {
+      const slug = slugify(c.name);
+      return {
+        id: String(c.id),
+        name: c.name,
+        slug,
+        description: null,
+        icon: "FileText",
+        created_at: c.created_at ?? new Date().toISOString(),
+      };
+    });
+  }, [categories, loadingCategories]);
+
+  const categoryProductsMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    categories.forEach((c) => {
+      const slug = slugify(c.name);
+      const ids = (c.product_ids ?? []).map((id) => String(id));
+      map.set(slug, new Set(ids));
+    });
+    return map;
+  }, [categories]);
+
+  const normalizedProducts = useMemo(
+    () =>
+      products.map((p: any) => ({
+        id: String(p.id),
+        category_id: null,
+        name: p.name,
+        package: p.package,
+        slug: p.slug,
+        description: p.description,
+        full_description: null,
+        base_price: p.base_price ?? 0,
+        image_url: p.image_url,
+        is_featured: false,
+        discount_percentage: p.discount_percentage ?? 0,
+        has_promo: p.has_promo ?? false,
+        sales_count: p.sales_count ?? 0,
+        average_rating: p.average_rating ?? 0,
+        purchase_rules: null,
+        package_count: p.package_count ?? 1,
+        created_at: new Date().toISOString(),
+      })),
+    [products],
+>>>>>>> f932458
   );
 
   const newProducts = useMemo(() => {
@@ -96,6 +203,20 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
         return productIds.has(String(p.id));
       });
     }
+<<<<<<< HEAD
+=======
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((p) => 
+        p.name.toLowerCase().includes(query) || 
+        (p.description && p.description.toLowerCase().includes(query))
+      );
+    }
+    
+    return result;
+  }, [normalizedProducts, selectedCategory, categoryProductsMap, searchQuery]);
+>>>>>>> f932458
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -108,6 +229,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     return result;
   }, [normalizedProducts, selectedCategory, categoryProductsMap, searchQuery]);
 
+<<<<<<< HEAD
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / APP_CONFIG.productsPerPage));
   const pageProducts = filteredProducts.slice(
     (currentPage - 1) * APP_CONFIG.productsPerPage,
@@ -138,12 +260,29 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       <MetaTags metadata={pageMetadata} />
       <StructuredData data={structuredData} />
       <div className="min-h-screen bg-slate-50 transition-colors duration-500 dark:bg-slate-950">
+=======
+  // Handle scroll for sticky effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-50 transition-colors duration-500 dark:bg-slate-950">
+>>>>>>> f932458
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-blue-500/10 blur-[120px] dark:bg-blue-600/5" />
         <div className="absolute -right-[10%] top-[20%] h-[30%] w-[30%] rounded-full bg-indigo-500/10 blur-[100px] dark:indigo-600/5" />
       </div>
 
+<<<<<<< HEAD
       <div className={`sticky top-0 z-50 ${isScrolled ? 'shadow-xl shadow-blue-900/5 backdrop-blur-xl' : ''}`}>
+=======
+      <div className={`sticky top-0 z-50 transition-all duration-500 ${isScrolled ? 'shadow-xl shadow-blue-900/5 backdrop-blur-xl' : ''}`}>
+>>>>>>> f932458
         <header className={`relative border-b transition-all duration-500 ${
           isScrolled 
             ? 'border-gray-200/50 bg-white/80 py-2 dark:border-slate-800/50 dark:bg-slate-950/80' 
@@ -177,6 +316,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                   type="text"
                   placeholder="Tìm kiếm sản phẩm..."
                   value={searchQuery}
+<<<<<<< HEAD
                   onChange={(e) => {
                     const value = e.target.value;
                     setSearchQuery(value);
@@ -216,21 +356,30 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                       ? 'border-red-300 focus:border-red-500 dark:border-red-800' 
                       : 'border-gray-100 focus:border-blue-500'
                   } ${
+=======
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
+>>>>>>> f932458
                     isScrolled ? 'h-9' : 'h-10'
                   }`}
                 />
                 {searchQuery && (
                   <button
+<<<<<<< HEAD
                     onClick={() => {
                       setSearchQuery("");
                       setSearchError(null);
                     }}
                     aria-label="Xóa tìm kiếm"
+=======
+                    onClick={() => setSearchQuery("")}
+>>>>>>> f932458
                     className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 )}
+<<<<<<< HEAD
                 {searchError && (
                   <div 
                     id="search-error"
@@ -241,6 +390,8 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                     <span>{searchError}</span>
                   </div>
                 )}
+=======
+>>>>>>> f932458
               </div>
             </div>
 
@@ -249,12 +400,16 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
             </div>
           </div>
         </header>
+<<<<<<< HEAD
         <MenuBar 
           isScrolled={isScrolled} 
           categories={categoriesUi}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
         />
+=======
+        <MenuBar isScrolled={isScrolled} />
+>>>>>>> f932458
       </div>
 
       <main className="relative z-10 mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -263,7 +418,23 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
         </section>
 
         {(!loadingPromotions && promotionProducts.length > 0 && !searchQuery) && (
+<<<<<<< HEAD
           <section className="mb-12 sm:mb-20">
+=======
+          <section className="mb-8 sm:mb-12">
+            <div className="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping rounded-xl bg-red-500 opacity-20" />
+                <div className="relative rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-2 text-white shadow-lg shadow-red-500/20">
+                  <Flame className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">Deal Sốc <span className="text-red-500">Hôm Nay</span></h2>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500 sm:text-[10px]">Đừng bỏ lỡ ưu đãi giới hạn</p>
+              </div>
+            </div>
+>>>>>>> f932458
             <PromotionCarousel 
               products={promotionProducts} 
               onProductClick={(slug) => {
@@ -299,6 +470,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
           </div>
         )}
 
+<<<<<<< HEAD
         <div className="flex flex-col gap-8 sm:gap-12" id="all-products">
           <section className="w-full" aria-labelledby="products-heading">
             <div className="mb-6 flex flex-col justify-between gap-4 border-b border-gray-100 pb-6 dark:border-slate-800 sm:flex-row sm:items-end">
@@ -334,16 +506,53 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                 aria-label="Đang tải sản phẩm"
               >
                 {[...Array(8)].map((_, i) => (
+=======
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-4 lg:gap-8">
+          <aside className="lg:col-span-1">
+            {loadingCategories ? (
+              <div className="space-y-4">
+                <div className="h-8 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                <CategorySkeletonGrid />
+              </div>
+            ) : (
+              <CategoryFilter
+                categories={categoriesUi}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            )}
+          </aside>
+
+          <section className="lg:col-span-3">
+            <div className="mb-4 sm:mb-5">
+              <h2 className="mb-0.5 text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
+                {searchQuery 
+                  ? `Tìm thấy sản phẩm cho "${searchQuery}"`
+                  : selectedCategory
+                  ? categoriesUi.find((c) => c.slug === selectedCategory)?.name || "Sản phẩm"
+                  : "Tất cả sản phẩm"}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400">{filteredProducts.length} sản phẩm</p>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {[...Array(6)].map((_, i) => (
+>>>>>>> f932458
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
             ) : filteredProducts.length > 0 ? (
               <>
+<<<<<<< HEAD
                 <div 
                   className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                   role="list"
                   aria-label="Danh sách sản phẩm"
                 >
+=======
+                <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
+>>>>>>> f932458
                   {pageProducts.map((product) => (
                     <article key={product.id} role="listitem">
                       <ProductCard
@@ -365,6 +574,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                 )}
               </>
             ) : (
+<<<<<<< HEAD
               <article className="rounded-xl border border-gray-100 bg-white py-16 text-center dark:border-slate-800 dark:bg-slate-900">
                 <div className="mx-auto max-w-md px-4">
                   <div className="mb-4 flex justify-center">
@@ -408,6 +618,11 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                   </div>
                 </div>
               </article>
+=======
+              <div className="rounded-xl border border-gray-100 bg-white py-12 text-center dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-gray-500 dark:text-slate-400">Không tìm thấy sản phẩm phù hợp</p>
+              </div>
+>>>>>>> f932458
             )}
           </section>
         </div>

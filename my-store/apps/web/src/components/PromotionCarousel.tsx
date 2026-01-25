@@ -128,6 +128,7 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
   const visibleProducts = products.slice(currentIndex, currentIndex + itemsPerView);
 
   return (
+<<<<<<< HEAD
     <div className="relative">
       {/* Section Background Decoration */}
       <div className="absolute -inset-4 z-0 rounded-[3rem] bg-red-50/50 dark:bg-red-950/10 blur-3xl opacity-50" />
@@ -148,6 +149,18 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
               Ưu đãi giới hạn mỗi ngày
             </p>
           </div>
+=======
+    <div className="group/carousel relative">
+      <div className="overflow-hidden px-1 py-2">
+        <div className="grid grid-cols-1 gap-6 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3">
+          {visibleProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              {...product}
+              onClick={() => onProductClick(product.slug)}
+            />
+          ))}
+>>>>>>> f932458
         </div>
         
         {onViewAll && (
@@ -160,6 +173,7 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
         )}
       </div>
 
+<<<<<<< HEAD
       <div className="group/carousel relative z-10">
         <div className="overflow-visible px-1 py-4">
           <div className={`grid grid-cols-1 gap-6 transition-all duration-700 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4`}>
@@ -168,6 +182,38 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
                 key={product.id}
                 product={product}
                 onClick={() => onProductClick(product.slug)}
+=======
+      {products.length > itemsPerView && (
+        <>
+          <button
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            className="absolute -left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/80 text-gray-900 shadow-lg backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 disabled:opacity-0 disabled:cursor-not-allowed cursor-pointer group-hover/carousel:translate-x-0 sm:-translate-x-3"
+            aria-label="Sản phẩm trước"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+
+          <button
+            onClick={handleNext}
+            disabled={currentIndex >= maxIndex}
+            className="absolute -right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/80 text-gray-900 shadow-lg backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 disabled:opacity-0 disabled:cursor-not-allowed cursor-pointer group-hover/carousel:translate-x-0 sm:translate-x-3"
+            aria-label="Sản phẩm tiếp theo"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+
+          <div className="mt-6 flex justify-center gap-2">
+            {[...Array(maxIndex + 1)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentIndex(i)}
+                className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
+                  i === currentIndex
+                    ? "w-8 bg-blue-600 shadow-lg shadow-blue-500/50"
+                    : "w-1.5 bg-gray-300 hover:bg-gray-400"
+                }`}
+>>>>>>> f932458
               />
             ))}
           </div>

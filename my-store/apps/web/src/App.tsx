@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import FloatingLogo from "@/components/FloatingLogo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import SkipLinks from "@/components/accessibility/SkipLinks";
 import Loader from "@/components/loader";
 
 const HomePage = lazy(() => import("@/components/pages/HomePage"));
@@ -55,7 +54,6 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <SkipLinks />
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950"><Loader /></div>}>
         {view === "home" && <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
         {view === "product" && selectedSlug && (
