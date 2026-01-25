@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const slides = [
   {
@@ -36,27 +37,60 @@ export default function BannerSlider() {
     return () => clearInterval(interval);
   }, []);
 
+  const handlePrev = () => {
+    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  const handleNext = () => {
+    setCurrent((prev) => (prev + 1) % slides.length);
+  };
+
   const active = slides[current];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-lg dark:shadow-slate-700/30">
-      <div className="grid items-center gap-4 p-4 md:grid-cols-2 md:gap-6 md:p-6 text-center md:text-left">
-        <div className="space-y-2 md:space-y-3">
-          <div className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-3 md:py-1 md:text-sm">
+    <section 
+      className="group/banner relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-lg dark:shadow-slate-700/30"
+      aria-label="Banner quảng cáo"
+      role="region"
+    >
+      {/* Navigation Arrows */}
+      <button
+        onClick={handlePrev}
+        className="absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:text-blue-600 opacity-0 group-hover/banner:opacity-100 dark:bg-slate-800/90 dark:text-white dark:hover:bg-slate-700 dark:hover:text-blue-400 sm:left-4"
+        aria-label="Slide trước"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        onClick={handleNext}
+        className="absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:text-blue-600 opacity-0 group-hover/banner:opacity-100 dark:bg-slate-800/90 dark:text-white dark:hover:bg-slate-700 dark:hover:text-blue-400 sm:right-4"
+        aria-label="Slide tiếp theo"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      <div className="grid items-center gap-3 p-3 md:grid-cols-2 md:gap-4 md:p-4 text-center md:text-left">
+        <div className="space-y-1.5 md:space-y-2">
+          <div className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-2.5 md:py-1 md:text-xs">
             Ưu đãi đặc biệt
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">{active.title}</h2>
-          <p className="hidden text-sm text-gray-600 dark:text-slate-200 md:block">{active.description}</p>
-          <button className="mx-auto mt-1 cursor-pointer inline-flex w-fit items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-2 md:px-4 md:py-2 md:text-sm">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl md:text-xl">{active.title}</h2>
+          <p className="hidden text-xs text-gray-600 dark:text-slate-200 md:block">{active.description}</p>
+          <button 
+            className="mx-auto mt-0.5 cursor-pointer inline-flex w-fit items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-1.5 md:px-3.5 md:py-1.5 md:text-xs"
+            aria-label={`${active.cta} - ${active.title}`}
+          >
             {active.cta}
           </button>
         </div>
-        <div className="relative h-40 sm:h-48 md:h-56">
+        <div className="relative h-32 sm:h-40 md:h-44">
           <div
             className="absolute inset-0 rounded-xl bg-cover bg-center shadow-inner"
             style={{
               backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0)), url(${active.image})`,
             }}
+            role="img"
+            aria-label={`Hình ảnh minh họa: ${active.title} - ${active.description}`}
           />
           <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-slate-950/60 via-slate-900/30 to-transparent opacity-0 transition-opacity duration-300 dark:opacity-100" />
         </div>
@@ -76,6 +110,6 @@ export default function BannerSlider() {
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

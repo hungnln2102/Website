@@ -8,6 +8,18 @@ import { errorTracker } from '@/lib/error-tracking/error-tracker';
 import App from './App';
 import './index.css';
 
+// Retry function with exponential backoff
+const retryWithBackoff = (failureCount: number, error: unknown) => {
+  // Don't retry on 4xx errors (client errors)
+  if (error instanceof Error) {
+    if (error.message.includes('404') || error.message.includes('403') || error.message.includes('401')) {
+      return false;
+    }
+  }
+  // Retry up to 3 times for network/server errors
+  return failureCount < 3;
+};
+
 // Configure React Query with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,7 +27,8 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: retryWithBackoff,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
 });

@@ -5,10 +5,12 @@ import { ArrowLeft, Check, Package, Shield, ShoppingCart, Star, Users, Search, X
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { fetchProductPackages, fetchProducts, fetchProductInfo, type ProductDto, type ProductPackageDto } from "@/lib/api";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { categoriesMock, productPackagesMock, productsMock, reviewsMock } from "@/lib/mockData";
 import { ModeToggle } from "@/components/mode-toggle";
+import { sanitizeHtml } from "@/lib/utils/sanitize";
 
 interface ProductDetailPageProps {
   slug: string;
@@ -109,7 +111,9 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
 
   const { 
     data: packageData = [], 
-    isLoading: loadingPackages 
+    isLoading: loadingPackages,
+    error: packagesError,
+    refetch: refetchPackages
   } = useQuery({
     queryKey: ["product-packages", productData?.package],
     queryFn: () => productData?.package ? fetchProductPackages(productData.package) : Promise.resolve([]),
@@ -128,7 +132,9 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
   // Fetch product info (description, image) from product_desc
   const {
     data: productInfo,
-    isLoading: loadingProductInfo
+    isLoading: loadingProductInfo,
+    error: productInfoError,
+    refetch: refetchProductInfo
   } = useQuery({
     queryKey: ["product-info", baseName],
     queryFn: () => baseName ? fetchProductInfo(baseName) : Promise.resolve(null),
@@ -136,7 +142,22 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
   });
 
   const loading = loadingProducts || (!!productData?.package && loadingPackages);
-  const error = productsError ? "Không thể tải được sản phẩm" : null;
+  const productsErrorMsg = productsError instanceof Error ? productsError.message : (productsError ? "Không thể tải được sản phẩm" : null);
+  const packagesErrorMsg = packagesError instanceof Error ? packagesError.message : (packagesError ? "Không thể tải thông tin gói sản phẩm" : null);
+  const productInfoErrorMsg = productInfoError instanceof Error ? productInfoError.message : (productInfoError ? "Không thể tải thông tin chi tiết sản phẩm" : null);
+  
+  // Retry handlers
+  const handleRetryProducts = () => {
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const handleRetryPackages = () => {
+    refetchPackages();
+  };
+
+  const handleRetryProductInfo = () => {
+    refetchProductInfo();
+  };
 
   const mappedProduct = useMemo(
     () =>
@@ -345,9 +366,18 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="text-center">
-          <p className="mb-4 text-gray-600 dark:text-slate-400">
-            {error ? error : "Không thể tải được sản phẩm"}
-          </p>
+          {productsErrorMsg ? (
+            <ErrorMessage
+              title="Lỗi tải sản phẩm"
+              message={productsErrorMsg}
+              onRetry={handleRetryProducts}
+              className="mb-4"
+            />
+          ) : (
+            <p className="mb-4 text-gray-600 dark:text-slate-400">
+              Không thể tải được sản phẩm
+            </p>
+          )}
           <button
             onClick={onBack}
             className="font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
@@ -374,9 +404,10 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
             <button
               onClick={onBack}
               className="group cursor-pointer flex items-center gap-2 text-gray-600 transition-all hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+              aria-label="Quay lại trang chủ"
             >
               <div className={`flex items-center justify-center rounded-xl bg-gray-100 transition-all duration-500 group-hover:bg-blue-50 group-hover:scale-110 dark:bg-slate-800 dark:group-hover:bg-blue-900/30 ${isScrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               </div>
               <span className={`font-semibold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xs' : 'text-sm'}`}>Quay lại trang chủ</span>
             </button>
@@ -391,16 +422,18 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
                   placeholder="Tìm kiếm sản phẩm..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
+                  className={`w-full pl-10 pr-10 transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
                     isScrolled ? 'h-9' : 'h-10'
                   }`}
+                  aria-label="Tìm kiếm sản phẩm"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+                    aria-label="Xóa tìm kiếm"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -414,12 +447,39 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
       </div>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        {/* Error States */}
+        {productsErrorMsg && (
+          <ErrorMessage
+            title="Lỗi tải sản phẩm"
+            message={productsErrorMsg}
+            onRetry={handleRetryProducts}
+            className="mb-4"
+          />
+        )}
+
+        {packagesErrorMsg && (
+          <ErrorMessage
+            title="Lỗi tải gói sản phẩm"
+            message={packagesErrorMsg}
+            onRetry={handleRetryPackages}
+            className="mb-4"
+          />
+        )}
+
+        {productInfoErrorMsg && (
+          <ErrorMessage
+            title="Lỗi tải thông tin chi tiết"
+            message={productInfoErrorMsg}
+            onRetry={handleRetryProductInfo}
+            className="mb-4"
+          />
+        )}
         <div className="mb-8 grid grid-cols-1 gap-6 sm:mb-10 sm:gap-8 lg:grid-cols-[1.05fr_1fr]">
           <div className="space-y-6 lg:space-y-8 w-full">
             <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg transition-all dark:border-slate-700/50 dark:bg-slate-800 sm:rounded-2xl sm:p-1.5 sm:shadow-xl">
               <img
                 src={productInfo?.image_url || product.image_url || "https://placehold.co/800x600?text=No+Image"}
-                alt={product.name}
+                alt={`Hình ảnh chi tiết sản phẩm ${product.name}${product.description ? ` - ${product.description.substring(0, 150)}` : ''}`}
                 loading="lazy"
                 decoding="async"
                 className="aspect-[4/3] w-full rounded-2xl object-cover transition-transform duration-700 group-hover:scale-105"
@@ -628,7 +688,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
                 {productInfo?.description ? (
                   <div 
                     className="prose prose-blue max-w-none dark:prose-invert"
-                    dangerouslySetInnerHTML={{ __html: productInfo.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(productInfo.description) }}
                   />
                 ) : (
                   <div className="whitespace-pre-line leading-relaxed text-gray-600 dark:text-slate-300">
@@ -691,7 +751,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
                   {productInfo?.purchase_rules ? (
                     <div 
                       className="prose prose-sm prose-invert"
-                      dangerouslySetInnerHTML={{ __html: productInfo.purchase_rules }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(productInfo.purchase_rules || "") }}
                     />
                   ) : (
                     <p>{product.purchase_rules || "Quý khách vui lòng kiểm tra kỹ gói sản phẩm trước khi thanh toán. Liên hệ hỗ trợ nếu cần tư vấn."}</p>
