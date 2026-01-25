@@ -129,6 +129,7 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
 
   return (
 <<<<<<< HEAD
+<<<<<<< HEAD
     <div className="relative">
       {/* Section Background Decoration */}
       <div className="absolute -inset-4 z-0 rounded-[3rem] bg-red-50/50 dark:bg-red-950/10 blur-3xl opacity-50" />
@@ -150,6 +151,8 @@ export default function PromotionCarousel({ products, onProductClick, onViewAll 
             </p>
           </div>
 =======
+=======
+>>>>>>> e475f55
     <div className="group/carousel relative">
       <div className="overflow-hidden px-1 py-2">
         <div className="grid grid-cols-1 gap-6 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3">
