@@ -12,17 +12,27 @@ const HomePage = lazy(() => import("@/components/pages/HomePage"));
 const ProductDetailPage = lazy(() => import("@/components/pages/ProductDetailPage"));
 const CategoryPage = lazy(() => import("@/components/pages/CategoryPage"));
 const NewProductsPage = lazy(() => import("@/components/pages/NewProductsPage"));
+const PromotionsPage = lazy(() => import("@/components/pages/PromotionsPage"));
+const AllProductsPage = lazy(() => import("@/components/pages/AllProductsPage"));
 
-type View = "home" | "product" | "category" | "new-products";
+type View = "home" | "product" | "category" | "new-products" | "promotions" | "all-products";
 
 const parsePath = (categories: CategoryDto[]): { view: View; slug: string | null } => {
   if (typeof window === "undefined") return { view: "home", slug: null };
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
   if (!path) return { view: "home", slug: null };
   
-  // Check for "san-pham-moi" route
+  // Check for special routes
   if (path === "san-pham-moi") {
     return { view: "new-products", slug: null };
+  }
+
+  if (path === "khuyen-mai") {
+    return { view: "promotions", slug: null };
+  }
+
+  if (path === "tat-ca-san-pham") {
+    return { view: "all-products", slug: null };
   }
   
   // Check if path starts with "danh-muc/"
@@ -113,6 +123,22 @@ export default function App() {
         )}
         {view === "new-products" && (
           <NewProductsPage
+            onBack={handleBack}
+            onProductClick={handleProductClick}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        )}
+        {view === "promotions" && (
+          <PromotionsPage
+            onBack={handleBack}
+            onProductClick={handleProductClick}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        )}
+        {view === "all-products" && (
+          <AllProductsPage
             onBack={handleBack}
             onProductClick={handleProductClick}
             searchQuery={searchQuery}

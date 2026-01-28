@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft, Package, Search, X } from "lucide-react";
 
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -80,6 +80,7 @@ export default function CategoryPage({
       image_url: p.image_url || null,
       discount_percentage: p.discount_percentage ?? 0,
       sales_count: p.sales_count ?? 0,
+      sold_count_30d: p.sold_count_30d ?? 0,
       average_rating: p.average_rating ?? 0,
       package_count: p.package_count ?? 1,
       slug: p.slug || slugify(p.name),
@@ -174,18 +175,48 @@ export default function CategoryPage({
             : 'border-gray-100 bg-white py-3.5 dark:border-slate-800/50 dark:bg-slate-950/70'
         }`}>
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Trang chủ</span>
-              </button>
-              <div className="hidden sm:block">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-4 rounded-xl px-1 py-1 -ml-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              aria-label="Quay về trang chủ"
+            >
+              <div className={`rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 transition-all duration-500 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}>
+                <div className="flex h-full w-full items-center justify-center rounded-[calc(0.75rem-1px)] bg-white dark:bg-slate-950">
+                  <span className={`font-bold text-blue-600 transition-all ${isScrolled ? 'text-lg' : 'text-xl'}`}>M</span>
+                </div>
+              </div>
+              <div className="hidden sm:block text-left">
                 <h1 className={`font-bold tracking-tight text-gray-900 transition-all duration-500 dark:text-white ${isScrolled ? 'text-base' : 'text-lg sm:text-xl'}`}>
-                  {category.name}
+                  Mavryk Premium <span className="text-blue-600 dark:text-blue-500">Store</span>
                 </h1>
+              </div>
+            </button>
+
+            <div className={`mx-4 flex flex-1 max-w-md transition-all duration-500 ${isScrolled ? 'max-w-lg' : ''}`}>
+              <div className="relative w-full group">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Search className={`h-4 w-4 transition-colors ${searchQuery ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm sản phẩm..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full pl-10 pr-10 transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
+                    isScrolled ? 'h-9' : 'h-10'
+                  }`}
+                  aria-label="Tìm kiếm sản phẩm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -214,6 +245,17 @@ export default function CategoryPage({
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Back button under menu */}
+        <div className="mb-4 flex items-center">
+          <button
+            onClick={onBack}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:bg-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Quay về</span>
+          </button>
+        </div>
+
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">

@@ -18,6 +18,7 @@ import variantDetailRouter from "./routes/variant-detail.route";
 
 // Import cron job for auto-refresh materialized views
 import "./jobs/refresh-variant-sold-count.job";
+import "./jobs/refresh-product-sold-30d.job";
 
 const app = express();
 
@@ -220,6 +221,7 @@ app.get("/products", async (_req, res) => {
           (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
             * (1 - COALESCE(priced.pct_promo::numeric, 0)) AS promo_price,
           COALESCE(psc.total_sales_count, 0) AS package_sales_count,
+          COALESCE(p30d.sold_count_30d, 0) AS sold_count_30d,
           ROW_NUMBER() OVER (
             PARTITION BY priced.package
             ORDER BY (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)) ASC
@@ -228,6 +230,8 @@ app.get("/products", async (_req, res) => {
         FROM priced
         LEFT JOIN product.product_sold_count psc
           ON psc.package_name = priced.package
+        LEFT JOIN product.product_sold_30d p30d
+          ON p30d.product_id = priced.id
       )
       SELECT
         id,
@@ -244,6 +248,7 @@ app.get("/products", async (_req, res) => {
         promo_price,
         package_count,
         package_sales_count AS sales_count,
+        sold_count_30d,
         description,
         image_url
       FROM ranked
@@ -274,6 +279,7 @@ app.get("/products", async (_req, res) => {
         discount_percentage: discountPct,
         has_promo: hasPromo,
         sales_count: toNumber(row.sales_count),
+        sold_count_30d: toNumber((row as any).sold_count_30d || 0),
         average_rating: 0,
         package_count: packageCount,
       };

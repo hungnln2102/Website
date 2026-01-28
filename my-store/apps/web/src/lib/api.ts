@@ -9,6 +9,7 @@ export type ProductDto = {
   discount_percentage: number;
   has_promo?: boolean;
   sales_count: number;
+  sold_count_30d?: number;
   average_rating: number;
   package_count?: number;
 };

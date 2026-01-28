@@ -1,22 +1,21 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Flame } from "lucide-react";
 
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import Pagination from "@/components/Pagination";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { fetchCategories, fetchProducts } from "@/lib/api";
+import { fetchPromotions, fetchCategories, type PromotionDto, type CategoryDto } from "@/lib/api";
 import MenuBar from "@/components/MenuBar";
 import SiteHeader from "@/components/SiteHeader";
 import { useScroll } from "@/hooks/useScroll";
-import { useQueryClient } from "@tanstack/react-query";
 import { slugify } from "@/lib/utils";
 
-interface NewProductsPageProps {
+interface PromotionsPageProps {
   onBack: () => void;
   onProductClick: (slug: string) => void;
   searchQuery: string;
@@ -31,12 +30,12 @@ type SortOption =
   | "price-asc"
   | "price-desc";
 
-export default function NewProductsPage({ 
-  onBack, 
+export default function PromotionsPage({
+  onBack,
   onProductClick,
   searchQuery,
-  setSearchQuery
-}: NewProductsPageProps) {
+  setSearchQuery,
+}: PromotionsPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const isScrolled = useScroll();
@@ -44,43 +43,55 @@ export default function NewProductsPage({
 
   const PER_PAGE = 12;
 
-  // Fetch data
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
   });
 
-  const { data: allProducts = [], isLoading: loadingProducts, error: productsError } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+  const {
+    data: promotions = [] as PromotionDto[],
+    isLoading: loadingPromotions,
+    error: promotionsError,
+  } = useQuery({
+    queryKey: ["promotions"],
+    queryFn: fetchPromotions,
   });
 
-  // Get all products and normalize
-  const normalizedProducts = useMemo(() => {
-    return allProducts.map((p: any) => ({
-      id: String(p.id),
-      name: p.name,
-      description: p.description || null,
-      base_price: p.base_price ?? 0,
-      image_url: p.image_url || null,
-      discount_percentage: p.discount_percentage ?? 0,
-      sales_count: p.sales_count ?? 0,
-      sold_count_30d: p.sold_count_30d ?? 0,
-      average_rating: p.average_rating ?? 0,
-      package_count: p.package_count ?? 1,
-      slug: p.slug || slugify(p.name),
-      category_id: p.category_id || null,
-      created_at: p.created_at || new Date().toISOString(),
-      full_description: null,
-      is_featured: false,
-      purchase_rules: null,
-    }));
-  }, [allProducts]);
+  const promotionsErrorMsg =
+    promotionsError instanceof Error
+      ? promotionsError.message
+      : promotionsError
+      ? "Không thể tải danh sách khuyến mãi"
+      : null;
 
-  // Sort products
-  const sortedProducts = useMemo(() => {
-    const sorted = [...normalizedProducts];
-    
+  const normalizedPromotions = useMemo(
+    () =>
+      promotions.map((p) => ({
+        id: String(p.id),
+        category_id: null,
+        name: p.name,
+        package: p.package,
+        slug: p.slug,
+        description: p.description,
+        full_description: null,
+        base_price: p.base_price ?? 0,
+        image_url: p.image_url,
+        is_featured: false,
+        discount_percentage: p.discount_percentage ?? 0,
+        has_promo: p.has_promo ?? true,
+        sales_count: p.sales_count ?? 0,
+        sold_count_30d: p.sold_count_30d ?? 0,
+        average_rating: p.average_rating ?? 0,
+        purchase_rules: null,
+        package_count: p.package_count ?? 1,
+        created_at: new Date().toISOString(),
+      })),
+    [promotions],
+  );
+
+  const sortedPromotions = useMemo(() => {
+    const sorted = [...normalizedPromotions];
+
     switch (sortBy) {
       case "featured":
         return sorted.sort((a, b) => {
@@ -94,11 +105,11 @@ export default function NewProductsPage({
         });
       case "best-selling":
         return sorted.sort(
-          (a, b) => (b.sales_count ?? 0) - (a.sales_count ?? 0)
+          (a, b) => (b.sales_count ?? 0) - (a.sales_count ?? 0),
         );
       case "discount":
         return sorted.sort(
-          (a, b) => (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0)
+          (a, b) => (b.discount_percentage ?? 0) - (a.discount_percentage ?? 0),
         );
       case "newest":
         return sorted.sort((a, b) => {
@@ -107,52 +118,52 @@ export default function NewProductsPage({
           return dateB - dateA;
         });
       case "price-asc":
-        return sorted.sort((a, b) => {
-          const priceA = a.base_price * (1 - a.discount_percentage / 100);
-          const priceB = b.base_price * (1 - b.discount_percentage / 100);
-          return priceA - priceB;
-        });
+        return sorted.sort((a, b) => a.base_price - b.base_price);
       case "price-desc":
-        return sorted.sort((a, b) => {
-          const priceA = a.base_price * (1 - a.discount_percentage / 100);
-          const priceB = b.base_price * (1 - b.discount_percentage / 100);
-          return priceB - priceA;
-        });
+        return sorted.sort((a, b) => b.base_price - a.base_price);
       default:
         return sorted;
     }
-  }, [normalizedProducts, sortBy]);
+  }, [normalizedPromotions, sortBy]);
 
-  // Pagination
-  const totalPages = Math.ceil(sortedProducts.length / PER_PAGE);
-  const paginatedProducts = useMemo(() => {
+  const filteredPromotions = useMemo(() => {
+    if (!searchQuery) return sortedPromotions;
+    const query = searchQuery.toLowerCase();
+    return sortedPromotions.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        (p.description && p.description.toLowerCase().includes(query)),
+    );
+  }, [sortedPromotions, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPromotions.length / PER_PAGE));
+  const paginatedPromotions = useMemo(() => {
     const start = (currentPage - 1) * PER_PAGE;
-    return sortedProducts.slice(start, start + PER_PAGE);
-  }, [sortedProducts, currentPage]);
+    return filteredPromotions.slice(start, start + PER_PAGE);
+  }, [filteredPromotions, currentPage]);
 
-  // Reset to page 1 when sort changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy]);
-
-  const handleRetry = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["products"] });
+  const handleRetryPromotions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["promotions"] });
   }, [queryClient]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       {/* Header */}
-      <div className={`sticky top-0 z-40 transition-all duration-500 ${isScrolled ? 'shadow-xl shadow-blue-900/5 backdrop-blur-xl' : ''}`}>
+      <div
+        className={`sticky top-0 z-40 transition-all duration-500 ${
+          isScrolled ? "shadow-xl shadow-blue-900/5 backdrop-blur-xl" : ""
+        }`}
+      >
         <SiteHeader
           isScrolled={isScrolled}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onLogoClick={onBack}
-          searchPlaceholder="Tìm kiếm sản phẩm..."
+          searchPlaceholder="Tìm kiếm khuyến mãi..."
         />
-        <MenuBar 
+        <MenuBar
           isScrolled={isScrolled}
-          categories={categories.map((c: any) => ({
+          categories={categories.map((c: CategoryDto) => ({
             id: String(c.id),
             name: c.name,
             slug: slugify(c.name),
@@ -170,7 +181,7 @@ export default function NewProductsPage({
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Back button under menu / breadcrumb area */}
+        {/* Back button under menu */}
         <div className="mb-4 flex items-center">
           <button
             onClick={onBack}
@@ -185,17 +196,17 @@ export default function NewProductsPage({
         <div className="mb-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="relative flex shrink-0">
-              <div className="absolute inset-0 animate-pulse rounded-xl bg-blue-500/25" />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-600 shadow-lg shadow-blue-500/30 ring-2 ring-blue-400/20">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="absolute inset-0 animate-pulse rounded-xl bg-orange-500/25" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 shadow-lg shadow-orange-500/30 ring-2 ring-orange-400/20">
+                <Flame className="h-6 w-6 text-white" />
               </div>
             </div>
             <div>
               <h1 className="mb-1 text-2xl font-black tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-                Sản Phẩm <span className="bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 bg-clip-text text-transparent">Mới</span>
+                Khuyến Mãi <span className="bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 bg-clip-text text-transparent">Hot</span>
               </h1>
               <p className="text-sm text-gray-500 dark:text-slate-400">
-                {sortedProducts.length} {sortedProducts.length === 1 ? 'sản phẩm' : 'sản phẩm'}
+                {filteredPromotions.length} {filteredPromotions.length === 1 ? "sản phẩm" : "sản phẩm"} đang giảm giá
               </p>
             </div>
           </div>
@@ -220,7 +231,7 @@ export default function NewProductsPage({
                   onClick={() => setSortBy(item.key)}
                   className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                     sortBy === item.key
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/40"
+                      ? "bg-orange-600 text-white shadow-sm shadow-orange-500/40"
                       : "bg-transparent text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -234,7 +245,7 @@ export default function NewProductsPage({
                 }
                 className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                   sortBy === "price-asc" || sortBy === "price-desc"
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-500/40"
+                    ? "bg-orange-600 text-white shadow-sm shadow-orange-500/40"
                     : "bg-transparent text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 }`}
               >
@@ -247,42 +258,45 @@ export default function NewProductsPage({
           </div>
         </div>
 
+        {/* Error States */}
+        {promotionsErrorMsg && (
+          <ErrorMessage
+            title="Lỗi tải khuyến mãi"
+            message={promotionsErrorMsg}
+            onRetry={handleRetryPromotions}
+            className="mb-4"
+          />
+        )}
+
         {/* Products Grid */}
-        {loadingProducts ? (
+        {loadingPromotions ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: PER_PAGE }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
           </div>
-        ) : productsError ? (
-          <ErrorMessage
-            message="Không thể tải danh sách sản phẩm"
-            onRetry={handleRetry}
-          />
-        ) : paginatedProducts.length === 0 ? (
+        ) : filteredPromotions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Sparkles className="mb-4 h-16 w-16 text-gray-300 dark:text-slate-700" />
+            <Flame className="mb-4 h-16 w-16 text-gray-300 dark:text-slate-700" />
             <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white">
-              Chưa có sản phẩm mới
+              Chưa có chương trình khuyến mãi
             </h2>
             <p className="text-gray-500 dark:text-slate-400">
-              Hiện chưa có sản phẩm mới nào trong hệ thống.
+              Hãy quay lại sau để xem các ưu đãi mới nhất.
             </p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {paginatedProducts.map((product: any) => (
+              {paginatedPromotions.map((product: any) => (
                 <ProductCard
                   key={product.id}
                   {...product}
                   onClick={() => onProductClick(product.slug)}
-                  isNew={true}
+                  isNew={false}
                 />
               ))}
             </div>
-
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-8">
                 <Pagination
@@ -300,3 +314,4 @@ export default function NewProductsPage({
     </div>
   );
 }
+

@@ -33,7 +33,7 @@ function NewProductCard({ product, onClick }: { product: Product; onClick: () =>
           />
           
           {/* New Badge */}
-          <div className="absolute left-3 top-3 overflow-hidden rounded-2xl bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xl ring-1 ring-white/20">
+          <div className="absolute left-2 top-2 z-20 overflow-hidden rounded-2xl bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xl ring-1 ring-white/20">
             <span className="relative z-10 flex items-center gap-1">
               <Sparkles className="h-3.5 w-3.5 fill-current animate-pulse" />
               MỚI

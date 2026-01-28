@@ -5,6 +5,7 @@ import { ShoppingCart, Star, TrendingUp, Sparkles } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 import { roundToNearestThousand } from "@/lib/pricing";
 import LazyImage from "@/components/ui/LazyImage";
+import ProductTag from "@/components/ProductTag";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -13,6 +14,7 @@ type ProductCardProps = Product & {
   onClick: () => void;
   variant?: "default" | "minimal" | "deal";
   isNew?: boolean;
+  sold_count_30d?: number;
 };
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
@@ -29,12 +31,19 @@ export default function ProductCard({
   onClick,
   variant = "default",
   isNew = false,
+  sold_count_30d = 0,
 }: ProductCardProps) {
   const hasDiscount = discount_percentage > 0;
   const discountedPrice = roundToNearestThousand(base_price * (1 - discount_percentage / 100));
   const hasMultipleCodes = (package_count ?? 1) > 1;
   const isMinimal = variant === "minimal";
   const isDeal = variant === "deal";
+  
+  // Xác định tag dựa trên sold_count_30d
+  // Ưu tiên: BESTSELLER > HOT > NEW
+  const sold30d = sold_count_30d ?? 0;
+  const isBestSeller = sold30d > 10;
+  const isHot = sold30d >= 5 && sold30d <= 10;
 
   if (isMinimal) {
     return (
@@ -124,19 +133,27 @@ export default function ProductCard({
             className="h-28 w-full object-cover transition-transform duration-700 group-hover:scale-110 sm:h-40"
           />
           <div className="absolute inset-0 bg-black/5 transition-opacity group-hover:opacity-0" />
-          {isDeal && (
-            <div className="absolute left-3 top-3 rounded-md bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
-              Hot Deal
-            </div>
-          )}
-          {isNew && !isDeal && (
-            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-md bg-gradient-to-r from-blue-500 to-indigo-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
-              <Sparkles className="h-2.5 w-2.5 fill-current" />
-              <span>MỚI</span>
-            </div>
-          )}
+          
+          {/* Tags: BESTSELLER > HOT > NEW > Deal - Góc trên bên trái của hình ảnh */}
+          <div className="absolute left-2 top-2 z-30">
+            {isBestSeller && (
+              <ProductTag type="best-selling" />
+            )}
+            {isHot && !isBestSeller && (
+              <ProductTag type="hot" />
+            )}
+            {isNew && !isHot && !isBestSeller && !isDeal && (
+              <ProductTag type="new" />
+            )}
+            {isDeal && !isBestSeller && !isHot && (
+              <div className="rounded-md bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
+                Hot Deal
+              </div>
+            )}
+          </div>
+          
           {hasDiscount && (
-            <div className="absolute right-3 top-3 overflow-hidden rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
+            <div className="absolute right-3 top-3 z-30 overflow-hidden rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
               <span className="relative z-10">-{discount_percentage}%</span>
               <div className="absolute inset-0 animate-pulse bg-white/20" />
             </div>
@@ -148,12 +165,7 @@ export default function ProductCard({
             <h3 className={`flex-1 line-clamp-2 text-xs font-black text-gray-900 transition-colors ${titleHover} dark:text-slate-100 md:line-clamp-1 md:text-sm lg:text-base`}>
               {name}
             </h3>
-            {(sales_count > 50 || hasDiscount) && (
-              <div className={`flex shrink-0 items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${hotBadge} md:text-[10px] opacity-80`} aria-label="Sản phẩm hot">
-                <TrendingUp className="h-3 w-3" aria-hidden="true" />
-                <span>HOT</span>
-              </div>
-            )}
+            {/* Không hiển thị HOT badge ở đây nữa vì đã có tag ở trên */}
           </div>
 
           <div className="mb-2 flex min-h-[18px] items-center justify-between gap-1 text-[10px] sm:mb-3 md:min-h-[20px] md:text-xs font-semibold">

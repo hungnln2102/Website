@@ -17,7 +17,8 @@
     "db:start": "docker compose up -d",
     "db:watch": "docker compose up",
     "db:stop": "docker compose stop",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "db:migrate:30d": "node scripts/run_migration_30d.js"
   },
   "devDependencies": {
     "prisma": "^7.1.0",

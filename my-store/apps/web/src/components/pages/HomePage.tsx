@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Flame, Search, X, TrendingUp, Sparkles, ArrowRight, Package } from "lucide-react";
+import { Flame, Sparkles, ArrowRight, Package } from "lucide-react";
 
 import BannerSlider from "@/components/BannerSlider";
 import Footer from "@/components/Footer";
@@ -13,8 +13,8 @@ import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { fetchCategories, fetchProducts, fetchPromotions, type CategoryDto, type ProductDto, type PromotionDto } from "@/lib/api";
 import { categoriesMock } from "@/lib/mockData";
-import { ModeToggle } from "@/components/mode-toggle";
 import MenuBar from "@/components/MenuBar";
+import SiteHeader from "@/components/SiteHeader";
 import { MetaTags, StructuredData } from "@/components/SEO";
 import { generateOrganizationSchema, generateWebSiteSchema, generateFAQSchema } from "@/lib/seo/metadata";
 import { faqs } from "@/lib/seo/faq-data";
@@ -34,6 +34,7 @@ interface HomePageProps {
 export default function HomePage({ onProductClick, searchQuery, setSearchQuery }: HomePageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAllProducts, setShowAllProducts] = useState(false);
   const isScrolled = useScroll(); // Use optimized scroll hook
   const queryClient = useQueryClient();
 
@@ -133,6 +134,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
         discount_percentage: p.discount_percentage ?? 0,
         has_promo: p.has_promo ?? false,
         sales_count: p.sales_count ?? 0,
+        sold_count_30d: p.sold_count_30d ?? 0,
         average_rating: p.average_rating ?? 0,
         purchase_rules: null,
         package_count: p.package_count ?? 1,
@@ -153,15 +155,22 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     }))
   , [promotions]);
 
-  // Get new products (sorted by created_at, latest first)
+  // Get new products - chỉ lấy sản phẩm mới (không phải BEST SELLING hoặc HOT)
+  // Sản phẩm mới: sold_count_30d < 5 (không phải HOT hoặc BEST SELLING)
   const newProducts = useMemo(() => {
     return [...normalizedProducts]
+      .filter((p) => {
+        const sold30d = p.sold_count_30d ?? 0;
+        // Chỉ lấy sản phẩm không phải BEST SELLING (sold_count_30d > 10) và không phải HOT (5 <= sold_count_30d <= 10)
+        return sold30d < 5;
+      })
       .sort((a, b) => {
+        // Sắp xếp theo ngày tạo mới nhất trước
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         return dateB - dateA;
       })
-      .slice(0, 6); // Get top 6 newest products
+      .slice(0, 4); // Chỉ hiển thị 4 sản phẩm mới nhất
   }, [normalizedProducts]);
 
   const handlePromotionClick = (p: any) => {
@@ -197,11 +206,54 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       );
     }
     
+    // Sắp xếp: Best Selling (sold_count_30d > 10) > Hot (5 <= sold_count_30d <= 10) > còn lại
+    result = result.sort((a, b) => {
+      const sold30dA = a.sold_count_30d ?? 0;
+      const sold30dB = b.sold_count_30d ?? 0;
+      
+      // Xác định category: 2 = Best Selling, 1 = Hot, 0 = Khác
+      const categoryA = sold30dA > 10 ? 2 : (sold30dA >= 5 && sold30dA <= 10 ? 1 : 0);
+      const categoryB = sold30dB > 10 ? 2 : (sold30dB >= 5 && sold30dB <= 10 ? 1 : 0);
+      
+      // Sắp xếp theo category trước
+      if (categoryA !== categoryB) {
+        return categoryB - categoryA; // Best Selling (2) > Hot (1) > Khác (0)
+      }
+      
+      // Nếu cùng category, sắp xếp theo sold_count_30d giảm dần
+      if (sold30dA !== sold30dB) {
+        return sold30dB - sold30dA;
+      }
+      
+      // Nếu cùng sold_count_30d, sắp xếp theo sales_count giảm dần
+      return (b.sales_count ?? 0) - (a.sales_count ?? 0);
+    });
+    
     return result;
   }, [normalizedProducts, selectedCategory, categoryProductsMap, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PER_PAGE));
   const pageProducts = filteredProducts.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  const isDefaultView = !searchQuery && !selectedCategory;
+  const isPreviewMode = isDefaultView && !showAllProducts;
+  const displayedProducts = isPreviewMode ? pageProducts.slice(0, 4) : pageProducts;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      setShowAllProducts(params.get("view") === "all-products");
+    };
+
+    updateFromUrl();
+    window.addEventListener("popstate", updateFromUrl);
+
+    return () => {
+      window.removeEventListener("popstate", updateFromUrl);
+    };
+  }, []);
 
   // SEO Metadata
   const seoMetadata = useMemo(() => {
@@ -268,6 +320,19 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     setCurrentPage(1); // Reset to first page when category changes
   }, []);
 
+  const handleLogoClick = useCallback(() => {
+    setSelectedCategory(null);
+    setCurrentPage(1);
+    setShowAllProducts(false);
+    setSearchQuery("");
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", "/");
+      window.dispatchEvent(new Event("popstate"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [setSearchQuery]);
+
   return (
     <div className="min-h-screen bg-slate-50 transition-colors duration-500 dark:bg-slate-950">
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
@@ -276,62 +341,13 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       </div>
 
       <div className={`sticky top-0 z-40 transition-all duration-500 ${isScrolled ? 'shadow-xl shadow-blue-900/5 backdrop-blur-xl' : ''}`}>
-        <header className={`relative border-b transition-all duration-500 ${
-          isScrolled 
-            ? 'border-gray-200/50 bg-white/80 py-2 dark:border-slate-800/50 dark:bg-slate-950/80' 
-            : 'border-gray-100 bg-white py-3.5 dark:border-slate-800/50 dark:bg-slate-950/70'
-        }`}>
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-4">
-              <div className={`rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 transition-all duration-500 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}>
-                <div className="flex h-full w-full items-center justify-center rounded-[calc(0.75rem-1px)] bg-white dark:bg-slate-950">
-                    <span className={`font-bold text-blue-600 transition-all ${isScrolled ? 'text-lg' : 'text-xl'}`}>M</span>
-                </div>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className={`font-bold tracking-tight text-gray-900 transition-all duration-500 dark:text-white ${isScrolled ? 'text-base' : 'text-lg sm:text-xl'}`}>
-                  Mavryk Premium <span className="text-blue-600 dark:text-blue-500">Store</span>
-                </h1>
-                {!isScrolled && (
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 md:block animate-in fade-in slide-in-from-top-1">
-                    Phần mềm bản quyền chính hãng
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className={`mx-4 flex flex-1 max-w-md transition-all duration-500 ${isScrolled ? 'max-w-lg' : ''}`}>
-              <div className="relative w-full group">
-                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Search className={`h-4 w-4 transition-colors ${searchQuery ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className={`w-full pl-10 pr-10 transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
-                    isScrolled ? 'h-9' : 'h-10'
-                  }`}
-                  aria-label="Tìm kiếm sản phẩm"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-                    aria-label="Xóa tìm kiếm"
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-4">
-              <ModeToggle />
-            </div>
-          </div>
-        </header>
+        <SiteHeader
+          isScrolled={isScrolled}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onLogoClick={handleLogoClick}
+          searchPlaceholder="Tìm kiếm sản phẩm..."
+        />
         <MenuBar 
           isScrolled={isScrolled}
           categories={categoriesUi}
@@ -370,13 +386,20 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                       </p>
                     </div>
                   </div>
-                  <a
-                    href="#khuyen-mai"
-                    className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-300 sm:self-center"
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (typeof window !== "undefined") {
+                        window.history.pushState({}, "", "/khuyen-mai");
+                        window.dispatchEvent(new Event("popstate"));
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                    className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-300 sm:self-center cursor-pointer"
                   >
                     <span>Xem tất cả ưu đãi</span>
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </a>
+                  </button>
                 </div>
                 <PromotionCarousel
                   variant="deal"
@@ -427,12 +450,18 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
                   </button>
                 </div>
-                <PromotionCarousel
-                  variant="default"
-                  markAsNew={true}
-                  products={newProducts as any}
-                  onProductClick={onProductClick}
-                />
+                {/* Grid 4 sản phẩm mới - không có nút di chuyển */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {newProducts.slice(0, 4).map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      {...product}
+                      onClick={() => onProductClick(product.slug)}
+                      variant="default"
+                      isNew={true}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </section>
@@ -499,6 +528,23 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                     </p>
                   </div>
                 </div>
+
+                {isPreviewMode && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (typeof window !== "undefined") {
+                        window.history.pushState({}, "", "/tat-ca-san-pham");
+                        window.dispatchEvent(new Event("popstate"));
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                    className="group inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-4 py-2 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300 sm:self-auto"
+                  >
+                    <span>Xem tất cả sản phẩm</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </button>
+                )}
               </div>
 
               {loading ? (
@@ -510,7 +556,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
               ) : filteredProducts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 auto-rows-fr">
-                    {pageProducts.map((product) => (
+                    {displayedProducts.map((product) => (
                       <ProductCard
                         key={product.id}
                         {...product}
@@ -518,7 +564,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
                       />
                     ))}
                   </div>
-                  {totalPages > 1 && (
+                  {!isPreviewMode && totalPages > 1 && (
                     <div className="mt-8">
                       <Pagination
                         currentPage={currentPage}

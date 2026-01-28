@@ -28,6 +28,7 @@ export default function CategoryButton({
   const [hoveredCategorySlug, setHoveredCategorySlug] = useState<string | null>(null);
   const [megaMenuTop, setMegaMenuTop] = useState<number>(0);
   const [megaMenuLeft, setMegaMenuLeft] = useState<number>(0);
+  const [isMobile, setIsMobile] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,10 +36,29 @@ export default function CategoryButton({
   const updateMenuPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setMegaMenuTop(rect.bottom);
-      setMegaMenuLeft(rect.left);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setMegaMenuTop(rect.bottom + 4);
+      // On mobile/tablet, use small margin
+      if (mobile) {
+        setMegaMenuLeft(8);
+      } else {
+        setMegaMenuLeft(rect.left);
+      }
     }
   }, []);
+
+  // Track window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (isMegaMenuOpen) {
+        updateMenuPosition();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMegaMenuOpen, updateMenuPosition]);
 
   // Fetch data internally for the mega menu content
   const { data: fetchedCategories = [] } = useQuery({
@@ -181,20 +201,20 @@ export default function CategoryButton({
           updateMenuPosition();
           setIsMegaMenuOpen((open) => !open);
         }}
-        className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 sm:px-4 ${
+        className={`flex shrink-0 cursor-pointer items-center gap-2.5 rounded-xl px-3.5 py-2.5 transition-all duration-300 sm:px-4 min-h-[44px] ${
           isMegaMenuOpen 
-            ? 'bg-blue-50 text-blue-600 shadow-sm dark:bg-blue-900/30 dark:text-blue-400 dark:shadow-slate-900/50' 
-            : 'hover:bg-white hover:shadow-sm hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50'
+            ? 'bg-gradient-to-r from-blue-50 to-blue-100/50 text-blue-700 shadow-md shadow-blue-200/50 dark:from-blue-900/30 dark:to-blue-900/20 dark:text-blue-400 dark:shadow-blue-900/50' 
+            : 'hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98]'
         }`}
         aria-expanded={isMegaMenuOpen}
         aria-haspopup="true"
       >
-        <Layers className={`h-4 w-4 shrink-0 transition-colors duration-200 ${isMegaMenuOpen ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} />
-        <span className={`text-sm font-semibold tracking-tight transition-colors duration-200 ${isMegaMenuOpen ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300'}`}>
+        <Layers className={`h-4 w-4 sm:h-4 sm:w-4 shrink-0 transition-all duration-300 ${isMegaMenuOpen ? 'text-blue-600 dark:text-blue-400 scale-110' : 'text-gray-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400 group-hover:scale-110'}`} />
+        <span className={`text-xs sm:text-sm font-bold tracking-tight transition-colors duration-300 whitespace-nowrap ${isMegaMenuOpen ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300'}`}>
           DANH MỤC
         </span>
         <ChevronRight 
-          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isMegaMenuOpen ? 'rotate-90 text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}
+          className={`h-3.5 w-3.5 shrink-0 transition-all duration-300 ${isMegaMenuOpen ? 'rotate-90 text-blue-600 dark:text-blue-400 scale-110' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-slate-300'}`}
           aria-hidden="true"
         />
       </button>
@@ -203,7 +223,7 @@ export default function CategoryButton({
       {isMegaMenuOpen && categories.length > 0 && createPortal(
         <aside
           ref={menuRef}
-          className="fixed z-[9999] w-[calc(100vw-2rem)] max-w-6xl rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:w-screen sm:max-w-6xl"
+          className="fixed z-[9999] w-[calc(100vw-1rem)] max-w-6xl rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:w-[calc(100vw-2rem)] md:w-[calc(100vw-3rem)] lg:w-screen lg:max-w-6xl"
           onMouseEnter={() => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
           }}
@@ -213,29 +233,42 @@ export default function CategoryButton({
               setHoveredCategorySlug(null);
             }, 200);
           }}
+          onClick={(e) => {
+            // Close on mobile when clicking outside categories/products
+            if (isMobile && (e.target as HTMLElement).closest('section')) {
+              // Allow clicks within sections
+            } else if (isMobile && (e.target as HTMLElement) === menuRef.current) {
+              setIsMegaMenuOpen(false);
+            }
+          }}
           aria-label="Danh mục sản phẩm"
           role="menu"
           style={{ 
             position: 'fixed',
             zIndex: 9999,
             top: megaMenuTop > 0 ? `${megaMenuTop}px` : 'auto',
-            left: megaMenuLeft > 0 ? `${megaMenuLeft}px` : 'auto'
+            left: isMobile ? '8px' : (megaMenuLeft > 0 ? `${Math.max(8, megaMenuLeft - 8)}px` : '8px'),
+            right: isMobile ? '8px' : 'auto',
+            maxHeight: 'calc(100vh - ' + (megaMenuTop > 0 ? megaMenuTop + 16 : 80) + 'px)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-0 overflow-hidden flex-1 min-h-0">
             {/* Categories List */}
-            <section className="border-r border-gray-100 dark:border-slate-700 p-4" aria-label="Danh sách danh mục">
-              <div className="mb-3 flex items-center justify-between">
+            <section className="border-r border-gray-100 dark:border-slate-700 p-3 sm:p-4 flex flex-col min-h-0" aria-label="Danh sách danh mục">
+              <div className="mb-3 flex items-center justify-between shrink-0">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Danh mục</h3>
                 <button
                   onClick={() => setIsMegaMenuOpen(false)}
-                  className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-800"
+                  className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label="Đóng menu"
                 >
                   <X className="h-4 w-4 text-gray-500" />
                 </button>
               </div>
-              <div className="space-y-1 max-h-[500px] overflow-y-auto">
+              <div className="space-y-1 overflow-y-auto flex-1 min-h-0 no-scrollbar">
                 {categories.map((category) => {
                   const isActive = hoveredCategorySlug === category.slug || propsSelectedCategory === category.slug;
                   return (
@@ -243,7 +276,7 @@ export default function CategoryButton({
                       key={category.id}
                       onClick={() => handleCategoryClick(category.slug)}
                       onMouseEnter={() => setHoveredCategorySlug(category.slug)}
-                      className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
+                      className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-all min-h-[44px] ${
                         isActive
                           ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                           : "text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -253,7 +286,7 @@ export default function CategoryButton({
                     >
                       <span className="text-sm font-semibold">{category.name}</span>
                       {isActive && (
-                        <ChevronRight className="ml-auto h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                        <ChevronRight className="ml-auto h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" aria-hidden="true" />
                       )}
                     </button>
                   );
@@ -263,9 +296,9 @@ export default function CategoryButton({
 
             {/* Products Grid */}
             {activeHoveredSlug && (
-              <section className="p-6" aria-labelledby="products-heading">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 id="products-heading" className="text-lg font-bold text-gray-900 dark:text-white">
+              <section className="p-4 sm:p-6 flex flex-col min-h-0 overflow-hidden" aria-labelledby="products-heading">
+                <div className="mb-4 flex items-center justify-between shrink-0 gap-2">
+                  <h3 id="products-heading" className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                     {categories.find(c => c.slug === activeHoveredSlug)?.name || "Sản phẩm"}
                   </h3>
                   <a
@@ -279,14 +312,14 @@ export default function CategoryButton({
                       window.dispatchEvent(new Event("popstate"));
                       setIsMegaMenuOpen(false);
                     }}
-                    className="group flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                    className="group flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 whitespace-nowrap shrink-0 min-h-[44px]"
                   >
                     <span>Xem tất cả</span>
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-0.5 shrink-0" aria-hidden="true" />
                   </a>
                 </div>
                 {filteredProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 overflow-y-auto flex-1 min-h-0 no-scrollbar">
                     {filteredProducts.map((product: any) => (
                       <article key={product.id} className="group">
                         <ProductCard

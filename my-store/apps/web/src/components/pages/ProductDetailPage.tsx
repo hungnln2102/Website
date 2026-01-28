@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Package, Shield, ShoppingCart, Star, Users, Search, X } from "lucide-react";
+import { ArrowLeft, Check, Package, Shield, ShoppingCart, Star, Users } from "lucide-react";
 
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { fetchProductPackages, fetchProducts, fetchProductInfo, type ProductDto, type ProductPackageDto } from "@/lib/api";
+import { fetchProductPackages, fetchProducts, fetchProductInfo, fetchCategories, type CategoryDto } from "@/lib/api";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { categoriesMock, productPackagesMock, productsMock, reviewsMock } from "@/lib/mockData";
 import { ModeToggle } from "@/components/mode-toggle";
+import MenuBar from "@/components/MenuBar";
+import SiteHeader from "@/components/SiteHeader";
+import { useScroll } from "@/hooks/useScroll";
+import { slugify } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
 
 interface ProductDetailPageProps {
@@ -48,7 +52,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
   const queryClient = useQueryClient();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const isScrolled = useScroll();
   
   // Store initial URL params to preserve them during loading
   const initialUrlParams = useMemo(() => {
@@ -67,12 +71,6 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
     if (initialUrlParams.duration) {
       setSelectedDuration(initialUrlParams.duration);
     }
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
   }, [initialUrlParams]);
 
   // Helper function to update URL
@@ -103,6 +101,11 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
   });
 
   const productData = useMemo(() => 
@@ -395,58 +398,43 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className={`sticky top-0 z-50 transition-all duration-500 ${isScrolled ? 'shadow-xl shadow-blue-900/5 backdrop-blur-xl' : ''}`}>
-        <header className={`relative border-b transition-all duration-500 ${
-          isScrolled 
-            ? 'border-gray-200/50 bg-white/80 py-2 dark:border-slate-800/80 dark:bg-slate-950/80' 
-            : 'border-gray-100 bg-white py-3 sm:py-3.5 dark:border-slate-800/80 dark:bg-slate-950/80'
-        }`}>
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={onBack}
-              className="group cursor-pointer flex items-center gap-2 text-gray-600 transition-all hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
-              aria-label="Quay lại trang chủ"
-            >
-              <div className={`flex items-center justify-center rounded-xl bg-gray-100 transition-all duration-500 group-hover:bg-blue-50 group-hover:scale-110 dark:bg-slate-800 dark:group-hover:bg-blue-900/30 ${isScrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              </div>
-              <span className={`font-semibold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xs' : 'text-sm'}`}>Quay lại trang chủ</span>
-            </button>
-
-            <div className={`mx-4 hidden flex-1 max-w-md sm:flex transition-all duration-500 ${isScrolled ? 'max-w-lg' : ''}`}>
-              <div className="relative w-full group">
-                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Search className={`h-4 w-4 transition-colors ${searchQuery ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-10 pr-10 transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
-                    isScrolled ? 'h-9' : 'h-10'
-                  }`}
-                  aria-label="Tìm kiếm sản phẩm"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-                    aria-label="Xóa tìm kiếm"
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-            </div>
-          </div>
-        </header>
+        <SiteHeader
+          isScrolled={isScrolled}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onLogoClick={onBack}
+          searchPlaceholder="Tìm kiếm sản phẩm..."
+        />
+        <MenuBar
+          isScrolled={isScrolled}
+          categories={categories.map((c: CategoryDto) => ({
+            id: String(c.id),
+            name: c.name,
+            slug: slugify(c.name),
+            icon: null,
+          }))}
+          selectedCategory={null}
+          onSelectCategory={(slug) => {
+            if (slug) {
+              window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+              window.dispatchEvent(new Event("popstate"));
+            }
+          }}
+        />
       </div>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        {/* Back button under header */}
+        <div className="mb-4 flex items-center">
+          <button
+            onClick={onBack}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:bg-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Quay về</span>
+          </button>
+        </div>
+
         {/* Error States */}
         {productsErrorMsg && (
           <ErrorMessage
