@@ -197,6 +197,24 @@ export default function AllProductsPage({
           onSearchChange={setSearchQuery}
           onLogoClick={onBack}
           searchPlaceholder="Tìm kiếm tất cả sản phẩm..."
+          products={products.map((p: ProductDto) => ({
+            id: String(p.id),
+            name: p.name,
+            slug: p.slug,
+            image_url: p.image_url,
+            base_price: p.base_price ?? 0,
+            discount_percentage: p.discount_percentage ?? 0,
+          }))}
+          categories={categories.map((c: CategoryDto) => ({
+            id: String(c.id),
+            name: c.name,
+            slug: slugify(c.name),
+          }))}
+          onProductClick={onProductClick}
+          onCategoryClick={(slug) => {
+            window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+            window.dispatchEvent(new Event("popstate"));
+          }}
         />
         <MenuBar
           isScrolled={isScrolled}

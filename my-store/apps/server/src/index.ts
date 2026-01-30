@@ -192,7 +192,8 @@ app.get("/products", async (_req, res) => {
           COALESCE(sm.price_max, 0) AS price_max,
           COALESCE(vsc.sales_count, 0) AS sales_count,
           pd.description,
-          pd.image_url
+          pd.image_url,
+          p.created_at AS created_at
         FROM ${TABLES.VARIANT} v
         LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
         LEFT JOIN LATERAL (
@@ -250,7 +251,8 @@ app.get("/products", async (_req, res) => {
         package_sales_count AS sales_count,
         sold_count_30d,
         description,
-        image_url
+        image_url,
+        created_at
       FROM ranked
       WHERE rn = 1
       ORDER BY package;
@@ -282,6 +284,7 @@ app.get("/products", async (_req, res) => {
         sold_count_30d: toNumber((row as any).sold_count_30d || 0),
         average_rating: 0,
         package_count: packageCount,
+        created_at: (row as any).created_at || null,
       };
     });
 
@@ -434,10 +437,12 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           p.package_name AS package,
           v.variant_name AS package_product,
           v.display_name AS id_product,
+          v.created_at AS created_at,
           COALESCE(pc.pct_ctv, 0) AS pct_ctv,
           COALESCE(pc.pct_khach, 0) AS pct_khach,
           pc.pct_promo,
           COALESCE(sm.price_max, 0) AS price_max,
+          COALESCE(vsc.sales_count, 0) AS sold_count_30d,
           pd.description,
           pd.image_url,
           pd.rules as purchase_rules
@@ -451,6 +456,7 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           LIMIT 1
         ) pc ON TRUE
         LEFT JOIN supply_max sm ON sm.product_id = v.id
+        LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
         LEFT JOIN product.product_desc pd ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
         WHERE p.package_name ILIKE ${packageName}
           AND v.is_active = true
@@ -470,7 +476,13 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
       const costValue = toNumber(row.cost);
       const key = `${packageProductKey}-${idProductKey}-${costValue}`;
       if (!dedup.has(key)) {
-        dedup.set(key, { ...row, cost: String(costValue) });
+        dedup.set(key, { 
+          ...row, 
+          cost: String(costValue),
+          created_at: row.created_at || null,
+          sold_count_30d: toNumber(row.sold_count_30d || 0),
+          pct_promo: toNumber(row.pct_promo || 0),
+        });
       }
     });
 

@@ -138,10 +138,20 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
         average_rating: p.average_rating ?? 0,
         purchase_rules: null,
         package_count: p.package_count ?? 1,
-        created_at: new Date().toISOString(),
+        created_at: p.created_at || null,
       })),
     [products],
   );
+
+  // Helper function to check if product is new (created within 7 days)
+  const isNewProduct = (createdAt: string | null): boolean => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  };
 
   const promotionProducts = useMemo(() => 
     promotions.map(p => ({
@@ -155,15 +165,11 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     }))
   , [promotions]);
 
-  // Get new products - chỉ lấy sản phẩm mới (không phải BEST SELLING hoặc HOT)
-  // Sản phẩm mới: sold_count_30d < 5 (không phải HOT hoặc BEST SELLING)
+  // Get new products - sản phẩm được tạo trong vòng 7 ngày
+  // Sản phẩm mới: created_at trong vòng 7 ngày từ ngày tạo
   const newProducts = useMemo(() => {
     return [...normalizedProducts]
-      .filter((p) => {
-        const sold30d = p.sold_count_30d ?? 0;
-        // Chỉ lấy sản phẩm không phải BEST SELLING (sold_count_30d > 10) và không phải HOT (5 <= sold_count_30d <= 10)
-        return sold30d < 5;
-      })
+      .filter((p) => isNewProduct(p.created_at))
       .sort((a, b) => {
         // Sắp xếp theo ngày tạo mới nhất trước
         const dateA = new Date(a.created_at).getTime();
@@ -347,6 +353,21 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
           onSearchChange={handleSearchChange}
           onLogoClick={handleLogoClick}
           searchPlaceholder="Tìm kiếm sản phẩm..."
+          products={normalizedProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            image_url: p.image_url,
+            base_price: p.base_price,
+            discount_percentage: p.discount_percentage,
+          }))}
+          categories={categoriesUi.map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+          }))}
+          onProductClick={onProductClick}
+          onCategoryClick={(slug) => handleCategorySelect(slug)}
         />
         <MenuBar 
           isScrolled={isScrolled}

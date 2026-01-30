@@ -29,6 +29,8 @@ export type ProductPackageDto = {
   description?: string | null;
   image_url?: string | null;
   purchase_rules?: string | null;
+  created_at?: string | null;
+  sold_count_30d?: number;
 };
 
 export type CategoryDto = {

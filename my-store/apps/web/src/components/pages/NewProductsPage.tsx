@@ -55,26 +55,38 @@ export default function NewProductsPage({
     queryFn: fetchProducts,
   });
 
-  // Get all products and normalize
+  // Helper function to check if product is new (created within 7 days)
+  const isNewProduct = (createdAt: string | null): boolean => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  };
+
+  // Get all products and normalize - chỉ lấy sản phẩm trong vòng 7 ngày
   const normalizedProducts = useMemo(() => {
-    return allProducts.map((p: any) => ({
-      id: String(p.id),
-      name: p.name,
-      description: p.description || null,
-      base_price: p.base_price ?? 0,
-      image_url: p.image_url || null,
-      discount_percentage: p.discount_percentage ?? 0,
-      sales_count: p.sales_count ?? 0,
-      sold_count_30d: p.sold_count_30d ?? 0,
-      average_rating: p.average_rating ?? 0,
-      package_count: p.package_count ?? 1,
-      slug: p.slug || slugify(p.name),
-      category_id: p.category_id || null,
-      created_at: p.created_at || new Date().toISOString(),
-      full_description: null,
-      is_featured: false,
-      purchase_rules: null,
-    }));
+    return allProducts
+      .map((p: any) => ({
+        id: String(p.id),
+        name: p.name,
+        description: p.description || null,
+        base_price: p.base_price ?? 0,
+        image_url: p.image_url || null,
+        discount_percentage: p.discount_percentage ?? 0,
+        sales_count: p.sales_count ?? 0,
+        sold_count_30d: p.sold_count_30d ?? 0,
+        average_rating: p.average_rating ?? 0,
+        package_count: p.package_count ?? 1,
+        slug: p.slug || slugify(p.name),
+        category_id: p.category_id || null,
+        created_at: p.created_at || null,
+        full_description: null,
+        is_featured: false,
+        purchase_rules: null,
+      }))
+      .filter((p) => isNewProduct(p.created_at)); // Chỉ lấy sản phẩm trong vòng 7 ngày
   }, [allProducts]);
 
   // Sort products
@@ -149,6 +161,24 @@ export default function NewProductsPage({
           onSearchChange={setSearchQuery}
           onLogoClick={onBack}
           searchPlaceholder="Tìm kiếm sản phẩm..."
+          products={allProducts.map((p: any) => ({
+            id: String(p.id),
+            name: p.name,
+            slug: p.slug || slugify(p.name),
+            image_url: p.image_url || null,
+            base_price: p.base_price ?? 0,
+            discount_percentage: p.discount_percentage ?? 0,
+          }))}
+          categories={categories.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            slug: slugify(c.name),
+          }))}
+          onProductClick={onProductClick}
+          onCategoryClick={(slug) => {
+            window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+            window.dispatchEvent(new Event("popstate"));
+          }}
         />
         <MenuBar 
           isScrolled={isScrolled}

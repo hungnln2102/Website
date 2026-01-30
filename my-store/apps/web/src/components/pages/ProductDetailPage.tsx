@@ -187,6 +187,17 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
 
   const product = mappedProduct ?? (productsMock.find((p) => p.slug === slug) || null);
   const packagesFromMock = product ? productPackagesMock.filter((p) => p.product_id === product.id) : [];
+  
+  // Helper function to check if a package is new (created within 30 days)
+  const isNewPackage = (createdAt: string | null | undefined): boolean => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays <= 30;
+  };
+
   const packages = useMemo(() => {
     if (!product) return [];
 
@@ -200,6 +211,11 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
         const costValue = Number(pkg.cost) || 0;
         const existing = dedup.get(packageKey);
         
+        // Aggregate sold_count_30d and track earliest created_at for the package
+        const soldCount30d = Number(pkg.sold_count_30d) || 0;
+        const pctPromo = Number(pkg.pct_promo) || 0;
+        const createdAt = pkg.created_at || null;
+        
         if (!existing || (costValue > 0 && (existing.price === 0 || costValue < existing.price))) {
           dedup.set(packageKey, {
             id: variantName, 
@@ -208,8 +224,18 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
             price: roundToNearestThousand(pkg.cost),
             features: [],
             duration_months: null,
-            created_at: new Date().toISOString(),
+            created_at: createdAt,
+            sold_count_30d: existing ? Math.max(existing.sold_count_30d || 0, soldCount30d) : soldCount30d,
+            has_promo: existing ? (existing.has_promo || pctPromo > 0) : pctPromo > 0,
           });
+        } else if (existing) {
+          // Update aggregated values
+          existing.sold_count_30d = Math.max(existing.sold_count_30d || 0, soldCount30d);
+          existing.has_promo = existing.has_promo || pctPromo > 0;
+          // Keep earliest created_at
+          if (createdAt && (!existing.created_at || new Date(createdAt) < new Date(existing.created_at))) {
+            existing.created_at = createdAt;
+          }
         }
       });
       return Array.from(dedup.values());
@@ -231,6 +257,8 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
         features: ["Bản quyền vĩnh viễn", "Hỗ trợ 24/7"],
         duration_months: 12,
         created_at: new Date().toISOString(),
+        sold_count_30d: 0,
+        has_promo: false,
       }
     ];
   }, [packageData, product, packagesFromMock]);
@@ -281,11 +309,12 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
     ];
   }, [packageData, product, selectedPackage]);
 
-  useEffect(() => {
-    if (packages.length > 0 && !selectedPackage) {
-      setSelectedPackage(packages[0].id);
-    }
-  }, [packages, selectedPackage]);
+  // Không tự động chọn package - người dùng phải tự chọn
+  // useEffect(() => {
+  //   if (packages.length > 0 && !selectedPackage) {
+  //     setSelectedPackage(packages[0].id);
+  //   }
+  // }, [packages, selectedPackage]);
 
   useEffect(() => {
     // Don't clear duration if it came from URL and options are still loading
@@ -404,6 +433,24 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
           onSearchChange={setSearchQuery}
           onLogoClick={onBack}
           searchPlaceholder="Tìm kiếm sản phẩm..."
+          products={allProducts.map((p) => ({
+            id: String(p.id),
+            name: p.name,
+            slug: p.slug,
+            image_url: p.image_url,
+            base_price: p.base_price ?? 0,
+            discount_percentage: p.discount_percentage ?? 0,
+          }))}
+          categories={categories.map((c: CategoryDto) => ({
+            id: String(c.id),
+            name: c.name,
+            slug: slugify(c.name),
+          }))}
+          onProductClick={onProductClick}
+          onCategoryClick={(slug) => {
+            window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+            window.dispatchEvent(new Event("popstate"));
+          }}
         />
         <MenuBar
           isScrolled={isScrolled}
@@ -534,36 +581,64 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                  {packages.map((pkg) => (
-                    <button
-                      key={pkg.id}
-                      onClick={() => {
-                        setSelectedPackage(pkg.id);
-                        setSelectedDuration(null);
-                        updateURL(pkg.id, null);
-                      }}
-                      className={`group cursor-pointer relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-300 sm:rounded-2xl sm:p-4 ${
-                        selectedPackage === pkg.id
-                          ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-50 dark:border-blue-500 dark:bg-blue-500/10 dark:ring-blue-900/20"
-                          : "border-gray-100 bg-white hover:border-gray-300 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600"
-                      }`}
-                    >
-                      <div className="relative z-10">
-                        <div className={`mb-2 font-bold transition-colors ${selectedPackage === pkg.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
-                          {pkg.name}
+                  {packages.map((pkg) => {
+                    // Determine tags for this package
+                    const isNew = isNewPackage(pkg.created_at);
+                    const isHot = (pkg.sold_count_30d || 0) > 10;
+                    const hasSale = pkg.has_promo === true;
+                    
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => {
+                          setSelectedPackage(pkg.id);
+                          setSelectedDuration(null);
+                          updateURL(pkg.id, null);
+                        }}
+                        className={`group cursor-pointer relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-300 sm:rounded-2xl sm:p-4 ${
+                          selectedPackage === pkg.id
+                            ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-50 dark:border-blue-500 dark:bg-blue-500/10 dark:ring-blue-900/20"
+                            : "border-gray-100 bg-white hover:border-gray-300 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {/* Tags */}
+                        {(isHot || isNew || hasSale) && (
+                          <div className="absolute right-2 top-2 z-20 flex flex-wrap gap-1 justify-end">
+                            {isHot && (
+                              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-md ring-1 ring-orange-400/50">
+                                HOT
+                              </span>
+                            )}
+                            {isNew && !isHot && (
+                              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-md ring-1 ring-blue-400/50">
+                                NEW
+                              </span>
+                            )}
+                            {hasSale && (
+                              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-green-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-md ring-1 ring-emerald-400/50">
+                                SALE
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="relative z-10">
+                          <div className={`mb-2 font-bold transition-colors ${selectedPackage === pkg.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                            {pkg.name}
+                          </div>
+                          <ul className="space-y-1.5">
+                            {(pkg.features ?? []).slice(0, 2).map((feature: string, idx: number) => (
+                              <li key={idx} className="flex items-center gap-2 text-[11px] font-medium text-gray-600 dark:text-slate-300">
+                                <Check className={`h-3.5 w-3.5 flex-shrink-0 ${selectedPackage === pkg.id ? 'text-blue-600 dark:text-blue-400' : 'text-green-500'}`} />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="space-y-1.5">
-                          {(pkg.features ?? []).slice(0, 2).map((feature: string, idx: number) => (
-                            <li key={idx} className="flex items-center gap-2 text-[11px] font-medium text-gray-600 dark:text-slate-300">
-                              <Check className={`h-3.5 w-3.5 flex-shrink-0 ${selectedPackage === pkg.id ? 'text-blue-600 dark:text-blue-400' : 'text-green-500'}`} />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className={`absolute right-0 top-0 h-full w-1 transition-all ${selectedPackage === pkg.id ? 'bg-blue-600 opacity-100' : 'bg-transparent opacity-0 group-hover:bg-gray-200 dark:group-hover:bg-slate-700'}`} />
-                    </button>
-                  ))}
+                        <div className={`absolute right-0 top-0 h-full w-1 transition-all ${selectedPackage === pkg.id ? 'bg-blue-600 opacity-100' : 'bg-transparent opacity-0 group-hover:bg-gray-200 dark:group-hover:bg-slate-700'}`} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -633,15 +708,15 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
 
               <div className="pt-2">
                 <button 
-                  disabled={!selectedDuration}
+                  disabled={!selectedPackage || !selectedDuration}
                   className={`group cursor-pointer relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-lg font-bold text-white transition-all active:scale-[0.98] sm:rounded-2xl sm:py-5 sm:text-xl ${
-                    selectedDuration 
+                    selectedPackage && selectedDuration 
                       ? "bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 shadow-2xl shadow-blue-500/40 hover:scale-[1.02] hover:shadow-blue-500/60"
                       : "bg-gray-200 cursor-not-allowed dark:bg-slate-700"
                   }`}
                 >
                   <div className="absolute inset-0 bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
-                  <ShoppingCart className={`h-6 w-6 ${!selectedDuration && 'text-gray-400'}`} />
+                  <ShoppingCart className={`h-6 w-6 ${(!selectedPackage || !selectedDuration) && 'text-gray-400'}`} />
                   <span>Mua ngay ngay</span>
                   {selectedDurationData && (
                     <span className="ml-1 rounded-lg bg-white/20 px-2 py-0.5 text-sm font-bold backdrop-blur-sm">
@@ -656,9 +731,14 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
                     </span>
                   )}
                 </button>
-                {!selectedDuration && (
+                {!selectedPackage && (
                   <p className="mt-4 text-center text-xs font-semibold text-red-500 animate-pulse">
-                    * Vui lòng chọn thời gian gia hạn
+                    * Vui lòng chọn gói sản phẩm
+                  </p>
+                )}
+                {selectedPackage && !selectedDuration && (
+                  <p className="mt-4 text-center text-xs font-semibold text-red-500 animate-pulse">
+                    * Vui lòng chọn thời gian sử dụng
                   </p>
                 )}
               </div>

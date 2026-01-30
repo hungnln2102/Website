@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+import SearchDropdown, { type SearchProduct, type SearchCategory } from "@/components/SearchDropdown";
 
 interface SiteHeaderProps {
   isScrolled: boolean;
@@ -9,6 +11,10 @@ interface SiteHeaderProps {
   onSearchChange: (value: string) => void;
   onLogoClick: () => void;
   searchPlaceholder?: string;
+  products?: SearchProduct[];
+  categories?: SearchCategory[];
+  onProductClick?: (slug: string) => void;
+  onCategoryClick?: (slug: string) => void;
 }
 
 export default function SiteHeader({
@@ -17,10 +23,44 @@ export default function SiteHeader({
   onSearchChange,
   onLogoClick,
   searchPlaceholder = "Tìm kiếm sản phẩm...",
+  products = [],
+  categories = [],
+  onProductClick,
+  onCategoryClick,
 }: SiteHeaderProps) {
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleProductClick = (slug: string) => {
+    setIsDropdownVisible(false);
+    onSearchChange("");
+    onProductClick?.(slug);
+  };
+
+  const handleCategoryClick = (slug: string) => {
+    setIsDropdownVisible(false);
+    onSearchChange("");
+    onCategoryClick?.(slug);
+  };
+
   return (
     <header
-      className={`relative border-b transition-all duration-500 ${
+      className={`relative z-[100] border-b transition-all duration-500 ${
         isScrolled
           ? "border-gray-200/50 bg-white/80 py-2 dark:border-slate-800/50 dark:bg-slate-950/80"
           : "border-gray-100 bg-white py-3.5 dark:border-slate-800/50 dark:bg-slate-950/70"
@@ -65,12 +105,13 @@ export default function SiteHeader({
         </button>
 
         <div
-          className={`mx-4 flex flex-1 max-w-md transition-all duration-500 ${
+          ref={searchContainerRef}
+          className={`relative mx-4 flex flex-1 max-w-md transition-all duration-500 z-[100] ${
             isScrolled ? "max-w-lg" : ""
           }`}
         >
           <div className="relative w-full group">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
               <Search
                 className={`h-4 w-4 transition-colors ${
                   searchQuery ? "text-blue-500" : "text-gray-400 group-focus-within:text-blue-500"
@@ -82,6 +123,7 @@ export default function SiteHeader({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
+              onFocus={() => setIsDropdownVisible(true)}
               className={`w-full pl-10 pr-10 transition-all duration-500 rounded-xl bg-gray-50 border border-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 ${
                 isScrolled ? "h-9" : "h-10"
               }`}
@@ -89,13 +131,26 @@ export default function SiteHeader({
             />
             {searchQuery && (
               <button
-                onClick={() => onSearchChange("")}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+                onClick={() => {
+                  onSearchChange("");
+                  setIsDropdownVisible(false);
+                }}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 z-10"
                 aria-label="Xóa tìm kiếm"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
+
+            {/* Search Dropdown */}
+            <SearchDropdown
+              searchQuery={searchQuery}
+              products={products}
+              categories={categories}
+              onProductClick={handleProductClick}
+              onCategoryClick={handleCategoryClick}
+              isVisible={isDropdownVisible}
+            />
           </div>
         </div>
 

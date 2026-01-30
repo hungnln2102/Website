@@ -151,10 +151,7 @@ export default function App() {
             onBack={handleBack}
             onProductClick={handleProductClick}
             searchQuery={searchQuery}
-            setSearchQuery={(q: string) => {
-              setSearchQuery(q);
-              if (q) handleBack(); // Go home if searching from detail page
-            }}
+            setSearchQuery={setSearchQuery}
           />
         )}
       </Suspense>
