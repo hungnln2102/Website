@@ -227,6 +227,7 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
             created_at: createdAt,
             sold_count_30d: existing ? Math.max(existing.sold_count_30d || 0, soldCount30d) : soldCount30d,
             has_promo: existing ? (existing.has_promo || pctPromo > 0) : pctPromo > 0,
+            image_url: pkg.image_url || existing?.image_url || null,
           });
         } else if (existing) {
           // Update aggregated values
@@ -235,6 +236,10 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
           // Keep earliest created_at
           if (createdAt && (!existing.created_at || new Date(createdAt) < new Date(existing.created_at))) {
             existing.created_at = createdAt;
+          }
+          // Keep image_url if not already set
+          if (!existing.image_url && pkg.image_url) {
+            existing.image_url = pkg.image_url;
           }
         }
       });
@@ -308,6 +313,13 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
       { key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.5), sortValue: 36 },
     ];
   }, [packageData, product, selectedPackage]);
+
+  // Lấy image_url của package đã chọn từ product_desc
+  const selectedPackageImageUrl = useMemo(() => {
+    if (!selectedPackage || !packages.length) return null;
+    const pkg = packages.find((p: any) => p.id === selectedPackage);
+    return pkg?.image_url || null;
+  }, [selectedPackage, packages]);
 
   // Không tự động chọn package - người dùng phải tự chọn
   // useEffect(() => {
@@ -513,11 +525,13 @@ export default function ProductDetailPage({ slug, onBack, onProductClick, search
           <div className="space-y-6 lg:space-y-8 w-full">
             <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg transition-all dark:border-slate-700/50 dark:bg-slate-800 sm:rounded-2xl sm:p-1.5 sm:shadow-xl">
               <img
-                src={productInfo?.image_url || product.image_url || "https://placehold.co/800x600?text=No+Image"}
-                alt={`Hình ảnh chi tiết sản phẩm ${product.name}${product.description ? ` - ${product.description.substring(0, 150)}` : ''}`}
+                src={selectedPackageImageUrl || product.image_url || "https://placehold.co/400x400?text=No+Image"}
+                alt={`Hình ảnh chi tiết sản phẩm ${product.name}${selectedPackage ? ` - ${selectedPackage}` : ''}${product.description ? ` - ${product.description.substring(0, 150)}` : ''}`}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[4/3] w-full rounded-2xl object-cover transition-transform duration-700 group-hover:scale-105"
+                className={`w-full rounded-2xl object-cover transition-all duration-500 group-hover:scale-105 ${
+                  selectedPackageImageUrl ? 'aspect-[4/3]' : 'aspect-square'
+                }`}
               />
               <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/5" />
             </div>

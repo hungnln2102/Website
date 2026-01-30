@@ -192,7 +192,7 @@ app.get("/products", async (_req, res) => {
           COALESCE(sm.price_max, 0) AS price_max,
           COALESCE(vsc.sales_count, 0) AS sales_count,
           pd.description,
-          pd.image_url,
+          p.image_url AS image_url,
           p.created_at AS created_at
         FROM ${TABLES.VARIANT} v
         LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
@@ -210,7 +210,7 @@ app.get("/products", async (_req, res) => {
         LEFT JOIN product.variant_sold_count vsc
           ON vsc.variant_id = v.id
         LEFT JOIN ${TABLES.PRODUCT_DESC} pd
-          ON TRIM(pd.product_id::text) = TRIM(v.display_name::text)
+          ON TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
         WHERE p.package_name IS NOT NULL
           AND v.is_active = true
       ),
@@ -318,7 +318,7 @@ app.get("/promotions", async (_req, res) => {
           COALESCE(sm.price_max, 0) AS price_max,
           COALESCE(vsc.sales_count, 0) AS sales_count,
           pd.description,
-          pd.image_url
+          p.image_url AS image_url
         FROM ${TABLES.VARIANT} v
         LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
         INNER JOIN LATERAL (
@@ -333,7 +333,7 @@ app.get("/promotions", async (_req, res) => {
         ) pc ON TRUE
         LEFT JOIN supply_max sm ON sm.product_id = v.id
         LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
-        LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON TRIM(pd.product_id::text) = TRIM(v.display_name::text)
+        LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
         WHERE v.is_active = true
     )
     SELECT
@@ -457,7 +457,9 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
         ) pc ON TRUE
         LEFT JOIN supply_max sm ON sm.product_id = v.id
         LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
-        LEFT JOIN product.product_desc pd ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
+        LEFT JOIN product.product_desc pd ON 
+          TRIM(pd.product_id::text) = TRIM(v.display_name::text)
+          OR TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
         WHERE p.package_name ILIKE ${packageName}
           AND v.is_active = true
       )

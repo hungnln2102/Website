@@ -51,11 +51,11 @@ export default function ProductCard({
         onClick={onClick}
         className="group relative cursor-pointer overflow-hidden rounded-lg border border-gray-200/40 bg-white transition-all duration-300 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-700"
       >
-        <div className="relative overflow-hidden">
+        <div className="relative aspect-square overflow-hidden">
           <LazyImage
-            src={image_url || "https://placehold.co/600x400?text=No+Image"}
+            src={image_url || "https://placehold.co/400x400?text=No+Image"}
             alt={`Hình ảnh sản phẩm ${name}`}
-            className="h-32 w-full object-cover transition-transform duration-300 group-hover:scale-105 sm:h-36"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {hasDiscount && (
             <div className="absolute right-2 top-2 rounded-md bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
@@ -126,11 +126,11 @@ export default function ProductCard({
     <div onClick={onClick} className={cardWrapper}>
       <div className={gradientHover} />
       <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(0.75rem-2px)] bg-white dark:bg-slate-950">
-        <div className="relative overflow-hidden">
+        <div className="relative aspect-square overflow-hidden">
           <LazyImage
-            src={image_url || "https://placehold.co/600x400?text=No+Image"}
+            src={image_url || "https://placehold.co/400x400?text=No+Image"}
             alt={`Hình ảnh sản phẩm ${name}${description ? ` - ${description.substring(0, 100)}` : ''}`}
-            className="h-28 w-full object-cover transition-transform duration-700 group-hover:scale-110 sm:h-40"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/5 transition-opacity group-hover:opacity-0" />
           
