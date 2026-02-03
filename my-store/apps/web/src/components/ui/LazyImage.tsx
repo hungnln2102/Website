@@ -50,30 +50,17 @@ export default function LazyImage({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !isLoaded && !hasError) {
-            // Try WebP first, then fallback to original
-            const webpSrc = src.replace(/\.(jpg|jpeg|png)$/i, ".webp");
+            // Dùng URL gốc - không chuyển .png sang .webp vì server chỉ có file gốc
             const img = new Image();
-            
             img.onload = () => {
-              setImageSrc(webpSrc);
+              setImageSrc(src);
               setIsLoaded(true);
             };
-            
             img.onerror = () => {
-              // Fallback to original format
-              const originalImg = new Image();
-              originalImg.onload = () => {
-                setImageSrc(src);
-                setIsLoaded(true);
-              };
-              originalImg.onerror = () => {
-                setImageSrc(fallback);
-                setHasError(true);
-              };
-              originalImg.src = src;
+              setImageSrc(fallback);
+              setHasError(true);
             };
-            
-            img.src = webpSrc;
+            img.src = src;
             observer.disconnect();
           }
         });
