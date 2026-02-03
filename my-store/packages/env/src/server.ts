@@ -26,6 +26,7 @@ export const env = createEnv({
       .optional()
       .transform((s) => (s ? s.split(",").map((u) => u.trim()).filter(Boolean) : [])),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    IMAGE_BASE_URL: z.string().url().optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -85,6 +85,14 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+const resolveImageUrl = (url: string | null): string => {
+  if (!url) return "https://placehold.co/600x400?text=No+Image";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = process.env.IMAGE_BASE_URL || "";
+  if (base) return `${base.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`;
+  return url;
+};
+
 // const withSchema = (key: keyof typeof DB_SCHEMA) =>
 //   Prisma.raw(`${DB_SCHEMA[key].SCHEMA}.${DB_SCHEMA[key].TABLE}`);
 
@@ -337,7 +345,7 @@ app.get("/products", async (_req, res) => {
         package: row.package ?? "",
         package_product: row.package_product ?? null,
         description: stripHtml(row.description) || "Chưa có mô tả",
-        image_url: row.image_url || "https://placehold.co/600x400?text=No+Image",
+        image_url: resolveImageUrl(row.image_url),
         base_price: basePrice,
         discount_percentage: discountPct,
         has_promo: hasPromo,
@@ -432,7 +440,7 @@ app.get("/promotions", async (_req, res) => {
         package: rowSummary.package ?? "",
         id_product: rowSummary.id_product,
         description: stripHtml(rowSummary.description) || "Khuyến mãi đặc biệt",
-        image_url: rowSummary.image_url || "https://placehold.co/600x400?text=Hot+Deal",
+        image_url: resolveImageUrl(rowSummary.image_url),
         base_price: basePrice,
         discount_percentage: discountPct,
         has_promo: true,
