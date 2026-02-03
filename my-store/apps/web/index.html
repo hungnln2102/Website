@@ -59,21 +59,17 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- DMCA Badge Helper - Load with error handling -->
-    <script>
+    <!-- DMCA Badge Helper - Disabled: gây lỗi getAttribute trong console. Badge tĩnh vẫn hiện ở Footer. -->
+    <!-- <script>
       (function() {
         try {
           var script = document.createElement('script');
           script.src = 'https://images.dmca.com/Badges/DMCABadgeHelper.min.js';
-          script.onerror = function() {
-            // Silently fail - DMCA badge is optional
-          };
+          script.onerror = function() {};
           document.body.appendChild(script);
-        } catch (e) {
-          // Silently fail - DMCA badge is optional
-        }
+        } catch (e) {}
       })();
-    </script>
+    </script> -->
     <script type="module" src="/src/main.tsx"></script>
     <!-- Tawk.to Live Chat -->
     <script type="text/javascript">
