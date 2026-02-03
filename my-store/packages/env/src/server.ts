@@ -20,7 +20,11 @@ if (envPath) {
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
-    CORS_ORIGIN: z.url(),
+    // CORS_ORIGIN: single URL or comma-separated (e.g. https://a.com,https://www.a.com)
+    CORS_ORIGIN: z
+      .string()
+      .optional()
+      .transform((s) => (s ? s.split(",").map((u) => u.trim()).filter(Boolean) : [])),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,

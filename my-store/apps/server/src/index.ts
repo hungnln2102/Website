@@ -162,13 +162,14 @@ app.use(
 */
 
 // CORS configuration - SECURITY: Fail fast if CORS_ORIGIN missing in production
-if (process.env.NODE_ENV === 'production' && !env.CORS_ORIGIN) {
-  throw new Error('CORS_ORIGIN must be set in production environment');
+const corsOriginList = env.CORS_ORIGIN || [];
+if (process.env.NODE_ENV === 'production' && corsOriginList.length === 0) {
+  throw new Error('CORS_ORIGIN must be set in production (e.g. https://mavrykpremium.store,https://www.mavrykpremium.store)');
 }
 
 const corsOrigins: (string | RegExp)[] = process.env.NODE_ENV === 'production'
-  ? [env.CORS_ORIGIN!]
-  : ['http://localhost:3001', 'http://localhost:4001', ...(env.CORS_ORIGIN ? [env.CORS_ORIGIN] : [])];
+  ? corsOriginList
+  : ['http://localhost:3001', 'http://localhost:4001', ...corsOriginList];
 
 app.use(
   cors({
