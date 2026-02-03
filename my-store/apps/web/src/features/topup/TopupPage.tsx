@@ -668,8 +668,8 @@ export default function TopupPage() {
                       Hủy
                     </button>
 
-                    {/* Test Button (Development) */}
-                    <button
+                    {/* Test Button (Development) - Comment out for production deploy */}
+                    {/* <button
                       onClick={handleTestTopup}
                       disabled={isTestLoading}
                       className="flex-1 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 py-3 font-medium text-amber-400 transition-all hover:bg-amber-500/20 disabled:opacity-50"
@@ -682,7 +682,7 @@ export default function TopupPage() {
                       ) : (
                         "🧪 Test nạp tiền"
                       )}
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </>
