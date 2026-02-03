@@ -65,7 +65,7 @@ export default function PromotionCarousel({ products, onProductClick, variant = 
         {products.map((product) => (
           <div
             key={product.id}
-            className="w-[min(85vw,320px)] shrink-0 snap-start sm:w-[300px] lg:w-[320px]"
+            className="w-[min(80vw,280px)] shrink-0 snap-start sm:w-[300px] lg:w-[320px]"
           >
             <ProductCard
               {...product}
@@ -83,7 +83,7 @@ export default function PromotionCarousel({ products, onProductClick, variant = 
             type="button"
             onClick={() => scrollBy("left")}
             disabled={!canScrollLeft}
-            className={`absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/95 text-gray-900 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all hover:scale-105 disabled:pointer-events-none disabled:opacity-30 dark:bg-slate-800/95 dark:text-white dark:ring-white/10 sm:left-3 ${
+            className={`absolute left-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-white/95 text-gray-900 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all hover:scale-105 disabled:pointer-events-none disabled:opacity-30 dark:bg-slate-800/95 dark:text-white dark:ring-white/10 sm:left-2 sm:h-10 sm:w-10 sm:rounded-xl md:left-3 ${
               variant === "deal"
                 ? "hover:bg-white hover:text-orange-600 dark:hover:bg-slate-700 dark:hover:text-orange-400"
                 : "hover:bg-white hover:text-blue-600 dark:hover:bg-slate-700 dark:hover:text-blue-400"
@@ -96,7 +96,7 @@ export default function PromotionCarousel({ products, onProductClick, variant = 
             type="button"
             onClick={() => scrollBy("right")}
             disabled={!canScrollRight}
-            className={`absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-white/95 text-gray-900 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all hover:scale-105 disabled:pointer-events-none disabled:opacity-30 dark:bg-slate-800/95 dark:text-white dark:ring-white/10 sm:right-3 ${
+            className={`absolute right-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-white/95 text-gray-900 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all hover:scale-105 disabled:pointer-events-none disabled:opacity-30 dark:bg-slate-800/95 dark:text-white dark:ring-white/10 sm:right-2 sm:h-10 sm:w-10 sm:rounded-xl md:right-3 ${
               variant === "deal"
                 ? "hover:bg-white hover:text-orange-600 dark:hover:bg-slate-700 dark:hover:text-orange-400"
                 : "hover:bg-white hover:text-blue-600 dark:hover:bg-slate-700 dark:hover:text-blue-400"

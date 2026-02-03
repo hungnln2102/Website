@@ -1,8 +1,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-this-in-production';
+// SECURITY: JWT secrets MUST be set via environment variables
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error(
+    'SECURITY ERROR: JWT_SECRET and JWT_REFRESH_SECRET environment variables must be set. ' +
+    'Generate secure random strings (min 32 characters) for production.'
+  );
+}
 
 export interface TokenPayload {
   userId: string;

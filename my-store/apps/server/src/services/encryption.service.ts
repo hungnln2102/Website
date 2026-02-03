@@ -1,6 +1,13 @@
 import CryptoJS from 'crypto-js';
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'change-this-encryption-key-in-production-use-openssl-rand';
+// SECURITY: Encryption key must be set in environment
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY) {
+  throw new Error(
+    'ENCRYPTION_KEY must be set in environment variables. ' +
+    'Generate one with: openssl rand -base64 32'
+  );
+}
 
 /**
  * Encryption service for sensitive data

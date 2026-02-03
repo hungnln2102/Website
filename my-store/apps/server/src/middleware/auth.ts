@@ -1,9 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
+import { tokenBlacklistService } from '../services/token-blacklist.service';
 
 /**
  * Authentication middleware
  * Verifies JWT access token from Authorization header
+ * SECURITY: Also checks token blacklist for logged-out tokens
  */
 export const authenticate = async (
   req: Request,
@@ -21,6 +23,14 @@ export const authenticate = async (
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // SECURITY: Check if token has been blacklisted (logged out)
+    if (await tokenBlacklistService.isBlacklisted(token)) {
+      return res.status(401).json({ 
+        error: 'Unauthorized',
+        message: 'Token has been revoked' 
+      });
+    }
     
     try {
       const decoded = authService.verifyAccessToken(token);
@@ -75,6 +85,7 @@ export const authorize = (...roles: string[]) => {
 /**
  * Optional authentication middleware
  * Attaches user info if token is present, but doesn't require it
+ * SECURITY: Also checks token blacklist
  */
 export const optionalAuth = async (
   req: Request,
@@ -86,6 +97,12 @@ export const optionalAuth = async (
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
+      
+      // SECURITY: Check if token has been blacklisted
+      if (await tokenBlacklistService.isBlacklisted(token)) {
+        (req as any).user = null;
+        return next();
+      }
       
       try {
         const decoded = authService.verifyAccessToken(token);

@@ -1,0 +1,29 @@
+# Security Policy
+# This file is served at /.well-known/security.txt
+
+# Contact for security issues
+# Replace with your actual contact information
+Contact: security@example.com
+Contact: mailto:security@example.com
+
+# Encryption key for secure communication (optional)
+# Encryption: https://example.com/pgp-key.txt
+
+# Policy page
+Policy: https://example.com/security-policy
+
+# Acknowledgments page
+Acknowledgments: https://example.com/security-hall-of-fame
+
+# Preferred languages
+Preferred-Languages: en, vi
+
+# Hiring page (if applicable)
+# Hiring: https://example.com/security-jobs
+
+# Canonical URL of this file
+Canonical: https://example.com/.well-known/security.txt
+
+# Expiration date (required, RFC 3339 format)
+# Update this date annually
+Expires: 2027-01-31T00:00:00.000Z

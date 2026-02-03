@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, HelpCircle, Menu, X } from "lucide-react";
+import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, HelpCircle, Menu, X, ShoppingCart } from "lucide-react";
 import { createPortal } from "react-dom";
 import CategoryButton from "./CategoryButton";
+import { getCartItemCount } from "@/hooks/useCart";
 
 interface MenuBarProps {
   isScrolled: boolean;
@@ -26,9 +27,20 @@ export default function MenuBar({
   const menuRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     setIsMounted(true);
+    // Load initial cart count
+    setCartCount(getCartItemCount());
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      setCartCount(getCartItemCount());
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdate);
+    return () => window.removeEventListener("cart-updated", handleCartUpdate);
   }, []);
 
   // Close mobile menu on escape key
@@ -55,6 +67,7 @@ export default function MenuBar({
   }, [isMobileMenuOpen]);
 
   const menuItems = [
+    { label: "Trang chủ", icon: Home, href: "/" },
     { label: "Sản phẩm", icon: Package, href: "/tat-ca-san-pham" },
     { label: "Khuyến mãi", icon: Gift, href: "/khuyen-mai" },
     { label: "Tin tức", icon: Newspaper, href: "#tin-tuc" },
@@ -76,7 +89,7 @@ export default function MenuBar({
         {/* Accent line */}
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent dark:via-blue-400/30" />
 
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-5 lg:px-8">
           <div className={`relative flex ${isScrolled ? "h-11" : "h-14"} items-center justify-between gap-3`}>
             {/* Left side: DANH MỤC + Menu Items (Desktop) */}
             <div className="hidden lg:flex items-center gap-0 flex-1 min-w-0">
@@ -93,12 +106,12 @@ export default function MenuBar({
               <div className="h-5 w-px shrink-0 bg-gray-200 dark:bg-slate-600 mx-1" aria-hidden />
 
               {/* Menu Items - Desktop */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar lg:gap-1.5 xl:gap-2">
                 {menuItems.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
-                    className="group relative flex shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px]"
+                    className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4 xl:px-4"
                   >
                     <item.icon className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
                     <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
@@ -126,9 +139,29 @@ export default function MenuBar({
               {/* Divider */}
               <div className="h-5 w-px shrink-0 bg-gray-200 dark:bg-slate-600" aria-hidden />
 
+              {/* Shopping Cart Icon */}
+              <a
+                href="cart"
+                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
+                aria-label="Giỏ hàng"
+              >
+                <div className="relative">
+                  <ShoppingCart className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
+                  Giỏ hàng
+                </span>
+                <span className="absolute bottom-1.5 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 group-hover:w-[70%] dark:from-blue-400 dark:to-blue-500" />
+              </a>
+
               <a
                 href="#huong-dan"
-                className="group relative flex shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px]"
+                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
               >
                 <HelpCircle className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
                 <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
@@ -136,6 +169,7 @@ export default function MenuBar({
                 </span>
                 <span className="absolute bottom-1.5 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 group-hover:w-[70%] dark:from-blue-400 dark:to-blue-500" />
               </a>
+
             </div>
 
             {/* Mobile: Menu button (moved to right) */}
@@ -219,6 +253,23 @@ export default function MenuBar({
 
               {/* Footer Actions */}
               <div className="border-t border-gray-200/80 dark:border-slate-700/80 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-slate-900/50 px-4 py-5 space-y-2">
+                <a
+                  href="cart"
+                  onClick={handleMobileMenuClose}
+                  className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
+                >
+                  <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-300">
+                    <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                        {cartCount > 99 ? "99+" : cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-base font-semibold text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400 transition-colors duration-300">
+                    Giỏ hàng
+                  </span>
+                </a>
                 <a
                   href="#lien-he"
                   onClick={handleMobileMenuClose}

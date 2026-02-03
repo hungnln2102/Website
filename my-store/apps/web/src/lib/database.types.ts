@@ -67,6 +67,7 @@ export interface Database {
           full_description: string | null;
           id: string;
           image_url: string | null;
+          is_active: boolean;
           is_featured: boolean;
           name: string;
           purchase_rules: string | null;
@@ -83,6 +84,7 @@ export interface Database {
           full_description?: string | null;
           id?: string;
           image_url?: string | null;
+          is_active?: boolean;
           is_featured?: boolean;
           name: string;
           purchase_rules?: string | null;
@@ -99,6 +101,7 @@ export interface Database {
           full_description?: string | null;
           id?: string;
           image_url?: string | null;
+          is_active?: boolean;
           is_featured?: boolean;
           name?: string;
           purchase_rules?: string | null;

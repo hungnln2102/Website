@@ -8,7 +8,7 @@ const RUNTIME_CACHE = 'mavryk-runtime-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/favicon.ico',
+  '/logo1.png',
   '/favicon.png',
 ];
 

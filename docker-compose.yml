@@ -6,13 +6,10 @@ services:
       context: ${BUILD_CONTEXT:-https://github.com/hungnln2102/Website.git#main:my-store}
       dockerfile: ${SERVER_DOCKERFILE:-apps/server/Dockerfile}
     container_name: website-api
+    env_file:
+      - ./my-store/apps/server/.env
     environment:
       NODE_ENV: production
-      PORT: 4000
-      DATABASE_URL: ${DATABASE_URL}
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://mavrykpremium.store}
-      FRONTEND_URL: ${FRONTEND_URL:-https://mavrykpremium.store}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "127.0.0.1:4000:4000"
     restart: unless-stopped

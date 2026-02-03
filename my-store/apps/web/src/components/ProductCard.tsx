@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Star, TrendingUp, Sparkles } from "lucide-react";
+import { Star, TrendingUp, Sparkles } from "lucide-react";
 
 import type { Database } from "@/lib/database.types";
 import { roundToNearestThousand } from "@/lib/pricing";
@@ -15,6 +15,7 @@ type ProductCardProps = Product & {
   variant?: "default" | "minimal" | "deal";
   isNew?: boolean;
   sold_count_30d?: number;
+  is_active?: boolean;
 };
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
@@ -32,18 +33,20 @@ export default function ProductCard({
   variant = "default",
   isNew = false,
   sold_count_30d = 0,
+  is_active = true,
 }: ProductCardProps) {
   const hasDiscount = discount_percentage > 0;
   const discountedPrice = roundToNearestThousand(base_price * (1 - discount_percentage / 100));
   const hasMultipleCodes = (package_count ?? 1) > 1;
   const isMinimal = variant === "minimal";
   const isDeal = variant === "deal";
+  const isOutOfStock = !is_active;
   
   // Xác định tag dựa trên sold_count_30d
-  // Ưu tiên: BESTSELLER > HOT > NEW
+  // Ưu tiên: OUT OF STOCK > BESTSELLER > HOT > NEW
   const sold30d = sold_count_30d ?? 0;
-  const isBestSeller = sold30d > 10;
-  const isHot = sold30d >= 5 && sold30d <= 10;
+  const isBestSeller = sold30d > 10 && !isOutOfStock;
+  const isHot = sold30d >= 5 && sold30d <= 10 && !isOutOfStock;
 
   if (isMinimal) {
     return (
@@ -69,35 +72,22 @@ export default function ProductCard({
             {name}
           </h3>
 
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              {!hasMultipleCodes && hasDiscount && (
-                <span className="text-[10px] font-medium text-gray-400 line-through">
-                  {formatCurrency(base_price)}
-                </span>
+          <div className="flex flex-col">
+            {!hasMultipleCodes && hasDiscount && (
+              <span className="text-[10px] font-medium text-gray-400 line-through">
+                {formatCurrency(base_price)}
+              </span>
+            )}
+            <div className="text-base font-bold text-blue-600 dark:text-blue-400">
+              {hasMultipleCodes ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[10px] font-medium text-gray-400">Từ</span>
+                  <span>{formatCurrency(discountedPrice)}</span>
+                </div>
+              ) : (
+                formatCurrency(discountedPrice)
               )}
-              <div className="text-base font-bold text-blue-600 dark:text-blue-400">
-                {hasMultipleCodes ? (
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-[10px] font-medium text-gray-400">Từ</span>
-                    <span>{formatCurrency(discountedPrice)}</span>
-                  </div>
-                ) : (
-                  formatCurrency(discountedPrice)
-                )}
-              </div>
             </div>
-            
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white transition-all hover:bg-blue-700 hover:scale-105"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
-              aria-label={`Xem chi tiết sản phẩm ${name}`}
-            >
-              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-            </button>
           </div>
         </div>
       </div>
@@ -112,13 +102,7 @@ export default function ProductCard({
     ? "absolute inset-0 z-0 bg-gradient-to-br from-orange-500 via-red-500 to-rose-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
     : "absolute inset-0 z-0 bg-gradient-to-br from-blue-500 via-cyan-400 to-indigo-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100";
 
-  const hotBadge = isDeal ? "text-orange-500 dark:text-orange-400" : "text-blue-500 dark:text-blue-400";
-
   const priceColor = isDeal ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400";
-
-  const btnClass = isDeal
-    ? "bg-gradient-to-br from-orange-500 to-red-600 shadow-orange-500/25 transition-all duration-300 hover:from-orange-600 hover:to-red-700 group-hover:scale-110"
-    : "bg-gradient-to-br from-blue-600 to-indigo-600 transition-all duration-300 group-hover:scale-110";
 
   const titleHover = isDeal ? "group-hover:text-orange-600 dark:group-hover:text-orange-400" : "group-hover:text-blue-600 dark:group-hover:text-blue-400";
 
@@ -134,23 +118,33 @@ export default function ProductCard({
           />
           <div className="absolute inset-0 bg-black/5 transition-opacity group-hover:opacity-0" />
           
-          {/* Tags: BESTSELLER > HOT > NEW > Deal - Góc trên bên trái của hình ảnh */}
+          {/* Tags: OUT OF STOCK > BESTSELLER > HOT > NEW > Deal - Góc trên bên trái của hình ảnh */}
           <div className="absolute left-2 top-2 z-30">
-            {isBestSeller && (
+            {isOutOfStock && (
+              <div className="rounded-md bg-gradient-to-r from-gray-600 to-gray-700 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
+                Hết hàng
+              </div>
+            )}
+            {isBestSeller && !isOutOfStock && (
               <ProductTag type="best-selling" />
             )}
-            {isHot && !isBestSeller && (
+            {isHot && !isBestSeller && !isOutOfStock && (
               <ProductTag type="hot" />
             )}
-            {isNew && !isHot && !isBestSeller && !isDeal && (
+            {isNew && !isHot && !isBestSeller && !isDeal && !isOutOfStock && (
               <ProductTag type="new" />
             )}
-            {isDeal && !isBestSeller && !isHot && (
+            {isDeal && !isBestSeller && !isHot && !isOutOfStock && (
               <div className="rounded-md bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
                 Hot Deal
               </div>
             )}
           </div>
+          
+          {/* Overlay khi hết hàng */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/40 z-20" />
+          )}
           
           {hasDiscount && (
             <div className="absolute right-3 top-3 z-30 overflow-hidden rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
@@ -178,7 +172,7 @@ export default function ProductCard({
             </div>
           </div>
 
-          <div className="mt-auto flex min-h-[56px] items-end justify-between border-t border-gray-50 pt-2 dark:border-slate-900">
+          <div className="mt-auto flex min-h-[56px] items-end border-t border-gray-50 pt-2 dark:border-slate-900">
             <div className="flex flex-col justify-end">
               {!hasMultipleCodes && hasDiscount && (
                 <span className="mb-0.5 text-[10px] font-medium text-gray-400 line-through decoration-red-400/50">
@@ -196,17 +190,6 @@ export default function ProductCard({
                 )}
               </div>
             </div>
-            <button
-              className={`relative flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg text-white shadow-lg sm:h-10 sm:w-10 sm:rounded-xl ${btnClass}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
-              aria-label={`Xem chi tiết sản phẩm ${name}`}
-            >
-              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-              <div className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
-            </button>
           </div>
         </div>
       </div>

@@ -59,8 +59,8 @@ export default function SearchDropdown({
 
   return (
     <div className="absolute left-0 right-0 top-full z-[9999] mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-      <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-800">
-        <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800">
+        <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">
           Sản phẩm gợi ý
         </span>
       </div>
@@ -75,10 +75,10 @@ export default function SearchDropdown({
                 <li key={product.id}>
                   <button
                     onClick={() => onProductClick(product.slug)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800"
+                    className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800 min-h-[80px] sm:min-h-[72px]"
                   >
                     {/* Product Image */}
-                    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-800">
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-800">
                       <LazyImage
                         src={product.image_url || "https://placehold.co/100x100?text=No+Image"}
                         alt={product.name}
@@ -88,19 +88,19 @@ export default function SearchDropdown({
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-slate-100">
+                      <h4 className="line-clamp-2 text-base font-medium text-gray-900 dark:text-slate-100">
                         {product.name}
                       </h4>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-sm font-bold text-red-500">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-bold text-red-500 dark:text-red-400">
                           {formatCurrency(discountedPrice)}
                         </span>
                         {hasDiscount && (
                           <>
-                            <span className="text-xs text-gray-400 line-through">
+                            <span className="text-sm text-gray-400 line-through dark:text-slate-500">
                               {formatCurrency(product.base_price)}
                             </span>
-                            <span className="text-xs font-semibold text-red-500">
+                            <span className="text-sm font-semibold text-red-500 dark:text-red-400">
                               -{product.discount_percentage}%
                             </span>
                           </>

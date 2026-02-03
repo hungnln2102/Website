@@ -5,6 +5,7 @@ import pool from "./config/database";
 import { env } from "@my-store/env/server";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -13,19 +14,23 @@ import { DB_SCHEMA } from "./config/db.config";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestLogger, responseTimeLogger } from "./middleware/logger";
 import { generalLimiter, strictLimiter } from "./middleware/rateLimiter";
+import {
+  apiSecurityMiddleware,
+  limitPayloadSize,
+} from "./middleware/apiSecurity";
+import { csrfProtection } from "./middleware/csrf";
 import paymentRouter from "./routes/payment.route";
 import variantDetailRouter from "./routes/variant-detail.route";
+import authRouter from "./routes/auth.route";
+import userRouter from "./routes/user.route";
+import cartRouter from "./routes/cart.route";
+import topupRouter from "./routes/topup.route";
 
 // Import cron job for auto-refresh materialized views
 import "./jobs/refresh-variant-sold-count.job";
 import "./jobs/refresh-product-sold-30d.job";
 
 const app = express();
-
-app.get("/", (_req, res) => {
-  console.log("DEBUG: Root request received at top level");
-  res.status(200).send("OK - TOP LEVEL");
-});
 
 type RawProductRow = {
   id: number | bigint;
@@ -95,26 +100,51 @@ const TABLES = {
   ORDER_EXPIRED: `${DB_SCHEMA.ORDER_EXPIRED.SCHEMA}.${DB_SCHEMA.ORDER_EXPIRED.TABLE}`,
 } as const;
 
-// Security headers
-/*
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", env.CORS_ORIGIN || "*"],
-      },
+// HTTPS redirect for production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Check for Heroku/AWS/Cloud proxy headers
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    if (!isHttps) {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
+// Security headers - using helmet defaults + customizations
+app.use(helmet({
+  // Disable CSP in development (causes issues with dev tools)
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "https://challenges.cloudflare.com/"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      frameSrc: ["https://challenges.cloudflare.com/"],
+      objectSrc: ["'none'"],
     },
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-    },
-  }),
-);
-*/
+  } : false,
+  // HSTS only in production
+  strictTransportSecurity: process.env.NODE_ENV === 'production' ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+}));
+
+// Add additional security headers manually for better compatibility
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  next();
+});
 
 /*
 // Response compression
@@ -131,13 +161,19 @@ app.use(
 );
 */
 
-// CORS configuration
+// CORS configuration - SECURITY: Fail fast if CORS_ORIGIN missing in production
+if (process.env.NODE_ENV === 'production' && !env.CORS_ORIGIN) {
+  throw new Error('CORS_ORIGIN must be set in production environment');
+}
+
+const corsOrigins: (string | RegExp)[] = process.env.NODE_ENV === 'production'
+  ? [env.CORS_ORIGIN!]
+  : ['http://localhost:3001', 'http://localhost:4001', ...(env.CORS_ORIGIN ? [env.CORS_ORIGIN] : [])];
+
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production'
-      ? [env.CORS_ORIGIN]
-      : ['http://localhost:3001', 'http://localhost:4001', env.CORS_ORIGIN || '*'],
-    methods: ["GET", "POST", "OPTIONS"],
+    origin: corsOrigins,
+    methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true,
     maxAge: 86400, // 24 hours
   }),
@@ -146,12 +182,24 @@ app.use(
 // Parse JSON bodies
 app.use(express.json());
 
+// Parse cookies (required for CSRF protection)
+app.use(cookieParser());
+
 // Request/response logging
 app.use(requestLogger);
 app.use(responseTimeLogger);
 
-// Apply general rate limiting to all routes
-// app.use(generalLimiter);
+// Apply general rate limiting to all routes - ENABLED for DDoS protection
+app.use(generalLimiter);
+
+// Apply API security middleware (banned IP check, validation, security headers)
+app.use(...apiSecurityMiddleware);
+
+// CSRF protection for state-changing requests
+app.use("/api", csrfProtection);
+
+// Limit payload size for API endpoints (100KB default)
+app.use("/api", limitPayloadSize(100));
 
 // tRPC middleware
 app.use(
@@ -168,6 +216,17 @@ app.use("/api/payment", paymentRouter);
 // Variant detail routes
 app.use("/api/variants", variantDetailRouter);
 
+// Auth routes
+app.use("/api/auth", authRouter);
+
+// Protected user routes
+app.use("/api/user", userRouter);
+
+// Cart routes
+app.use("/api/cart", cartRouter);
+
+// Topup routes
+app.use("/api/topup", topupRouter);
 
 app.get("/products", async (_req, res) => {
   try {
@@ -212,7 +271,6 @@ app.get("/products", async (_req, res) => {
         LEFT JOIN ${TABLES.PRODUCT_DESC} pd
           ON TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
         WHERE p.package_name IS NOT NULL
-          AND v.is_active = true
       ),
       ranked AS (
         SELECT
@@ -227,7 +285,9 @@ app.get("/products", async (_req, res) => {
             PARTITION BY priced.package
             ORDER BY (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)) ASC
           ) AS rn,
-          COUNT(*) OVER (PARTITION BY priced.package) AS package_count
+          COUNT(*) OVER (PARTITION BY priced.package) AS package_count,
+          -- Check if ANY variant in this package is active (product is in stock if at least one variant is active)
+          BOOL_OR(priced.is_active) OVER (PARTITION BY priced.package) AS has_active_variant
         FROM priced
         LEFT JOIN product.product_sold_count psc
           ON psc.package_name = priced.package
@@ -243,7 +303,7 @@ app.get("/products", async (_req, res) => {
         pct_khach,
         pct_promo,
         has_promo,
-        is_active,
+        has_active_variant AS is_active,
         price_max,
         sale_price,
         promo_price,
@@ -280,6 +340,7 @@ app.get("/products", async (_req, res) => {
         base_price: basePrice,
         discount_percentage: discountPct,
         has_promo: hasPromo,
+        is_active: row.is_active !== false,
         sales_count: toNumber(row.sales_count),
         sold_count_30d: toNumber((row as any).sold_count_30d || 0),
         average_rating: 0,
@@ -438,6 +499,7 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           v.variant_name AS package_product,
           v.display_name AS id_product,
           v.created_at AS created_at,
+          v.is_active AS is_active,
           COALESCE(pc.pct_ctv, 0) AS pct_ctv,
           COALESCE(pc.pct_khach, 0) AS pct_khach,
           pc.pct_promo,
@@ -461,7 +523,6 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           TRIM(pd.product_id::text) = TRIM(v.display_name::text)
           OR TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
         WHERE p.package_name ILIKE ${packageName}
-          AND v.is_active = true
       )
       SELECT
         *,
@@ -484,6 +545,7 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
           created_at: row.created_at || null,
           sold_count_30d: toNumber(row.sold_count_30d || 0),
           pct_promo: toNumber(row.pct_promo || 0),
+          is_active: row.is_active !== false,
         });
       }
     });
@@ -498,86 +560,110 @@ const productPackagesHandler = async (req: express.Request, res: express.Respons
 app.get("/product-packages/:package", strictLimiter, productPackagesHandler);
 app.get("/product-packages", strictLimiter, productPackagesHandler);
 
-// Debug endpoint to test database connection
-app.get("/debug/db", async (_req, res) => {
-  try {
-    const result = await prisma.$queryRaw`SELECT 1 as test`;
-    res.json({ status: "ok", result });
-  } catch (err) {
-    console.error("Database test error:", err);
-    res.status(500).json({ status: "error", error: String(err) });
-  }
-});
+// Debug endpoints - ONLY available in development mode
+if (process.env.NODE_ENV !== 'production') {
+  // Debug endpoint to test database connection
+  app.get("/debug/db", async (_req, res) => {
+    try {
+      const result = await prisma.$queryRaw`SELECT 1 as test`;
+      res.json({ status: "ok", result });
+    } catch (err) {
+      console.error("Database test error:", err);
+      res.status(500).json({ status: "error", error: String(err) });
+    }
+  });
 
-// Simple categories test without aggregation
-app.get("/debug/categories-simple", async (_req, res) => {
-  try {
-    const rows = await prisma.$queryRaw<CategoryRow[]>`
-      SELECT c.id, c.name, c.created_at, c.color
-      FROM product.category c
-      ORDER BY c.id
-      LIMIT 10;
-    `;
-    res.json({ status: "ok", count: rows.length, data: rows });
-  } catch (err) {
-    console.error("Simple categories test error:", err);
-    res.status(500).json({ status: "error", error: String(err) });
-  }
-});
+  // Simple categories test without aggregation
+  app.get("/debug/categories-simple", async (_req, res) => {
+    try {
+      const rows = await prisma.$queryRaw<CategoryRow[]>`
+        SELECT c.id, c.name, c.created_at, c.color
+        FROM product.category c
+        ORDER BY c.id
+        LIMIT 10;
+      `;
+      res.json({ status: "ok", count: rows.length, data: rows });
+    } catch (err) {
+      console.error("Simple categories test error:", err);
+      res.status(500).json({ status: "error", error: String(err) });
+    }
+  });
 
-// Check database connections
-app.get("/debug/connections", async (_req, res) => {
-  try {
-    const connections = await prisma.$queryRaw<any[]>`
-      SELECT 
-        count(*) as total_connections,
-        count(*) FILTER (WHERE state = 'active') as active_connections,
-        count(*) FILTER (WHERE state = 'idle') as idle_connections
-      FROM pg_stat_activity
-      WHERE datname = current_database();
-    `;
-    res.json({ status: "ok", data: connections[0] });
-  } catch (err) {
-    console.error("Check connections error:", err);
-    res.status(500).json({ status: "error", error: String(err) });
-  }
-});
+  // Check database connections
+  app.get("/debug/connections", async (_req, res) => {
+    try {
+      const connections = await prisma.$queryRaw<any[]>`
+        SELECT 
+          count(*) as total_connections,
+          count(*) FILTER (WHERE state = 'active') as active_connections,
+          count(*) FILTER (WHERE state = 'idle') as idle_connections
+        FROM pg_stat_activity
+        WHERE datname = current_database();
+      `;
+      res.json({ status: "ok", data: connections[0] });
+    } catch (err) {
+      console.error("Check connections error:", err);
+      res.status(500).json({ status: "error", error: String(err) });
+    }
+  });
 
-// Check table locks
-app.get("/debug/locks", async (_req, res) => {
-  try {
-    const locks = await prisma.$queryRaw<any[]>`
-      SELECT 
-        l.locktype,
-        l.relation::regclass as table_name,
-        l.mode,
-        l.granted,
-        a.usename,
-        a.query,
-        a.state
-      FROM pg_locks l
-      LEFT JOIN pg_stat_activity a ON l.pid = a.pid
-      WHERE l.relation IS NOT NULL
-      ORDER BY l.granted, l.relation
-      LIMIT 20;
-    `;
-    res.json({ status: "ok", count: locks.length, data: locks });
-  } catch (err) {
-    console.error("Check locks error:", err);
-    res.status(500).json({ status: "error", error: String(err) });
-  }
-});
+  // Check table locks
+  app.get("/debug/locks", async (_req, res) => {
+    try {
+      const locks = await prisma.$queryRaw<any[]>`
+        SELECT 
+          l.locktype,
+          l.relation::regclass as table_name,
+          l.mode,
+          l.granted,
+          a.usename,
+          a.query,
+          a.state
+        FROM pg_locks l
+        LEFT JOIN pg_stat_activity a ON l.pid = a.pid
+        WHERE l.relation IS NOT NULL
+        ORDER BY l.granted, l.relation
+        LIMIT 20;
+      `;
+      res.json({ status: "ok", count: locks.length, data: locks });
+    } catch (err) {
+      console.error("Check locks error:", err);
+      res.status(500).json({ status: "error", error: String(err) });
+    }
+  });
+}
 
+// Health check endpoint
 app.get("/", (_req, res) => {
   res.status(200).send("OK");
+});
+
+// Security.txt endpoint (RFC 9116)
+app.get("/.well-known/security.txt", (_req, res) => {
+  res.type("text/plain").send(`# Security Policy
+Contact: security@example.com
+Policy: https://example.com/security-policy
+Preferred-Languages: en, vi
+Expires: 2027-01-31T00:00:00.000Z
+`);
 });
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
 
+import { initRedis } from "./config/redis";
+
 const PORT = Number(process.env.PORT) || 4000;
 
-function start() {
+async function start() {
+  // Initialize Redis (optional - falls back to in-memory if not available)
+  const redisConnected = await initRedis();
+  if (redisConnected) {
+    console.log("✅ Redis connected - using distributed caching");
+  } else {
+    console.log("⚠️  Redis not available - using in-memory fallback");
+  }
+
   app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
