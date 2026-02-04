@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Percent, Gift, CreditCard, QrCode, Wallet } from "lucide-react";
+import { Percent, CreditCard, QrCode, Wallet } from "lucide-react";
 
 type PaymentMethod = "vnpay" | "qr" | "momo_later" | "momo" | "topup" | "balance";
 
@@ -23,60 +23,35 @@ export function CartSummary({
   balance,
   onPaymentSelect,
 }: CartSummaryProps) {
-  const [referralCode, setReferralCode] = useState("");
   const [discountCode, setDiscountCode] = useState("");
-  const [isGift, setIsGift] = useState(false);
 
   const amountToAdd = Math.max(0, total - balance);
 
   return (
     <div className="space-y-4">
-      {/* Referral Code */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-            Bạn có mã giới thiệu?
-          </span>
-        </div>
-        <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer">
-          Nhập mã
-        </button>
-      </div>
-
       {/* Discount Code */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Percent className="h-5 w-5 text-gray-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-            Bạn có mã ưu đãi?
+            Mã khuyến mãi
           </span>
         </div>
-        <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer">
-          Nhập mã
-        </button>
-      </div>
-
-      {/* Gift Option */}
-      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Gift className="h-5 w-5 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-            Bạn muốn tặng cho bạn bè?
-          </span>
-        </div>
-        <button
-          onClick={() => setIsGift(!isGift)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-            isGift ? "bg-blue-600" : "bg-gray-200 dark:bg-slate-600"
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
-              isGift ? "translate-x-6" : "translate-x-1"
-            }`}
+          <input
+            type="text"
+            value={discountCode}
+            onChange={(event) => setDiscountCode(event.target.value)}
+            placeholder="Nhập mã khuyến mãi"
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
           />
-        </button>
+          <button
+            type="button"
+            className="h-10 shrink-0 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-95"
+          >
+            Áp Dụng
+          </button>
+        </div>
       </div>
 
       {/* Payment Summary */}
@@ -149,7 +124,7 @@ export function CartSummary({
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 cursor-pointer active:scale-95"
             >
               <Wallet className="h-5 w-5" />
-              Nạp thêm vào tài khoản
+              Thanh Toán
             </button>
             <p className="text-center text-xs text-gray-500 dark:text-slate-400">
               Quét mã. Thanh toán. Không cần nạp tiền.

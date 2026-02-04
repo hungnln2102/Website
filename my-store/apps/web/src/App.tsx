@@ -303,7 +303,7 @@ export default function App() {
           />
         )}
       </Suspense>
-      <FloatingLogo />
+      {view !== "login" && <FloatingLogo />}
     </ErrorBoundary>
   );
 }

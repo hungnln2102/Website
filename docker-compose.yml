@@ -20,6 +20,7 @@ services:
       dockerfile: ${WEB_DOCKERFILE:-apps/web/Dockerfile}
       args:
         VITE_SERVER_URL: ${VITE_SERVER_URL:-https://api.mavrykpremium.store}
+        VITE_API_URL: ${VITE_API_URL:-https://api.mavrykpremium.store}
     container_name: website-web
     ports:
       - "127.0.0.1:4001:80"

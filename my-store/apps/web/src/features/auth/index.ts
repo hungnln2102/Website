@@ -6,7 +6,6 @@ export {
   AuthStyles,
   LoginForm,
   RegisterForm,
-  SocialLoginButtons,
 } from "./components";
 
 // Hooks

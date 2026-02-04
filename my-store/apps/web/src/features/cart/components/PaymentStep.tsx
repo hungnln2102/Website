@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Clock,
   CheckCircle,
@@ -36,6 +36,7 @@ const formatCurrency = (value: number) =>
   `${value.toLocaleString("vi-VN")}đ`;
 
 const PAYMENT_TIMEOUT = 15 * 60; // 15 minutes in seconds
+const SUCCESS_REDIRECT_SECONDS = 5;
 
 // Bank configuration - Cấu hình thông tin ngân hàng
 const BANK_CONFIG = {
@@ -59,6 +60,8 @@ export function PaymentStep({
   const [timeLeft, setTimeLeft] = useState<number>(PAYMENT_TIMEOUT);
   const [error, setError] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [redirectSeconds, setRedirectSeconds] = useState<number>(SUCCESS_REDIRECT_SECONDS);
+  const hasTriggeredSuccess = useRef(false);
 
   // Generate transfer content (nội dung chuyển khoản)
   const transferContent = orderId.replace(/-/g, "").slice(-8).toUpperCase();
@@ -101,7 +104,7 @@ export function PaymentStep({
 
   // Check payment status
   const checkStatus = useCallback(async () => {
-    if (!orderId || paymentState !== "ready") return;
+    if (paymentMethod === "balance" || !orderId || paymentState !== "ready") return;
 
     try {
       const response = await checkPaymentStatus(orderId);
@@ -124,14 +127,25 @@ export function PaymentStep({
     }
   }, [orderId, paymentState, onPaymentSuccess, onPaymentFailed]);
 
-  // Initialize payment on mount
+  // Initialize payment on mount (skip for balance payment)
   useEffect(() => {
+    if (paymentMethod === "balance") return;
     initializePayment();
-  }, []);
+  }, [initializePayment, paymentMethod]);
+
+  // Auto-success for balance payments
+  useEffect(() => {
+    if (paymentMethod !== "balance" || hasTriggeredSuccess.current) return;
+    const newOrderId = generateOrderId();
+    hasTriggeredSuccess.current = true;
+    setOrderId(newOrderId);
+    setPaymentState("success");
+    onPaymentSuccess(newOrderId);
+  }, [paymentMethod, onPaymentSuccess]);
 
   // Countdown timer
   useEffect(() => {
-    if (paymentState !== "ready" || timeLeft <= 0) return;
+    if (paymentMethod === "balance" || paymentState !== "ready" || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -148,7 +162,25 @@ export function PaymentStep({
 
   // Poll payment status every 5 seconds
   useEffect(() => {
-    if (paymentState !== "ready") return;
+    if (paymentMethod === "balance" || paymentState !== "ready") return;
+  // Redirect countdown after success (balance payment)
+  useEffect(() => {
+    if (paymentMethod !== "balance" || paymentState !== "success") return;
+
+    setRedirectSeconds(SUCCESS_REDIRECT_SECONDS);
+    const timer = setInterval(() => {
+      setRedirectSeconds((prev) => {
+        if (prev <= 1) {
+          window.history.pushState({}, "", "/");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [paymentMethod, paymentState]);
 
     const pollInterval = setInterval(checkStatus, 5000);
     return () => clearInterval(pollInterval);
@@ -393,6 +425,23 @@ export function PaymentStep({
             <p className="text-gray-500 dark:text-slate-500">
               Cảm ơn bạn đã mua hàng. Đơn hàng đang được xử lý.
             </p>
+            {paymentMethod === "balance" && (
+              <>
+                <p className="mt-4 text-sm text-gray-500 dark:text-slate-400">
+                  Tự động quay về trang chủ sau {redirectSeconds}s.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.history.pushState({}, "", "/");
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }}
+                  className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Về trang chủ ngay
+                </button>
+              </>
+            )}
           </div>
         );
 

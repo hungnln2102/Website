@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Loader2 } from "lucide-react";
-import { SocialLoginButtons } from "./SocialLoginButtons";
 import { Turnstile, resetTurnstile } from "./Turnstile";
 
 export interface LoginFormData {
@@ -192,7 +191,7 @@ export function LoginForm({
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
+        {/* <p className="mt-4 text-center text-sm text-gray-500">
           Chưa có tài khoản?{" "}
           <button
             onClick={onSwitchToRegister}
@@ -200,9 +199,8 @@ export function LoginForm({
           >
             Đăng ký ngay
           </button>
-        </p>
+        </p> */}
 
-        <SocialLoginButtons />
       </div>
     </div>
   );

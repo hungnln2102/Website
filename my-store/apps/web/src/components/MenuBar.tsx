@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, HelpCircle, Menu, X, ShoppingCart } from "lucide-react";
+import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, HelpCircle, Menu, X, ShoppingCart, LogIn } from "lucide-react";
 import { createPortal } from "react-dom";
 import CategoryButton from "./CategoryButton";
 import { getCartItemCount } from "@/hooks/useCart";
+import { useAuth } from "@/features/auth/hooks";
 
 interface MenuBarProps {
   isScrolled: boolean;
@@ -28,6 +29,8 @@ export default function MenuBar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
@@ -77,6 +80,20 @@ export default function MenuBar({
 
   const handleMobileMenuClose = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleCartClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setShowLoginPopup(true);
+      handleMobileMenuClose();
+    }
+  };
+
+  const goToLogin = () => {
+    setShowLoginPopup(false);
+    window.history.pushState({}, "", "/login");
+    window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
   return (
@@ -141,13 +158,14 @@ export default function MenuBar({
 
               {/* Shopping Cart Icon */}
               <a
-                href="cart"
+                href={user ? "/gio-hang" : "#"}
+                onClick={handleCartClick}
                 className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
                 aria-label="Giỏ hàng"
               >
                 <div className="relative">
                   <ShoppingCart className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
-                  {cartCount > 0 && (
+                  {user && cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
                       {cartCount > 99 ? "99+" : cartCount}
                     </span>
@@ -254,13 +272,16 @@ export default function MenuBar({
               {/* Footer Actions */}
               <div className="border-t border-gray-200/80 dark:border-slate-700/80 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-slate-900/50 px-4 py-5 space-y-2">
                 <a
-                  href="cart"
-                  onClick={handleMobileMenuClose}
+                  href={user ? "/gio-hang" : "#"}
+                  onClick={(e) => {
+                    handleCartClick(e);
+                    handleMobileMenuClose();
+                  }}
                   className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
                 >
                   <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-300">
                     <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
-                    {cartCount > 0 && (
+                    {user && cartCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
                         {cartCount > 99 ? "99+" : cartCount}
                       </span>
@@ -297,6 +318,36 @@ export default function MenuBar({
               </div>
             </div>
           </aside>
+        </>,
+        document.body
+      )}
+
+      {/* Popup yêu cầu đăng nhập khi bấm Giỏ hàng lúc chưa đăng nhập */}
+      {showLoginPopup && isMounted && createPortal(
+        <>
+          <div
+            className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowLoginPopup(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed left-1/2 top-1/2 z-[10001] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-popup-title"
+          >
+            <p id="login-popup-title" className="mb-4 text-center text-slate-700 dark:text-slate-200">
+              Quý khách cần đăng nhập để thực hiện thao tác này
+            </p>
+            <button
+              type="button"
+              onClick={goToLogin}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
+            >
+              <LogIn className="h-5 w-5" />
+              Đăng nhập
+            </button>
+          </div>
         </>,
         document.body
       )}

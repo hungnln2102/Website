@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Mail, Lock, Eye, EyeOff, UserCircle, IdCard, AlertCircle } from "lucide-react";
-import { SocialLoginButtons } from "./SocialLoginButtons";
 
 export interface RegisterFormData {
   lastName: string;
@@ -342,7 +341,7 @@ export function RegisterForm({
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
+        {/* <p className="mt-4 text-center text-sm text-gray-500">
           Đã có tài khoản?{" "}
           <button
             onClick={onSwitchToLogin}
@@ -350,9 +349,8 @@ export function RegisterForm({
           >
             Đăng nhập
           </button>
-        </p>
+        </p> */}
 
-        <SocialLoginButtons />
       </div>
     </div>
   );

@@ -10,7 +10,7 @@
     
     <!-- Security Headers -->
     <!-- CSP: Allow localhost connections for development, https for production -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://images.dmca.com https://browser.sentry.io https://embed.tawk.to; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:4000 http://127.0.0.1:4000 https: ws: wss: https://o4510767167635456.ingest.us.sentry.io https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://*.tawk.to; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://images.dmca.com https://browser.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; frame-src 'self'; connect-src 'self' http://localhost:4000 http://127.0.0.1:4000 https: ws: wss: https://o4510767167635456.ingest.us.sentry.io https://*.ingest.us.sentry.io https://*.ingest.sentry.io; base-uri 'self'; form-action 'self';" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <!-- Note: X-Frame-Options should be set via HTTP headers, not meta tags -->
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
@@ -71,20 +71,5 @@
       })();
     </script> -->
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Tawk.to Live Chat -->
-    <script type="text/javascript">
-      var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-      Tawk_API.onLoad = function () {
-        window.__TAWK_READY__ = true;
-      };
-      (function () {
-        var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
-        s1.async = true;
-        s1.src = 'https://embed.tawk.to/69820f402807131c367659e0/1jgi0n53a';
-        s1.charset = 'UTF-8';
-        s1.setAttribute('crossorigin', '*');
-        s0.parentNode.insertBefore(s1, s0);
-      })();
-    </script>
   </body>
 </html>

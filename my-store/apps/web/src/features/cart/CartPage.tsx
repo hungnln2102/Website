@@ -83,7 +83,7 @@ export default function CartPage({
     };
   }, [cartItems]);
 
-  const balance = 0; // Replace with actual user balance
+  const balance = typeof user?.balance === "number" ? user.balance : 0;
 
   const handleQuantityChange = (id: string, quantity: number) => {
     // Find the item to get its duration for the updateQuantity call
@@ -178,7 +178,27 @@ export default function CartPage({
         {/* Progress Steps */}
         <CartProgressSteps currentStep={currentStep} />
 
-        {cartItems.length === 0 ? (
+        {currentStep === 3 && selectedPaymentMethod ? (
+          /* Step 3: Payment */
+          <PaymentStep
+            cartItems={cartItems}
+            total={total}
+            paymentMethod={selectedPaymentMethod}
+            onBack={handleBackToCart}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentFailed={handlePaymentFailed}
+          />
+        ) : currentStep === 2 && selectedPaymentMethod ? (
+          /* Step 2: Confirmation */
+          <CartConfirmation
+            cartItems={cartItems}
+            total={total}
+            discount={discount}
+            paymentMethod={selectedPaymentMethod}
+            onBack={handleBackToCart}
+            onConfirm={handleConfirmPayment}
+          />
+        ) : cartItems.length === 0 ? (
           /* Empty Cart */
           <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white py-16 dark:border-slate-700 dark:bg-slate-800">
             <ShoppingCart className="mb-4 h-16 w-16 text-gray-300 dark:text-slate-600" />
@@ -237,26 +257,6 @@ export default function CartPage({
               </div>
             </div>
           </div>
-        ) : currentStep === 2 && selectedPaymentMethod ? (
-          /* Step 2: Confirmation */
-          <CartConfirmation
-            cartItems={cartItems}
-            total={total}
-            discount={discount}
-            paymentMethod={selectedPaymentMethod}
-            onBack={handleBackToCart}
-            onConfirm={handleConfirmPayment}
-          />
-        ) : currentStep === 3 && selectedPaymentMethod ? (
-          /* Step 3: Payment */
-          <PaymentStep
-            cartItems={cartItems}
-            total={total}
-            paymentMethod={selectedPaymentMethod}
-            onBack={handleBackToCart}
-            onPaymentSuccess={handlePaymentSuccess}
-            onPaymentFailed={handlePaymentFailed}
-          />
         ) : null}
       </main>
 

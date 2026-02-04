@@ -17,6 +17,9 @@ COPY . .
 ARG VITE_SERVER_URL=http://localhost:4000
 ENV VITE_SERVER_URL=$VITE_SERVER_URL
 
+ARG VITE_API_URL=http://localhost:4000
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build --workspace web
 
 FROM nginx:1.27-alpine
