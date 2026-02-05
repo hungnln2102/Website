@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://mavrykpremium.store/sitemap.xml
+Sitemap: https://www.mavrykpremium.store/sitemap.xml
 
 # Disallow admin and API routes
 Disallow: /api/
