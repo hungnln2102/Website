@@ -5,7 +5,7 @@
 export const APP_CONFIG = {
   name: "Mavryk Premium Store",
   description: "Cửa hàng phần mềm bản quyền chính hãng - Phần mềm bản quyền giá tốt nhất",
-  url: typeof window !== "undefined" ? window.location.origin : "https://mavryk.store",
+  url: typeof window !== "undefined" ? window.location.origin : "https://mavrykpremium.store",
   locale: "vi-VN",
   productsPerPage: 12,
   carouselAutoPlayInterval: 8000,

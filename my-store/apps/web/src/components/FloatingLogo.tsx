@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 
@@ -30,11 +30,24 @@ const actions = [
 
 export default function FloatingLogo() {
   const [open, setOpen] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(true);
+
+  // Ẩn dòng "Liên hệ với chúng tôi" sau 5 giây, giữ logo
+  useEffect(() => {
+    const timer = setTimeout(() => setBannerVisible(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
-      {/* Bong bóng chat: cố định phía trên */}
-      <div className="fixed bottom-20 right-4 z-50 flex justify-end pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)] sm:bottom-24 sm:right-6">
+      {/* Bong bóng chat: hiển thị 5s rồi animation ẩn, logo giữ nguyên bên dưới */}
+      <div
+        className={`fixed bottom-20 right-4 z-50 flex justify-end pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)] sm:bottom-24 sm:right-6 transition-all duration-500 ease-out ${
+          bannerVisible
+            ? "opacity-100 translate-y-0"
+            : "pointer-events-none opacity-0 translate-y-4"
+        }`}
+      >
         <ContactMessageBlock expanded={open} onClick={() => setOpen(true)} />
       </div>
 

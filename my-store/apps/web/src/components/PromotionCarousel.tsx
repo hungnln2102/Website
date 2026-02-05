@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Database } from "@/lib/database.types";
-import ProductCard from "./ProductCard";
+import ProductCard from "@/components/ProductCard";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 

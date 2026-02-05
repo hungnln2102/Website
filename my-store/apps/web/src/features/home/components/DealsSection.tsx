@@ -1,7 +1,7 @@
 "use client";
 
 import { Flame, ArrowRight } from "lucide-react";
-import PromotionCarousel from "@/components/PromotionCarousel";
+import ProductCard from "@/components/ProductCard";
 import type { PromotionDto } from "@/lib/api";
 
 interface DealsSectionProps {
@@ -33,9 +33,9 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
     <section className="mb-6 sm:mb-8" aria-labelledby="deals-heading">
       <div className="relative overflow-hidden rounded-2xl border border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-rose-50/50 shadow-lg shadow-orange-500/10 dark:border-orange-900/40 dark:from-slate-900/95 dark:via-slate-900 dark:to-orange-950/30 dark:shadow-orange-950/20">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
-        <div className="p-3 sm:p-5 lg:p-6">
+        <div className="p-4 sm:p-5 lg:p-6">
           {/* Header */}
-          <div className="mb-3 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="relative flex shrink-0">
                 <div className="absolute inset-0 animate-pulse rounded-xl bg-orange-500/25" />
@@ -67,16 +67,21 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
             </button>
           </div>
 
-          {/* Carousel */}
-          <PromotionCarousel
-            variant="deal"
-            products={promotionProducts as any}
-            onProductClick={(slug) => {
-              const p = promotionProducts.find((x: any) => x.slug === slug);
-              if (p) onPromotionClick(p as any);
-              else onProductClick(slug);
-            }}
-          />
+          {/* Grid đồng bộ với Sản Phẩm Mới & Tất cả sản phẩm */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {promotionProducts.map((product: any) => (
+              <ProductCard
+                key={product.id}
+                {...product}
+                onClick={() => {
+                  const p = promotionProducts.find((x: any) => x.slug === product.slug);
+                  if (p) onPromotionClick(p as PromotionDto);
+                  else onProductClick(product.slug);
+                }}
+                variant="deal"
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

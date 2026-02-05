@@ -388,7 +388,7 @@ app.get("/promotions", async (_req, res) => {
           COALESCE(sm.price_max, 0) AS price_max,
           COALESCE(vsc.sales_count, 0) AS sales_count,
           pd.description,
-          p.image_url AS image_url
+          COALESCE(pd.image_url, p.image_url) AS image_url
         FROM ${TABLES.VARIANT} v
         LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
         INNER JOIN LATERAL (

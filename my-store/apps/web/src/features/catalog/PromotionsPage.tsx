@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { Flame } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import { MetaTags } from "@/components/SEO";
+import { APP_CONFIG } from "@/lib/constants";
 import { CatalogLayout, PageHeader, SortToolbar, ProductGrid } from "./components";
 import { useCatalogData, useProductSort } from "./hooks";
 
@@ -56,50 +58,64 @@ export default function PromotionsPage({
     searchQuery,
   });
 
+  const seoMetadata = useMemo(
+    () => ({
+      title: `Khuyến mãi - ${APP_CONFIG.name}`,
+      description:
+        "Danh sách các sản phẩm đang khuyến mãi, giảm giá hấp dẫn tại Mavryk Premium Store. Cập nhật ưu đãi phần mềm bản quyền mỗi ngày.",
+      keywords: "khuyến mãi phần mềm, giảm giá phần mềm, ưu đãi phần mềm bản quyền, Mavryk Premium Store",
+      url: `${APP_CONFIG.url}/khuyen-mai`,
+    }),
+    []
+  );
+
   return (
-    <CatalogLayout
-      onBack={onBack}
-      onProductClick={onProductClick}
-      searchQuery={searchQuery}
-      setSearchQuery={setSearchQuery}
-      searchPlaceholder="Tìm kiếm khuyến mãi..."
-      products={promotions}
-      categories={categories}
-    >
-      <PageHeader
-        icon={Flame}
-        title="Khuyến Mãi"
-        highlightedTitle="Hot"
-        count={totalCount}
-        countLabel="sản phẩm đang giảm giá"
-        gradientFrom="from-orange-500"
-        gradientVia="via-red-500"
-        gradientTo="to-rose-500"
-        iconBgGradient="bg-gradient-to-br from-orange-500 via-red-500 to-rose-600"
-        iconShadow="shadow-orange-500/30"
-        ringColor="ring-orange-400/20"
-        pulseColor="bg-orange-500/25"
-      />
-
-      <SortToolbar
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        activeColor="bg-orange-600 shadow-orange-500/40"
-      />
-
-      <ProductGrid
-        products={paginatedProducts}
-        loading={loadingPromotions}
-        error={promotionsError}
-        onRetry={handleRetryPromotions}
+    <>
+      <MetaTags metadata={seoMetadata} />
+      <CatalogLayout
+        onBack={onBack}
         onProductClick={onProductClick}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        emptyIcon={Flame}
-        emptyTitle="Chưa có chương trình khuyến mãi"
-        emptyMessage="Hãy quay lại sau để xem các ưu đãi mới nhất."
-      />
-    </CatalogLayout>
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        searchPlaceholder="Tìm kiếm khuyến mãi..."
+        products={promotions}
+        categories={categories}
+      >
+        <PageHeader
+          icon={Flame}
+          title="Khuyến Mãi"
+          highlightedTitle="Hot"
+          count={totalCount}
+          countLabel="sản phẩm đang giảm giá"
+          gradientFrom="from-orange-500"
+          gradientVia="via-red-500"
+          gradientTo="to-rose-500"
+          iconBgGradient="bg-gradient-to-br from-orange-500 via-red-500 to-rose-600"
+          iconShadow="shadow-orange-500/30"
+          ringColor="ring-orange-400/20"
+          pulseColor="bg-orange-500/25"
+        />
+
+        <SortToolbar
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          activeColor="bg-orange-600 shadow-orange-500/40"
+        />
+
+        <ProductGrid
+          products={paginatedProducts}
+          loading={loadingPromotions}
+          error={promotionsError}
+          onRetry={handleRetryPromotions}
+          onProductClick={onProductClick}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          emptyIcon={Flame}
+          emptyTitle="Chưa có chương trình khuyến mãi"
+          emptyMessage="Hãy quay lại sau để xem các ưu đãi mới nhất."
+        />
+      </CatalogLayout>
+    </>
   );
 }

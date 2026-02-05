@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Layers, ChevronRight, X, Package, ArrowRight } from "lucide-react";
 import { fetchCategories, fetchProducts, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
-import ProductCard from "./ProductCard";
+import ProductCard from "@/components/ProductCard";
 
 interface CategoryButtonProps {
   categories?: Array<{
@@ -129,14 +129,10 @@ export default function CategoryButton({
   }, [onSelectCategory]);
 
   const handleProductClick = useCallback((slug: string) => {
-    if (onSelectCategory) {
-      // This is handled by parent component
-      return;
-    }
     window.history.pushState({}, "", `/${encodeURIComponent(slug)}`);
     window.dispatchEvent(new Event("popstate"));
     setIsMegaMenuOpen(false);
-  }, [onSelectCategory]);
+  }, []);
 
   // Close menu when clicking outside (account for portaled menu)
   useEffect(() => {

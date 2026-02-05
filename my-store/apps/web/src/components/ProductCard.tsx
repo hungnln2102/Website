@@ -110,11 +110,15 @@ export default function ProductCard({
     <div onClick={onClick} className={cardWrapper}>
       <div className={gradientHover} />
       <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(0.75rem-2px)] bg-white dark:bg-slate-950">
-        <div className="relative aspect-square overflow-hidden">
+        {/* Deal: 4:3 | Sản Phẩm Mới & Tất Cả Sản Phẩm: 1:1 */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: isDeal ? "4/3" : "1/1" }}
+        >
           <LazyImage
             src={image_url || "https://placehold.co/400x400?text=No+Image"}
             alt={`Hình ảnh sản phẩm ${name}${description ? ` - ${description.substring(0, 100)}` : ''}`}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/5 transition-opacity group-hover:opacity-0" />
           
@@ -155,8 +159,8 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-1.5 flex min-h-[36px] items-start justify-between gap-2 md:mb-2 md:min-h-[28px]">
-            <h3 className={`flex-1 line-clamp-2 text-xs font-black text-gray-900 transition-colors ${titleHover} dark:text-slate-100 md:line-clamp-1 md:text-sm lg:text-base`}>
+          <div className="mb-2 flex min-h-[48px] items-start justify-between gap-2 md:mb-2.5 md:min-h-[44px]">
+            <h3 className={`flex-1 line-clamp-2 text-base font-black tracking-tight text-gray-900 transition-colors drop-shadow-sm ${titleHover} dark:text-white md:line-clamp-1 md:text-lg lg:text-xl [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
               {name}
             </h3>
             {/* Không hiển thị HOT badge ở đây nữa vì đã có tag ở trên */}

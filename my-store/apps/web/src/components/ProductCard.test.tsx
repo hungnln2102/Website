@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, createMockProduct } from '@/lib/test-utils';
-import ProductCard from './ProductCard';
+import ProductCard from "@/components/ProductCard";
 
 describe('ProductCard', () => {
   const mockOnClick = vi.fn();

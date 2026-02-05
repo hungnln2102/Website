@@ -6,10 +6,12 @@ import Footer from "@/components/Footer";
 import { ErrorMessage } from "@/components/ui/error-message";
 import MenuBar from "@/components/MenuBar";
 import SiteHeader from "@/components/SiteHeader";
+import { MetaTags } from "@/components/SEO";
 import { useScroll } from "@/hooks/useScroll";
 import { slugify } from "@/lib/utils";
 import type { CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
+import { APP_CONFIG } from "@/lib/constants";
 
 import { useProductData } from "./hooks";
 import {
@@ -106,6 +108,31 @@ export default function ProductDetailPage({
     updateURL(selectedPackage, durationKey);
   }, [selectedPackage, updateURL]);
 
+  const seoMetadata = useMemo(() => {
+    if (!product) {
+      return {
+        title: `Sản phẩm - ${APP_CONFIG.name}`,
+        description: APP_CONFIG.description,
+        url: APP_CONFIG.url,
+      };
+    }
+
+    const title = `${product.name} - ${APP_CONFIG.name}`;
+    const description =
+      product.description ||
+      `Mua ${product.name} chính hãng, giá tốt tại ${APP_CONFIG.name}. ${APP_CONFIG.description}`;
+
+    const url = `${APP_CONFIG.url}/${encodeURIComponent(product.slug)}`;
+
+    return {
+      title,
+      description,
+      url,
+      image: product.image_url || `${APP_CONFIG.url}/favicon.png`,
+      type: "product" as const,
+    };
+  }, [product]);
+
   // Show loading state
   if (loading) {
     return <ProductLoadingSkeleton />;
@@ -120,6 +147,7 @@ export default function ProductDetailPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <MetaTags metadata={seoMetadata} />
       {/* Header */}
       <div
         className={`sticky top-0 z-50 transition-all duration-500 ${

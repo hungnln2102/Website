@@ -111,6 +111,7 @@ export default function TopupPage() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [step, setStep] = useState<"select" | "payment" | "complete">("select");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [transactionCode, setTransactionCode] = useState("");
   const [isTestLoading, setIsTestLoading] = useState(false);
@@ -214,6 +215,17 @@ export default function TopupPage() {
     // Reset result when proceeding to payment
     setTopupResult(null);
     setStep("payment");
+  };
+
+  const handleCancelPayment = () => {
+    setStep("select");
+    setSelectedPackage(null);
+    setCustomAmount("");
+    // Generate new transaction code
+    if (user) {
+      setTransactionCode(`NAP${user.id}${Date.now().toString(36).toUpperCase()}`);
+    }
+    setShowCancelConfirm(false);
   };
 
   const generateQRUrl = () => {
@@ -654,15 +666,7 @@ export default function TopupPage() {
                   <div className="flex gap-3">
                     {/* Cancel Button */}
                     <button
-                      onClick={() => {
-                        setStep("select");
-                        setSelectedPackage(null);
-                        setCustomAmount("");
-                        // Generate new transaction code
-                        if (user) {
-                          setTransactionCode(`NAP${user.id}${Date.now().toString(36).toUpperCase()}`);
-                        }
-                      }}
+                      onClick={() => setShowCancelConfirm(true)}
                       className="flex-1 rounded-xl border border-slate-600 bg-slate-700 py-3 font-medium text-slate-300 transition-all hover:bg-slate-600"
                     >
                       Hủy
@@ -692,6 +696,34 @@ export default function TopupPage() {
       </main>
 
       <Footer />
+
+      {/* Cancel payment confirmation popup */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-slate-900 p-6 shadow-2xl sm:rounded-2xl">
+            <h3 className="text-lg font-semibold text-white">
+              Hủy giao dịch nạp tiền?
+            </h3>
+            <p className="mt-2 text-sm text-slate-300">
+              Nếu bạn hủy, giao dịch nạp tiền hiện tại sẽ bị bỏ qua. Bạn có thể chọn lại mệnh giá và tạo giao dịch mới sau.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row-reverse">
+              <button
+                onClick={handleCancelPayment}
+                className="w-full rounded-xl bg-red-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600 sm:w-auto sm:px-6"
+              >
+                Xác nhận hủy
+              </button>
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700 sm:w-auto sm:px-6"
+              >
+                Tiếp tục thanh toán
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom styles for scan animation */}
       <style>{`
