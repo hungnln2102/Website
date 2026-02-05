@@ -89,9 +89,12 @@ export default function SiteHeader({
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 md:gap-6 lg:px-8">
-        <button
-          type="button"
-          onClick={onLogoClick}
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            onLogoClick();
+          }}
           className="flex shrink-0 items-center gap-1.5 rounded-xl px-1 py-1 -ml-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/40 sm:gap-2 md:gap-4"
           aria-label="Quay về trang chủ"
         >
@@ -120,7 +123,7 @@ export default function SiteHeader({
               </p>
             )}
           </div>
-        </button>
+        </a>
 
         <div
           ref={searchContainerRef}

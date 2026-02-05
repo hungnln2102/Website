@@ -15,9 +15,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto] sm:items-start">
           {/* Left: logo + 2 paragraphs — min-w-0 để scale/wrap đúng khi màn hình nhỏ */}
           <div className="min-w-0 max-w-xl">
-            <button
-              type="button"
-              onClick={() => {
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
                 window.history.pushState({}, "", "/");
                 window.dispatchEvent(new PopStateEvent("popstate"));
                 window.scrollTo({ top: 0, behavior: "smooth" });
@@ -29,7 +30,7 @@ export default function Footer() {
               <span className="text-base font-bold text-white">
                 Mavryk Premium <span className="text-blue-400">Store</span>
               </span>
-            </button>
+            </a>
             <p className="text-xs leading-snug text-slate-300 break-words">
               Mavryk Premium Store ra đời với mục đích giúp khách hàng mua key phần mềm bản quyền chính hãng
               một cách nhanh chóng, an toàn và có hỗ trợ sau bán hàng rõ ràng.
@@ -65,6 +66,19 @@ export default function Footer() {
             </a>
             <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto text-xs text-slate-400 [&>*]:whitespace-nowrap">
               <a
+                href="/"
+                className="transition-colors hover:text-white"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState({}, "", "/");
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                Trang chủ
+              </a>
+              <span className="text-slate-600">|</span>
+              <a
                 href="/gioi-thieu"
                 className="transition-colors hover:text-white"
                 onClick={(e) => {
@@ -87,9 +101,10 @@ export default function Footer() {
         {/* Bottom: logo + copyright, DMCA — compact */}
         <div className="mt-4 flex flex-col items-center justify-between gap-2 border-t border-slate-800/80 pt-2 pb-[5px] sm:flex-row">
           <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-            <button
-              type="button"
-              onClick={() => {
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
                 window.history.pushState({}, "", "/");
                 window.dispatchEvent(new PopStateEvent("popstate"));
                 window.scrollTo({ top: 0, behavior: "smooth" });
@@ -97,7 +112,7 @@ export default function Footer() {
               className="opacity-80 transition-opacity hover:opacity-100"
               aria-label="Về trang chủ"
             >
-            </button>
+            </a>
             <p className="text-center text-[11px] text-slate-500 sm:text-left">
               &copy; {new Date().getFullYear()} Mavryk Premium Store. All rights reserved.
             </p>
