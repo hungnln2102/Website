@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Footer() {
   return (
     <footer className="mt-16 bg-gray-900 text-white dark:bg-slate-950 dark:border-t dark:border-slate-800">
@@ -22,9 +20,26 @@ export default function Footer() {
           <div>
             <h4 className="mb-4 font-semibold">Chính sách</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>Chính sách bảo hành</li>
-              <li>Hướng dẫn mua hàng</li>
-              <li>Điều khoản sử dụng</li>
+              <li>
+                <a
+                  href="/gioi-thieu"
+                  className="transition-colors hover:text-white"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, "", "/gioi-thieu");
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  Giới thiệu
+                </a>
+              </li>
+              <li>
+                <span className="cursor-default">Chính sách bảo hành</span>
+              </li>
+              <li>
+                <span className="cursor-default">Điều khoản sử dụng</span>
+              </li>
             </ul>
           </div>
         </div>

@@ -148,7 +148,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
 
   // Structured Data
   const structuredData = useMemo(() => {
-    const schemas = [generateOrganizationSchema(), generateWebSiteSchema()];
+    const schemas: object[] = [generateOrganizationSchema(), generateWebSiteSchema()];
     if (faqs && faqs.length > 0) {
       schemas.push(generateFAQSchema(faqs));
     }

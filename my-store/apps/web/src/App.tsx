@@ -17,11 +17,26 @@ const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const CartPage = lazy(() => import("@/features/cart/CartPage"));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage"));
 const TopupPage = lazy(() => import("@/features/topup/TopupPage"));
+const AboutPage = lazy(() => import("@/features/about/AboutPage"));
 const PaymentSuccessPage = lazy(() => import("@/features/payment/PaymentSuccessPage"));
 const PaymentErrorPage = lazy(() => import("@/features/payment/PaymentErrorPage"));
 const PaymentCancelPage = lazy(() => import("@/features/payment/PaymentCancelPage"));
 
-type View = "home" | "product" | "category" | "new-products" | "promotions" | "all-products" | "login" | "cart" | "profile" | "topup" | "payment-success" | "payment-error" | "payment-cancel";
+type View =
+  | "home"
+  | "product"
+  | "category"
+  | "new-products"
+  | "promotions"
+  | "all-products"
+  | "login"
+  | "cart"
+  | "profile"
+  | "topup"
+  | "about"
+  | "payment-success"
+  | "payment-error"
+  | "payment-cancel";
 
 interface RouteInfo {
   view: View;
@@ -35,6 +50,10 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   if (!path) return { view: "home", slug: null, parentPath: null };
   
   // Check for special routes
+  if (path === "gioi-thieu" || path === "about") {
+    return { view: "about", slug: null, parentPath: "/" };
+  }
+
   if (path === "login") {
     return { view: "login", slug: null, parentPath: "/" };
   }
@@ -278,6 +297,7 @@ export default function App() {
           />
         )}
         {view === "topup" && <TopupPage />}
+        {view === "about" && <AboutPage />}
         {view === "payment-success" && (
           <PaymentSuccessPage
             onBack={handleBack}
