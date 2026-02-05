@@ -5,18 +5,28 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const slides = [
   {
+    // Intro slide: giới thiệu Mavryk (SEO + brand)
+    title: "Mavryk Premium Store - Cửa hàng phần mềm bản quyền chính hãng",
+    description:
+      "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
+    cta: "Tìm hiểu thêm",
+    href: "/gioi-thieu",
+    image:
+      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=65&auto=format&fit=crop",
+  },
+  {
     title: "Giảm 20% bộ Office bản quyền",
     description: "Kích hoạt trong 5 phút, hỗ trợ cài đặt từ xa.",
     cta: "Nhận ưu đãi",
     image:
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=65&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=1200&q=65&auto=format&fit=crop",
   },
   {
     title: "Bảo mật đa lớp cho doanh nghiệp",
     description: "Diệt virus, chống ransomware, quản trị tập trung.",
     cta: "Xem gói bảo mật",
     image:
-      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&q=65&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=1200&q=65&auto=format&fit=crop",
   },
   {
     title: "Hỗ trợ 24/7 - Uy tín, tận tâm",
@@ -69,16 +79,28 @@ export default function BannerSlider() {
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      <div className="grid items-center gap-3 p-3 md:grid-cols-2 md:gap-4 md:p-4 text-center md:text-left">
-        <div className="space-y-1.5 md:space-y-2">
+      <div className="grid items-center gap-3 p-3 text-center md:grid-cols-2 md:gap-6 md:p-5 md:text-left">
+        <div className="space-y-1.5 md:space-y-2.5">
           <div className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-2.5 md:py-1 md:text-xs">
-            Ưu đãi đặc biệt
+            {current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"}
           </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl md:text-xl">{active.title}</h2>
-          <p className="hidden text-xs text-gray-600 dark:text-slate-200 md:block">{active.description}</p>
+          <h2 className="text-base font-bold leading-snug text-gray-900 dark:text-white sm:text-lg md:text-xl">
+            {active.title}
+          </h2>
+          <p className="mx-auto max-w-xl text-xs text-gray-600 dark:text-slate-200 sm:text-sm md:mx-0">
+            {active.description}
+          </p>
           <button 
-            className="mx-auto mt-0.5 cursor-pointer inline-flex w-fit items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-1.5 md:px-3.5 md:py-1.5 md:text-xs"
+            className="mx-auto mt-1 cursor-pointer inline-flex w-fit items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-2 md:px-3.5 md:py-1.5 md:text-xs"
             aria-label={`${active.cta} - ${active.title}`}
+            onClick={() => {
+              if (typeof window !== "undefined" && (active as any).href) {
+                const href = (active as any).href as string;
+                window.history.pushState({}, "", href);
+                window.dispatchEvent(new PopStateEvent("popstate"));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
           >
             {active.cta}
           </button>
