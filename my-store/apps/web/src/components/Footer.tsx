@@ -1,64 +1,120 @@
+import { Facebook, Youtube, Mail, MessageCircle } from "lucide-react";
+import logo from "@/asset/logo.png";
+
+const socialLinks = [
+  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
+  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
+  { icon: MessageCircle, href: "#", label: "Zalo" },
+];
+
 export default function Footer() {
   return (
-    <footer className="mt-16 bg-gray-900 text-white dark:bg-slate-950 dark:border-t dark:border-slate-800">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div>
-            <h3 className="mb-4 text-xl font-bold">Mavryk Premium Store</h3>
-            <p className="text-gray-400">
-              Chuyên cung cấp phần mềm bản quyền chính hãng với giá tốt và hỗ trợ tận tâm.
+    <footer className="mt-12 border-t border-slate-800/80 bg-slate-900 text-white">
+      <div className="mx-auto max-w-7xl px-4 pt-1 pb-1 sm:px-4 lg:px-4">
+        {/* Main row: logo + text | social + email + links */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto] sm:items-start">
+          {/* Left: logo + 2 paragraphs — min-w-0 để scale/wrap đúng khi màn hình nhỏ */}
+          <div className="min-w-0 max-w-xl">
+            <button
+              type="button"
+              onClick={() => {
+                window.history.pushState({}, "", "/");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="mb-2 flex items-center gap-2 text-left transition-opacity hover:opacity-90"
+              aria-label="Về trang chủ Mavryk Premium Store"
+            >
+              <img src={logo} alt="" className="h-7 w-7 rounded-lg bg-white object-contain p-1" />
+              <span className="text-base font-bold text-white">
+                Mavryk Premium <span className="text-blue-400">Store</span>
+              </span>
+            </button>
+            <p className="text-xs leading-snug text-slate-300 break-words">
+              Mavryk Premium Store ra đời với mục đích giúp khách hàng mua key phần mềm bản quyền chính hãng
+              một cách nhanh chóng, an toàn và có hỗ trợ sau bán hàng rõ ràng.
+            </p>
+            <p className="mt-1.5 text-xs leading-snug text-slate-400 break-words">
+              Cập nhật đa dạng sản phẩm Windows, Office, Adobe, Autodesk; xử lý đơn nhanh, gửi key qua email
+              và đồng hành cùng bạn trong suốt quá trình kích hoạt và sử dụng.
             </p>
           </div>
-          <div>
-            <h4 className="mb-4 font-semibold">Hỗ trợ khách hàng</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li>Hotline: 0378 304 963</li>
-              <li>Email: support@mavrykpremium.store</li>
-              <li>Thời gian: 8:00 - 23:00 hằng ngày</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-4 font-semibold">Chính sách</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li>
+
+          {/* Right: social icons + email + policy links */}
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <div className="flex items-center gap-2">
+              {socialLinks.map(({ icon: Icon, href, label }) => (
                 <a
-                  href="/gioi-thieu"
-                  className="transition-colors hover:text-white"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.history.pushState({}, "", "/gioi-thieu");
-                    window.dispatchEvent(new PopStateEvent("popstate"));
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/80 text-slate-300 transition-colors hover:bg-blue-500 hover:text-white"
+                  aria-label={label}
                 >
-                  Giới thiệu
+                  <Icon className="h-3.5 w-3.5" />
                 </a>
-              </li>
-              <li>
-                <span className="cursor-default">Chính sách bảo hành</span>
-              </li>
-              <li>
-                <span className="cursor-default">Điều khoản sử dụng</span>
-              </li>
-            </ul>
+              ))}
+            </div>
+            <a
+              href="mailto:support@mavrykpremium.store"
+              className="flex items-center gap-1.5 text-xs text-slate-300 transition-colors hover:text-blue-400"
+            >
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              support@mavrykpremium.store
+            </a>
+            <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto text-xs text-slate-400 [&>*]:whitespace-nowrap">
+              <a
+                href="/gioi-thieu"
+                className="transition-colors hover:text-white"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState({}, "", "/gioi-thieu");
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                Giới thiệu
+              </a>
+              <span className="text-slate-600">|</span>
+              <span className="cursor-default whitespace-nowrap">Chính sách bảo hành</span>
+              <span className="text-slate-600">|</span>
+              <span className="cursor-default whitespace-nowrap">Điều khoản sử dụng</span>
+            </div>
           </div>
         </div>
-        <div className="mt-8 flex flex-col items-center justify-between border-t border-gray-800 pt-8 md:flex-row">
-          <p className="text-gray-400">&copy; 2024 Mavryk Premium Store. All rights reserved.</p>
-          <div className="mt-4 md:mt-0">
-            <a 
-              href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73" 
-              title="DMCA.com Protection Status" 
-              className="dmca-badge transition-opacity hover:opacity-80"
-              target="_blank"
-              rel="noopener noreferrer"
-            > 
-              <img 
-                src="https://images.dmca.com/Badges/dmca_protected_sml_120l.png?ID=c788f409-9a7f-422c-9359-bf1582035d73" 
-                alt="DMCA.com Protection Status" 
-              />
-            </a>
+
+        {/* Bottom: logo + copyright, DMCA — compact */}
+        <div className="mt-4 flex flex-col items-center justify-between gap-2 border-t border-slate-800/80 pt-2 pb-[5px] sm:flex-row">
+          <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                window.history.pushState({}, "", "/");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="opacity-80 transition-opacity hover:opacity-100"
+              aria-label="Về trang chủ"
+            >
+            </button>
+            <p className="text-center text-[11px] text-slate-500 sm:text-left">
+              &copy; {new Date().getFullYear()} Mavryk Premium Store. All rights reserved.
+            </p>
           </div>
+          <a
+            href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73"
+            title="DMCA.com Protection Status"
+            className="transition-opacity hover:opacity-90"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://images.dmca.com/Badges/dmca_protected_sml_120l.png?ID=c788f409-9a7f-422c-9359-bf1582035d73"
+              alt="DMCA.com Protection Status"
+              className="h-6 object-contain"
+            />
+          </a>
         </div>
       </div>
     </footer>
