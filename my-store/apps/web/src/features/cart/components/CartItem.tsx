@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Trash2, Package } from "lucide-react";
+import { Minus, Plus, Trash2, Package, FileText } from "lucide-react";
 
 export interface CartItemData {
   id: string;
@@ -13,6 +13,10 @@ export interface CartItemData {
   quantity: number;
   tags?: string[];
   status: "in_stock" | "out_of_stock";
+  /** Thông tin bổ sung: { [input_id]: value } */
+  additionalInfo?: Record<string, string>;
+  /** Label tương ứng: { [input_id]: input_name } */
+  additionalInfoLabels?: Record<string, string>;
 }
 
 interface CartItemProps {
@@ -66,6 +70,30 @@ export function CartItem({ item, onQuantityChange, onRemove }: CartItemProps) {
             </div>
           )}
         </div>
+
+        {/* Additional Info */}
+        {item.additionalInfo && Object.keys(item.additionalInfo).length > 0 && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 dark:border-amber-800/40 dark:bg-amber-900/10">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Thông tin bổ sung</span>
+            </div>
+            <div className="space-y-1">
+              {Object.entries(item.additionalInfo)
+                .filter(([, value]) => value.trim() !== "")
+                .map(([key, value]) => (
+                  <div key={key} className="flex items-baseline gap-1.5 text-xs">
+                    <span className="font-medium text-gray-600 dark:text-slate-400 shrink-0">
+                      {item.additionalInfoLabels?.[key] || key}:
+                    </span>
+                    <span className="text-gray-800 dark:text-slate-200 break-all">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-3 flex items-center gap-2">
           <Package className="h-4 w-4 text-gray-400" />

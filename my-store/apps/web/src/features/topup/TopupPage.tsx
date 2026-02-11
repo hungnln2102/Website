@@ -298,8 +298,8 @@ export default function TopupPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onLogoClick={handleLogoClick}
-          products={products}
-          categories={categories}
+          products={products.map((p) => ({ id: String(p.id), name: p.name, slug: p.slug, image_url: p.image_url, base_price: p.base_price, discount_percentage: p.discount_percentage }))}
+          categories={categories.map((c) => ({ id: String(c.id), name: c.name, slug: c.name.toLowerCase().replace(/\s+/g, "-") }))}
           user={user}
           onLogout={logout}
         />
@@ -335,8 +335,8 @@ export default function TopupPage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onLogoClick={handleLogoClick}
-        products={products}
-        categories={categories}
+        products={products.map((p) => ({ id: String(p.id), name: p.name, slug: p.slug, image_url: p.image_url, base_price: p.base_price, discount_percentage: p.discount_percentage }))}
+        categories={categories.map((c) => ({ id: String(c.id), name: c.name, slug: c.name.toLowerCase().replace(/\s+/g, "-") }))}
         user={user}
         onLogout={logout}
       />

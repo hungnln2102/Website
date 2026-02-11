@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, HelpCircle, Menu, X, ShoppingCart, LogIn } from "lucide-react";
+import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, ClipboardList, Menu, X, ShoppingCart, LogIn } from "lucide-react";
 import { createPortal } from "react-dom";
 import CategoryButton from "./CategoryButton";
 import { getCartItemCount } from "@/hooks/useCart";
@@ -178,12 +178,17 @@ export default function MenuBar({
               </a>
 
               <a
-                href="#huong-dan"
+                href="/tai-khoan"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState({}, "", "/tai-khoan");
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }}
                 className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
               >
-                <HelpCircle className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
+                <ClipboardList className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
                 <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
-                  Hướng dẫn
+                  Lịch sử đơn hàng
                 </span>
                 <span className="absolute bottom-1.5 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 group-hover:w-[70%] dark:from-blue-400 dark:to-blue-500" />
               </a>
@@ -304,15 +309,20 @@ export default function MenuBar({
                   </span>
                 </a>
                 <a
-                  href="#huong-dan"
-                  onClick={handleMobileMenuClose}
+                  href="/tai-khoan"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, "", "/tai-khoan");
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                    handleMobileMenuClose();
+                  }}
                   className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
                 >
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-300">
-                    <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
+                    <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
                   </div>
                   <span className="text-base font-semibold text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400 transition-colors duration-300">
-                    Hướng dẫn
+                    Lịch sử đơn hàng
                   </span>
                 </a>
               </div>

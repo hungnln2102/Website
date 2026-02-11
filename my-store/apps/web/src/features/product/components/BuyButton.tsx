@@ -19,6 +19,12 @@ interface BuyButtonProps {
   selectedDurationData: DurationOption | null;
   productName?: string;
   imageUrl?: string;
+  /** Khi có thông tin bổ sung: phải điền đủ thì mới bấm được Mua ngay / Thêm giỏ */
+  additionalInfoValid?: boolean;
+  /** Thông tin bổ sung đã điền: { [input_id]: value } */
+  additionalInfo?: Record<string, string>;
+  /** Label tương ứng: { [input_id]: input_name } */
+  additionalInfoLabels?: Record<string, string>;
 }
 
 export function BuyButton({ 
@@ -27,10 +33,13 @@ export function BuyButton({
   selectedDurationData, 
   productName,
   imageUrl,
+  additionalInfoValid = true,
+  additionalInfo,
+  additionalInfoLabels,
 }: BuyButtonProps) {
   const { addItem } = useCart();
   const [showContactPopup, setShowContactPopup] = useState(false);
-  const isEnabled = selectedPackage && selectedDuration;
+  const isEnabled = selectedPackage && selectedDuration && additionalInfoValid;
 
   const getFinalPrice = () => {
     if (!selectedDurationData) return null;
@@ -62,6 +71,7 @@ export function BuyButton({
   const handleAddToCart = () => {
     if (!isEnabled || !selectedDurationData || finalPrice === null) return;
 
+    const hasAdditionalInfo = additionalInfo && Object.values(additionalInfo).some((v) => v.trim() !== "");
     const cartItem = {
       id: `${selectedPackage}-${selectedDuration}`,
       variantId: (selectedDurationData as any).id,
@@ -72,6 +82,7 @@ export function BuyButton({
       originalPrice: discountPercentage > 0 ? originalPrice || undefined : undefined,
       discountPercentage: discountPercentage > 0 ? discountPercentage : undefined,
       imageUrl,
+      ...(hasAdditionalInfo ? { additionalInfo, additionalInfoLabels } : {}),
     };
 
     addItem(cartItem);
@@ -81,6 +92,7 @@ export function BuyButton({
   const handleBuyNow = () => {
     if (!isEnabled || !selectedDurationData || finalPrice === null) return;
 
+    const hasAdditionalInfo = additionalInfo && Object.values(additionalInfo).some((v) => v.trim() !== "");
     const cartItem = {
       id: `${selectedPackage}-${selectedDuration}`,
       variantId: (selectedDurationData as any).id,
@@ -92,6 +104,7 @@ export function BuyButton({
       discountPercentage: discountPercentage > 0 ? discountPercentage : undefined,
       imageUrl,
       quantity: 1,
+      ...(hasAdditionalInfo ? { additionalInfo, additionalInfoLabels } : {}),
     };
 
     // Save directly to localStorage before navigating
@@ -225,6 +238,11 @@ export function BuyButton({
       {selectedPackage && !selectedDuration && (
         <p className="mt-2 text-center text-[10px] font-semibold text-red-500 animate-pulse">
           * Vui lòng chọn thời gian sử dụng
+        </p>
+      )}
+      {selectedPackage && selectedDuration && !additionalInfoValid && (
+        <p className="mt-2 text-center text-[10px] font-semibold text-red-500 animate-pulse">
+          * Vui lòng điền đầy đủ thông tin bổ sung
         </p>
       )}
     </div>

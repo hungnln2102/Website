@@ -219,7 +219,7 @@ export class SepayService {
    * Get payment status from order ID
    * This is a placeholder - implement based on your database
    */
-  async getPaymentStatus(orderId: string): Promise<{
+  async getPaymentStatus(_orderId: string): Promise<{
     status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
     transactionId?: string;
     paidAt?: Date;

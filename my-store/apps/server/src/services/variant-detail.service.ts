@@ -82,6 +82,7 @@ export class VariantDetailService {
         v.display_name,
         v.variant_name,
         v.product_id,
+        v.form_id,
         SPLIT_PART(v.display_name, '--', 1) as base_name,
         SPLIT_PART(v.display_name, '--', 2) as duration,
         pd.description,

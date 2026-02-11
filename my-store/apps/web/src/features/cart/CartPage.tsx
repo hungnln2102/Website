@@ -29,7 +29,7 @@ export default function CartPage({
   onSearchChange = () => {},
 }: CartPageProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   // Fetch products and categories for header
   const { data: allProducts = [] } = useQuery({
@@ -58,6 +58,8 @@ export default function CartPage({
       quantity: item.quantity,
       tags: [item.packageName, item.duration].filter(Boolean),
       status: "in_stock" as const,
+      additionalInfo: item.additionalInfo,
+      additionalInfoLabels: item.additionalInfoLabels,
     })),
   [cartStorageItems]);
 
@@ -117,13 +119,13 @@ export default function CartPage({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle payment success
-  const handlePaymentSuccess = (orderId: string) => {
+  // Handle payment success (newBalance from MCoin payment)
+  const handlePaymentSuccess = (orderId: string, newBalance?: number) => {
     toast.success("Thanh toán thành công!");
-    // Clear cart after successful payment
+    if (typeof newBalance === "number" && updateUser) {
+      updateUser({ balance: newBalance });
+    }
     clearCart();
-    // Could redirect to success page or show success state
-    console.log("Payment successful:", orderId);
   };
 
   // Handle payment failure

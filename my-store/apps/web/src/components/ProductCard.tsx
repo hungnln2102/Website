@@ -41,7 +41,15 @@ export default function ProductCard({
   const isMinimal = variant === "minimal";
   const isDeal = variant === "deal";
   const isOutOfStock = !is_active;
-  
+
+  // Short description: 1–2 dòng, từ description nếu có
+  const shortDescription =
+    description && description.trim().length > 0
+      ? description.length <= 120
+        ? description
+        : `${description.slice(0, 117).trim()}...`
+      : null;
+
   // Xác định tag dựa trên sold_count_30d
   // Ưu tiên: OUT OF STOCK > BESTSELLER > HOT > NEW
   const sold30d = sold_count_30d ?? 0;
@@ -68,9 +76,14 @@ export default function ProductCard({
         </div>
 
         <div className="p-3">
-          <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
+          <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
             {name}
           </h3>
+          {shortDescription && (
+            <p className="mb-2 line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-slate-400">
+              {shortDescription}
+            </p>
+          )}
 
           <div className="flex flex-col">
             {!hasMultipleCodes && hasDiscount && (
@@ -159,12 +172,16 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-2 flex min-h-[48px] items-start justify-between gap-2 md:mb-2.5 md:min-h-[44px]">
+          <div className="mb-1 flex min-h-[40px] items-start justify-between gap-2 md:mb-1.5 md:min-h-[38px]">
             <h3 className={`flex-1 line-clamp-2 text-base font-black tracking-tight text-gray-900 transition-colors drop-shadow-sm ${titleHover} dark:text-white md:line-clamp-1 md:text-lg lg:text-xl [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
               {name}
             </h3>
-            {/* Không hiển thị HOT badge ở đây nữa vì đã có tag ở trên */}
           </div>
+          {shortDescription && (
+            <p className="mb-2 line-clamp-2 min-h-[2.5em] text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
+              {shortDescription}
+            </p>
+          )}
 
           <div className="mb-2 flex min-h-[18px] items-center justify-between gap-1 text-[10px] sm:mb-3 md:min-h-[20px] md:text-xs font-semibold">
             <div className="flex items-center gap-1" aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}>

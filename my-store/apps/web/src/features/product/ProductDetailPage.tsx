@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Footer from "@/components/Footer";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -9,7 +10,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { MetaTags } from "@/components/SEO";
 import { useScroll } from "@/hooks/useScroll";
 import { slugify } from "@/lib/utils";
-import type { CategoryDto } from "@/lib/api";
+import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
 import { APP_CONFIG } from "@/lib/constants";
 
@@ -21,6 +22,9 @@ import {
   ProductInfo,
   PackageSelector,
   DurationSelector,
+  AdditionalInfoSection,
+  getDefaultAdditionalInfo,
+  isAdditionalInfoValid,
   BuyButton,
   ProductDescription,
   ReviewSection,
@@ -49,6 +53,8 @@ export default function ProductDetailPage({
   // Product selection state - single instance
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
+  // Thông tin bổ sung: Record<string, string> (key = input_id khi form động, hoặc email/phone/note khi form tĩnh)
+  const [additionalInfo, setAdditionalInfo] = useState<Record<string, string>>(() => getDefaultAdditionalInfo());
 
   // Load from URL on mount
   useEffect(() => {
@@ -85,6 +91,23 @@ export default function ProductDetailPage({
     () => durationOptions.find((option) => option.key === selectedDuration) || null,
     [durationOptions, selectedDuration]
   );
+
+  const formId = selectedDurationData?.form_id ?? null;
+  const { data: formFieldsData } = useQuery({
+    queryKey: ["form-fields", formId],
+    queryFn: () => fetchFormFields(formId!),
+    enabled: !!formId && formId > 0,
+  });
+  const formData = formFieldsData?.success && formFieldsData?.data ? formFieldsData.data : null;
+
+  // Reset thông tin bổ sung khi đổi gói/thời gian (variant có form_id → form động, không → form tĩnh)
+  useEffect(() => {
+    if (formId != null && formId > 0) {
+      setAdditionalInfo({});
+    } else {
+      setAdditionalInfo(getDefaultAdditionalInfo());
+    }
+  }, [selectedPackage, selectedDuration, formId]);
 
   // Update URL helper
   const updateURL = useCallback((packageId: string | null, durationKey: string | null) => {
@@ -256,12 +279,25 @@ export default function ProductDetailPage({
                   onSelect={handleDurationSelect}
                 />
               )}
+              <AdditionalInfoSection
+                values={additionalInfo}
+                onChange={setAdditionalInfo}
+                visible={!!selectedPackage && !!selectedDuration}
+                fields={formData?.fields}
+              />
               <BuyButton
                 selectedPackage={selectedPackage}
                 selectedDuration={selectedDuration}
                 selectedDurationData={selectedDurationData}
                 productName={product.name}
                 imageUrl={selectedPackageImageUrl || product.image_url}
+                additionalInfoValid={isAdditionalInfoValid(additionalInfo, formData?.fields)}
+                additionalInfo={additionalInfo}
+                additionalInfoLabels={
+                  formData?.fields
+                    ? Object.fromEntries(formData.fields.map((f) => [String(f.input_id), f.input_name]))
+                    : undefined
+                }
               />
             </div>
           )}

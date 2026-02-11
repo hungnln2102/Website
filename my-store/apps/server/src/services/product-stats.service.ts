@@ -1,159 +1,104 @@
-import prisma from '@my-store/db';
-import { cacheService } from './cache.service';
+import pool from "../config/database";
+import { TABLES } from "../config/db.config";
+import { cacheService } from "./cache.service";
 
 export interface ProductWithSoldCount {
   id: string;
   name: string;
   price: number;
   sold_count: number;
-  // ... other product fields
 }
 
 export class ProductStatsService {
-  private CACHE_TTL = 300; // 5 minutes
-  private CACHE_KEY_PREFIX = 'product:sold_count:';
+  private CACHE_TTL = 300;
+  private CACHE_KEY_PREFIX = "product:sold_count:";
 
-  /**
-   * Get real-time sold count for a product
-   * Uses cache with automatic invalidation
-   */
   async getProductSoldCount(productId: string): Promise<number> {
     const cacheKey = `${this.CACHE_KEY_PREFIX}${productId}`;
-
-    // Try cache first
     return await cacheService.getOrSet(
       cacheKey,
-      async () => {
-        // Query from database
-        return await this.queryProductSoldCount(productId);
-      },
+      () => this.queryProductSoldCount(productId),
       this.CACHE_TTL
     );
   }
 
-  /**
-   * Query sold count from database (real-time)
-   */
   private async queryProductSoldCount(productId: string): Promise<number> {
-    const [orderListCount, orderExpiredCount] = await Promise.all([
-      prisma.orderList.count({
-        where: { product_id: productId },
-      }),
-      prisma.orderExpired.count({
-        where: { product_id: productId },
-      }),
+    const [orderListResult, orderExpiredResult] = await Promise.all([
+      pool.query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} WHERE id_product::text = $1`,
+        [productId]
+      ),
+      pool.query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_EXPIRED} WHERE id_product::text = $1`,
+        [productId]
+      ),
     ]);
-
-    return orderListCount + orderExpiredCount;
+    const a = parseInt(orderListResult.rows[0]?.count ?? "0", 10);
+    const b = parseInt(orderExpiredResult.rows[0]?.count ?? "0", 10);
+    return a + b;
   }
 
-  /**
-   * Get multiple products with sold count
-   * Optimized with batch caching
-   */
   async getProductsWithSoldCount(productIds?: string[]): Promise<Map<string, number>> {
-    const products = productIds || await this.getAllProductIds();
+    const ids = productIds ?? (await this.getAllProductIds());
     const soldCounts = new Map<string, number>();
-
-    // Batch fetch from cache and DB
     await Promise.all(
-      products.map(async (productId) => {
+      ids.map(async (productId) => {
         const count = await this.getProductSoldCount(productId);
         soldCounts.set(productId, count);
       })
     );
-
     return soldCounts;
   }
 
-  /**
-   * Get all product IDs
-   */
   private async getAllProductIds(): Promise<string[]> {
-    const products = await prisma.product.findMany({
-      select: { id: true },
-    });
-    return products.map((p) => p.id);
+    const result = await pool.query<{ id: number }>(
+      `SELECT id FROM ${TABLES.PRODUCT} ORDER BY id`
+    );
+    return result.rows.map((p) => String(p.id));
   }
 
-  /**
-   * Invalidate cache for a product
-   * Call this when an order is created/updated/deleted
-   */
   async invalidateProductCache(productId: string): Promise<void> {
     const cacheKey = `${this.CACHE_KEY_PREFIX}${productId}`;
     await cacheService.del(cacheKey);
     console.log(`🔄 Cache invalidated for product ${productId}`);
   }
 
-  /**
-   * Invalidate cache for multiple products
-   */
   async invalidateMultipleProductsCache(productIds: string[]): Promise<void> {
-    await Promise.all(
-      productIds.map((id) => this.invalidateProductCache(id))
-    );
+    await Promise.all(productIds.map((id) => this.invalidateProductCache(id)));
   }
 
-  /**
-   * Invalidate all product caches
-   */
   async invalidateAllProductsCache(): Promise<void> {
     await cacheService.delPattern(`${this.CACHE_KEY_PREFIX}*`);
-    console.log('🔄 All product caches invalidated');
+    console.log("🔄 All product caches invalidated");
   }
 
-  /**
-   * Get products sorted by sold count
-   * Real-time with caching
-   */
   async getTopSellingProducts(limit: number = 10): Promise<ProductWithSoldCount[]> {
-    // Get all products
-    const products = await prisma.product.findMany({
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        // Add other fields you need
-      },
-    });
-
-    // Get sold counts for all products
+    const result = await pool.query<{ id: number; package_name: string | null }>(
+      `SELECT id, package_name FROM ${TABLES.PRODUCT} ORDER BY id LIMIT 500`
+    );
+    const products = result.rows.map((p) => ({
+      id: String(p.id),
+      name: p.package_name ?? "",
+      price: 0,
+    }));
     const soldCounts = await this.getProductsWithSoldCount(
       products.map((p) => p.id)
     );
-
-    // Combine and sort
-    const productsWithCount = products.map((product) => ({
+    const withCount = products.map((product) => ({
       ...product,
-      sold_count: soldCounts.get(product.id) || 0,
+      sold_count: soldCounts.get(product.id) ?? 0,
     }));
-
-    // Sort by sold_count descending
-    productsWithCount.sort((a, b) => b.sold_count - a.sold_count);
-
-    return productsWithCount.slice(0, limit);
+    withCount.sort((a, b) => b.sold_count - a.sold_count);
+    return withCount.slice(0, limit);
   }
 
-  /**
-   * Warm up cache for all products
-   * Call this on server startup or periodically
-   */
   async warmUpCache(): Promise<void> {
-    console.log('🔥 Warming up product sold count cache...');
-    
+    console.log("🔥 Warming up product sold count cache...");
     const productIds = await this.getAllProductIds();
-    
-    await Promise.all(
-      productIds.map((id) => this.getProductSoldCount(id))
-    );
-
+    await Promise.all(productIds.map((id) => this.getProductSoldCount(id)));
     console.log(`✅ Cache warmed up for ${productIds.length} products`);
   }
 
-  /**
-   * Get cache statistics
-   */
   async getCacheStats(): Promise<{
     total_products: number;
     cached_products: number;
@@ -161,7 +106,6 @@ export class ProductStatsService {
   }> {
     const productIds = await this.getAllProductIds();
     let cachedCount = 0;
-
     await Promise.all(
       productIds.map(async (id) => {
         const cacheKey = `${this.CACHE_KEY_PREFIX}${id}`;
@@ -169,16 +113,13 @@ export class ProductStatsService {
         if (exists) cachedCount++;
       })
     );
-
     return {
       total_products: productIds.length,
       cached_products: cachedCount,
-      cache_hit_rate: productIds.length > 0 
-        ? (cachedCount / productIds.length) * 100 
-        : 0,
+      cache_hit_rate:
+        productIds.length > 0 ? (cachedCount / productIds.length) * 100 : 0,
     };
   }
 }
 
-// Export singleton
 export const productStatsService = new ProductStatsService();

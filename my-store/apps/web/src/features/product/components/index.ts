@@ -5,6 +5,8 @@ export { ProductInfo } from "./ProductInfo";
 export { PackageSelector } from "./PackageSelector";
 export { DurationSelector } from "./DurationSelector";
 export type { DurationOption } from "./DurationSelector";
+export { AdditionalInfoSection, getDefaultAdditionalInfo, isAdditionalInfoValid } from "./AdditionalInfoSection";
+export type { AdditionalInfoValues } from "./AdditionalInfoSection";
 export { BuyButton } from "./BuyButton";
 export { ProductDescription } from "./ProductDescription";
 export { ReviewSection } from "./ReviewSection";

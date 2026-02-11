@@ -95,7 +95,9 @@ export async function addCartItem(input: AddCartItemInput): Promise<CartItemDB> 
     RETURNING id, account_id, variant_id, quantity, extra_info, created_at, updated_at
   `;
 
-  return items[0];
+  const row = items[0];
+  if (!row) throw new Error("Cart insert did not return row");
+  return row;
 }
 
 /**

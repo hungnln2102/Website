@@ -7,6 +7,15 @@
 
 const API_BASE = "http://localhost:4000";
 
+type AuthJson = {
+  requireCaptcha?: boolean;
+  error?: string;
+  lockedMinutes?: number;
+  success?: boolean;
+  message?: string;
+  siteKey?: string;
+};
+
 interface TestResult {
   name: string;
   passed: boolean;
@@ -84,17 +93,15 @@ async function testRateLimiting() {
     });
     lastStatus = res.status;
     requestCount++;
-    
-    const data = await res.json();
-    
-    // Rate limit triggered (429)
+
+    const data = (await res.json()) as AuthJson;
+
     if (res.status === 429) {
       securityTriggered = true;
       triggerType = "rate_limit";
       break;
     }
-    
-    // CAPTCHA requirement triggered (also a valid security measure)
+
     if (data.requireCaptcha === true) {
       securityTriggered = true;
       triggerType = "captcha_required";
@@ -238,9 +245,8 @@ async function testAccountLockout() {
       }),
     });
 
-    const data = await res.json();
-    
-    // Rate limit or account lockout (429)
+    const data = (await res.json()) as AuthJson;
+
     if (res.status === 429) {
       securityTriggered = true;
       triggerType = data.lockedMinutes ? "account_lockout" : "rate_limit";
@@ -290,7 +296,7 @@ async function testCaptchaEndpoint() {
     return { passed: true, details: "Rate limited (general rate limiter working)" };
   }
   
-  const data = await res.json();
+  const data = (await res.json()) as { required?: boolean; siteKey?: string };
 
   return {
     passed: res.status === 200,
@@ -356,7 +362,7 @@ async function testUserEnumeration() {
       password: "wrongpassword",
     }),
   });
-  const data1 = await res1.json();
+  const data1 = (await res1.json()) as AuthJson;
 
   // Login with wrong password (if there's an existing user)
   const res2 = await fetch(`${API_BASE}/api/auth/login`, {
@@ -367,9 +373,8 @@ async function testUserEnumeration() {
       password: "wrongpassword",
     }),
   });
-  const data2 = await res2.json();
+  const data2 = (await res2.json()) as AuthJson;
 
-  // Error messages should be the same to prevent user enumeration
   const sameError = data1.error === data2.error;
 
   return {
@@ -410,7 +415,7 @@ async function testLogoutEndpoint() {
     return { passed: true, details: "Rate limited (general rate limiter working)" };
   }
 
-  const data = await res.json();
+  const data = (await res.json()) as AuthJson;
 
   return {
     passed: res.status === 200 && data.success === true,

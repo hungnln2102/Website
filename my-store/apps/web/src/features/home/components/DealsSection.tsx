@@ -74,8 +74,8 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
                 key={product.id}
                 {...product}
                 onClick={() => {
-                  const p = promotionProducts.find((x: any) => x.slug === product.slug);
-                  if (p) onPromotionClick(p as PromotionDto);
+                  const original = promotions.find((x) => x.slug === product.slug);
+                  if (original) onPromotionClick(original);
                   else onProductClick(product.slug);
                 }}
                 variant="deal"

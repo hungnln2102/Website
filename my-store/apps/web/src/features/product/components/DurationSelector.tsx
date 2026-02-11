@@ -11,6 +11,8 @@ export interface DurationOption {
   sortValue: number;
   pct_promo?: number;
   is_active?: boolean;
+  /** form_id từ variant → dùng để lấy form Thông tin bổ sung (form_name + form_input + inputs) */
+  form_id?: number | null;
 }
 
 interface DurationSelectorProps {

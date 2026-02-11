@@ -33,8 +33,7 @@ router.get('/with-sold-count', async (req: Request, res: Response) => {
  */
 router.get('/:id/sold-count', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    
+    const id = req.params.id ?? "";
     const product = await productSoldCountService.getProductSoldCount(id);
 
     if (!product) {
@@ -88,7 +87,7 @@ router.get('/top-selling', async (req: Request, res: Response) => {
  * Get sold count statistics
  * GET /api/products/sold-count-stats
  */
-router.get('/sold-count-stats', async (req: Request, res: Response) => {
+router.get('/sold-count-stats', async (_req: Request, res: Response) => {
   try {
     const stats = await productSoldCountService.getStats();
 

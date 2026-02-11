@@ -59,6 +59,9 @@ graph TB
 - `@my-store/config` - Shared configurations
 - `@my-store/env` - Environment variable validation
 
+### AI / Developer context (NeuralMemory)
+- **NeuralMemory** dùng để lưu và truy vấn ký ức theo association (spreading activation). Cursor MCP đã cấu hình tại `.cursor/mcp.json`; scripts: `npm run memory:remember`, `memory:recall`, `memory:context`. Chi tiết: [docs/NEURAL_MEMORY.md](./NEURAL_MEMORY.md).
+
 ## Project Structure
 
 ```

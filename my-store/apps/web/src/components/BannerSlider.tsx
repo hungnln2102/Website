@@ -58,8 +58,8 @@ export default function BannerSlider() {
   const active = slides[current];
 
   return (
-    <section 
-      className="group/banner relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-lg dark:shadow-slate-700/30"
+    <section
+      className="group/banner relative flex h-[260px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md sm:h-[300px] md:h-[320px] dark:border-slate-800 dark:bg-slate-900 dark:shadow-lg dark:shadow-slate-700/30"
       aria-label="Banner quảng cáo"
       role="region"
     >
@@ -79,19 +79,19 @@ export default function BannerSlider() {
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      <div className="grid items-center gap-3 p-3 text-center md:grid-cols-2 md:gap-6 md:p-5 md:text-left">
-        <div className="space-y-1.5 md:space-y-2.5">
-          <div className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-2.5 md:py-1 md:text-xs">
+      <div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-3 p-3 text-center md:grid-cols-2 md:gap-6 md:p-5 md:text-left">
+        <div className="flex min-h-0 flex-col justify-center space-y-1.5 md:space-y-2.5">
+          <div className="inline-flex w-fit items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/40 dark:text-blue-100 md:px-2.5 md:py-1 md:text-xs md:mx-0 mx-auto">
             {current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"}
           </div>
-          <h2 className="text-base font-bold leading-snug text-gray-900 dark:text-white sm:text-lg md:text-xl">
+          <h2 className="text-base font-bold leading-snug text-gray-900 dark:text-white sm:text-lg md:text-xl line-clamp-2">
             {active.title}
           </h2>
-          <p className="mx-auto max-w-xl text-xs text-gray-600 dark:text-slate-200 sm:text-sm md:mx-0">
+          <p className="mx-auto line-clamp-2 max-w-xl text-xs text-gray-600 dark:text-slate-200 sm:text-sm md:mx-0">
             {active.description}
           </p>
-          <button 
-            className="mx-auto mt-1 cursor-pointer inline-flex w-fit items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-2 md:px-3.5 md:py-1.5 md:text-xs"
+          <button
+            className="mx-auto mt-1 inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white shadow transition hover:bg-blue-700 md:mx-0 md:mt-2 md:px-3.5 md:py-1.5 md:text-xs"
             aria-label={`${active.cta} - ${active.title}`}
             onClick={() => {
               if (typeof window !== "undefined" && (active as any).href) {
@@ -105,9 +105,9 @@ export default function BannerSlider() {
             {active.cta}
           </button>
         </div>
-        <div className="relative h-32 sm:h-40 md:h-44">
+        <div className="relative h-32 shrink-0 sm:h-40 md:h-44">
           <div
-            className="absolute inset-0 rounded-xl bg-cover bg-center shadow-inner"
+            className="absolute inset-0 rounded-xl bg-cover bg-center bg-no-repeat shadow-inner"
             style={{
               backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0)), url(${active.image})`,
             }}
@@ -118,7 +118,7 @@ export default function BannerSlider() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pb-4">
+      <div className="flex shrink-0 items-center justify-center gap-2 pb-4">
         {slides.map((_, i) => (
           <button
             key={i}

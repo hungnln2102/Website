@@ -1,15 +1,18 @@
+import { getApiBase, handleApiError } from "./client";
 import type { ProductDto } from "../types";
 
-const API_BASE = import.meta.env.VITE_SERVER_URL ?? "http://localhost:4000";
+const API_BASE = getApiBase();
 
-/**
- * Fetches all products from the API
- */
 export async function fetchProducts(): Promise<ProductDto[]> {
-  const res = await fetch(`${API_BASE}/products`);
-  if (!res.ok) {
-    throw new Error(`Fetch products failed: ${res.status}`);
+  try {
+    const res = await fetch(`${API_BASE}/products`);
+    if (!res.ok) {
+      handleApiError(res, "Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.");
+    }
+    const body = await res.json();
+    return (body?.data ?? []) as ProductDto[];
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.");
   }
-  const body = await res.json();
-  return (body?.data ?? []) as ProductDto[];
 }

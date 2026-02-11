@@ -161,7 +161,7 @@ export function useProductData(slug: string, selectedPackage: string | null) {
       const activePackageKey = (selectedPackage || "").toLowerCase();
       if (!activePackageKey) return [];
 
-      const options = new Map<string, DurationOption & { pct_promo?: number; is_active?: boolean }>();
+      const options = new Map<string, DurationOption>();
       packageData.forEach((pkg, idx) => {
         const packageKey = (pkg.package_product ?? pkg.package ?? "").trim().toLowerCase();
         if (packageKey !== activePackageKey) return;
@@ -172,10 +172,19 @@ export function useProductData(slug: string, selectedPackage: string | null) {
         const label = duration?.label ?? (pkg.id_product?.trim() || "Gói");
         const sortValue = duration?.sortValue ?? Number.MAX_SAFE_INTEGER;
         const isActive = pkg.is_active !== false;
+        const formId = pkg.form_id != null ? Number(pkg.form_id) : null;
 
         const existing = options.get(key);
         if (!existing || (price > 0 && (existing.price === 0 || price < existing.price))) {
-          options.set(key, { key, label, price, sortValue, pct_promo: pkg.pct_promo, is_active: isActive } as any);
+          options.set(key, {
+            key,
+            label,
+            price,
+            sortValue,
+            pct_promo: pkg.pct_promo,
+            is_active: isActive,
+            form_id: formId,
+          });
         }
       });
 

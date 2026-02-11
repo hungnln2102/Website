@@ -19,6 +19,10 @@ export interface CartItem {
   discountPercentage?: number;
   quantity: number;
   imageUrl?: string;
+  /** Thông tin bổ sung: { [input_id]: value } */
+  additionalInfo?: Record<string, string>;
+  /** Label của từng field: { [input_id]: input_name } */
+  additionalInfoLabels?: Record<string, string>;
 }
 
 const CART_STORAGE_KEY = "mavryk_cart";

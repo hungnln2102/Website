@@ -6,7 +6,7 @@
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
 
-const AUDIT_TABLE = `${DB_SCHEMA.AUDIT_LOG.SCHEMA}.${DB_SCHEMA.AUDIT_LOG.TABLE}`;
+const AUDIT_TABLE = `${DB_SCHEMA.AUDIT_LOG!.SCHEMA}.${DB_SCHEMA.AUDIT_LOG!.TABLE}`;
 
 // Audit action types
 export type AuditAction =
@@ -36,6 +36,7 @@ export type AuditAction =
   | "PAYMENT_SUCCESS"
   | "PAYMENT_FAILED"
   | "PAYMENT_REFUND"
+  | "TOPUP"
   // Admin actions
   | "ADMIN_USER_BAN"
   | "ADMIN_USER_UNBAN"

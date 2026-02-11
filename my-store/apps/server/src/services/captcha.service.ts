@@ -104,7 +104,7 @@ class CaptchaService {
         body: formData.toString(),
       });
 
-      const data: TurnstileResponse = await response.json();
+      const data = (await response.json()) as TurnstileResponse;
 
       if (!data.success) {
         const errorCodes = data["error-codes"]?.join(", ") || "unknown";

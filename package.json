@@ -6,7 +6,13 @@
     "dev:web": "npm --prefix my-store run dev:web",
     "dev:server": "npm --prefix my-store run dev:server",
     "build": "npm --prefix my-store run build",
-    "check-types": "npm --prefix my-store run check-types"
+    "check-types": "npm --prefix my-store run check-types",
+    "memory:remember": "nmem remember",
+    "memory:recall": "nmem recall",
+    "memory:context": "nmem context --limit 15 --json",
+    "memory:todo": "nmem todo",
+    "memory:status": "nmem status",
+    "memory:init": "nmem init --skip-mcp"
   },
   "dependencies": {
     "@sentry/react": "^10.36.0"

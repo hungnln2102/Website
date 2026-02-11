@@ -12,7 +12,7 @@ import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
 import { authService } from "./auth.service";
 
-const PASSWORD_HISTORY_TABLE = `${DB_SCHEMA.PASSWORD_HISTORY.SCHEMA}.${DB_SCHEMA.PASSWORD_HISTORY.TABLE}`;
+const PASSWORD_HISTORY_TABLE = `${DB_SCHEMA.PASSWORD_HISTORY!.SCHEMA}.${DB_SCHEMA.PASSWORD_HISTORY!.TABLE}`;
 
 // Number of recent passwords to check against
 const PASSWORD_HISTORY_COUNT = 5;

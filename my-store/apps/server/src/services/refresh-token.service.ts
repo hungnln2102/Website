@@ -7,7 +7,7 @@ import crypto from "crypto";
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
 
-const REFRESH_TOKEN_TABLE = `${DB_SCHEMA.REFRESH_TOKEN.SCHEMA}.${DB_SCHEMA.REFRESH_TOKEN.TABLE}`;
+const REFRESH_TOKEN_TABLE = `${DB_SCHEMA.REFRESH_TOKEN!.SCHEMA}.${DB_SCHEMA.REFRESH_TOKEN!.TABLE}`;
 
 // Refresh token expiry: 7 days
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
@@ -84,14 +84,12 @@ class RefreshTokenService {
       return null;
     }
 
-    const record = result.rows[0];
+    const record = result.rows[0]!;
 
-    // Check if revoked
     if (record.revoked_at) {
       return null;
     }
 
-    // Check if expired
     if (new Date() > new Date(record.expires_at)) {
       return null;
     }

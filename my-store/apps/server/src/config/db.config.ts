@@ -47,6 +47,12 @@ export const SCHEMA_CUSTOMER = pickSchema(
   "customer",
 );
 
+export const SCHEMA_FORM_DESC = pickSchema(
+  process.env.DB_SCHEMA_FORM_DESC,
+  process.env.SCHEMA_FORM_DESC,
+  "form_desc",
+);
+
 export const DB_SCHEMA: Record<string, TableConfig> = {
   PRODUCT: {
     SCHEMA: SCHEMA_PRODUCT,
@@ -66,6 +72,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       VARIANT_NAME: "variant_name",
       IS_ACTIVE: "is_active",
       DISPLAY_NAME: "display_name",
+      FORM_ID: "form_id",
     },
   },
   PRICE_CONFIG: {
@@ -124,7 +131,21 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "order_list",
     COLS: {
       ID: "id",
+      ID_ORDER: "id_order",
       ID_PRODUCT: "id_product",
+      INFORMATION_ORDER: "information_order",
+      CUSTOMER: "customer",
+      CONTACT: "contact",
+      SLOT: "slot",
+      ORDER_DATE: "order_date",
+      DAYS: "days",
+      ORDER_EXPIRED: "order_expired",
+      SUPPLY: "supply",
+      COST: "cost",
+      PRICE: "price",
+      NOTE: "note",
+      STATUS: "status",
+      ACCOUNT_ID: "account_id", // bổ sung cho Lịch sử đơn hàng (migration add_account_id_to_order_list)
     },
   },
   ORDER_EXPIRED: {
@@ -133,6 +154,37 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ID_PRODUCT: "id_product",
+    },
+  },
+  FORM_INPUT: {
+    SCHEMA: SCHEMA_FORM_DESC,
+    TABLE: "form_input",
+    COLS: {
+      ID: "id",
+      FORM_ID: "form_id",
+      INPUT_ID: "input_id",
+      SORT_ORDER: "sort_order",
+    },
+  },
+  FORM_NAME: {
+    SCHEMA: SCHEMA_FORM_DESC,
+    TABLE: "form_name",
+    COLS: {
+      ID: "id",
+      NAME: "name",
+      DESCRIPTION: "description",
+      CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
+    },
+  },
+  INPUTS: {
+    SCHEMA: SCHEMA_FORM_DESC,
+    TABLE: "inputs",
+    COLS: {
+      ID: "id",
+      INPUT_NAME: "input_name",
+      INPUT_TYPE: "input_type",
+      CREATED_AT: "created_at",
     },
   },
   ACCOUNT: {
@@ -273,4 +325,17 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       CREATED_AT: "created_at",
     },
   },
+} as const;
+
+/** Full table identifiers (schema.table) for raw SQL. */
+export const TABLES = {
+  SUPPLIER_COST: `${DB_SCHEMA.SUPPLIER_COST!.SCHEMA}.${DB_SCHEMA.SUPPLIER_COST!.TABLE}`,
+  PRICE_CONFIG: `${DB_SCHEMA.PRICE_CONFIG!.SCHEMA}.${DB_SCHEMA.PRICE_CONFIG!.TABLE}`,
+  PRODUCT_DESC: `${DB_SCHEMA.PRODUCT_DESC!.SCHEMA}.${DB_SCHEMA.PRODUCT_DESC!.TABLE}`,
+  CATEGORY: `${DB_SCHEMA.CATEGORY!.SCHEMA}.${DB_SCHEMA.CATEGORY!.TABLE}`,
+  PRODUCT_CATEGORY: `${DB_SCHEMA.PRODUCT_CATEGORY!.SCHEMA}.${DB_SCHEMA.PRODUCT_CATEGORY!.TABLE}`,
+  VARIANT: `${DB_SCHEMA.VARIANT!.SCHEMA}.${DB_SCHEMA.VARIANT!.TABLE}`,
+  PRODUCT: `${DB_SCHEMA.PRODUCT!.SCHEMA}.${DB_SCHEMA.PRODUCT!.TABLE}`,
+  ORDER_LIST: `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`,
+  ORDER_EXPIRED: `${DB_SCHEMA.ORDER_EXPIRED!.SCHEMA}.${DB_SCHEMA.ORDER_EXPIRED!.TABLE}`,
 } as const;

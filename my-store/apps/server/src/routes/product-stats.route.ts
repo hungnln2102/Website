@@ -11,8 +11,7 @@ const router = express.Router();
  */
 router.get('/:id/sold-count', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
+    const id = req.params.id ?? "";
     const soldCount = await productStatsService.getProductSoldCount(id);
 
     res.json({
@@ -60,8 +59,7 @@ router.get('/top-selling', async (req: Request, res: Response) => {
  */
 router.post('/:id/invalidate-cache', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
+    const id = req.params.id ?? "";
     await productStatsService.invalidateProductCache(id);
 
     res.json({
@@ -81,7 +79,7 @@ router.post('/:id/invalidate-cache', async (req: Request, res: Response) => {
  * Warm up cache
  * POST /api/products/warm-cache
  */
-router.post('/warm-cache', async (req: Request, res: Response) => {
+router.post('/warm-cache', async (_req: Request, res: Response) => {
   try {
     await productStatsService.warmUpCache();
 
@@ -102,7 +100,7 @@ router.post('/warm-cache', async (req: Request, res: Response) => {
  * Get cache statistics
  * GET /api/products/cache-stats
  */
-router.get('/cache-stats', async (req: Request, res: Response) => {
+router.get('/cache-stats', async (_req: Request, res: Response) => {
   try {
     const stats = await productStatsService.getCacheStats();
 

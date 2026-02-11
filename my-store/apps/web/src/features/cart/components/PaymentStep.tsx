@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Clock,
   CheckCircle,
@@ -19,6 +19,7 @@ import {
   createPayment,
   checkPaymentStatus,
   generateOrderId,
+  confirmBalancePayment,
 } from "@/lib/api";
 
 interface PaymentStepProps {
@@ -26,7 +27,7 @@ interface PaymentStepProps {
   total: number;
   paymentMethod: PaymentMethod;
   onBack: () => void;
-  onPaymentSuccess: (orderId: string) => void;
+  onPaymentSuccess: (orderId: string, newBalance?: number) => void;
   onPaymentFailed: (error: string) => void;
 }
 
@@ -61,7 +62,6 @@ export function PaymentStep({
   const [error, setError] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [redirectSeconds, setRedirectSeconds] = useState<number>(SUCCESS_REDIRECT_SECONDS);
-  const hasTriggeredSuccess = useRef(false);
 
   // Generate transfer content (nội dung chuyển khoản)
   const transferContent = orderId.replace(/-/g, "").slice(-8).toUpperCase();
@@ -127,23 +127,17 @@ export function PaymentStep({
     }
   }, [orderId, paymentState, onPaymentSuccess, onPaymentFailed]);
 
-  // Initialize payment on mount (skip for balance payment)
+  // Initialize payment on mount: bank/QR flow or balance "ready" with orderId
   useEffect(() => {
-    if (paymentMethod === "balance") return;
+    if (paymentMethod === "balance") {
+      setOrderId((prev) => prev || generateOrderId());
+      setPaymentState("ready");
+      return;
+    }
     initializePayment();
-  }, [initializePayment, paymentMethod]);
+  }, [paymentMethod]);
 
-  // Auto-success for balance payments
-  useEffect(() => {
-    if (paymentMethod !== "balance" || hasTriggeredSuccess.current) return;
-    const newOrderId = generateOrderId();
-    hasTriggeredSuccess.current = true;
-    setOrderId(newOrderId);
-    setPaymentState("success");
-    onPaymentSuccess(newOrderId);
-  }, [paymentMethod, onPaymentSuccess]);
-
-  // Countdown timer
+  // Countdown timer (bank/QR only)
   useEffect(() => {
     if (paymentMethod === "balance" || paymentState !== "ready" || timeLeft <= 0) return;
 
@@ -160,13 +154,16 @@ export function PaymentStep({
     return () => clearInterval(timer);
   }, [paymentState, timeLeft]);
 
-  // Poll payment status every 5 seconds
+  // Poll payment status every 5 seconds (bank/QR only)
   useEffect(() => {
     if (paymentMethod === "balance" || paymentState !== "ready") return;
+    const pollInterval = setInterval(checkStatus, 5000);
+    return () => clearInterval(pollInterval);
+  }, [paymentMethod, paymentState, checkStatus]);
+
   // Redirect countdown after success (balance payment)
   useEffect(() => {
     if (paymentMethod !== "balance" || paymentState !== "success") return;
-
     setRedirectSeconds(SUCCESS_REDIRECT_SECONDS);
     const timer = setInterval(() => {
       setRedirectSeconds((prev) => {
@@ -178,13 +175,33 @@ export function PaymentStep({
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [paymentMethod, paymentState]);
 
-    const pollInterval = setInterval(checkStatus, 5000);
-    return () => clearInterval(pollInterval);
-  }, [paymentState, checkStatus]);
+  // Confirm balance (MCoin) payment: Trừ Coin => Lưu đơn => Lịch sử giao dịch
+  const handleConfirmBalance = useCallback(async () => {
+    const currentOrderId = orderId || generateOrderId();
+    if (!currentOrderId) return;
+    setOrderId(currentOrderId);
+    setPaymentState("processing");
+    setError("");
+    const items = cartItems.map((it) => ({
+      id_product: it.id,
+      name: it.name,
+      quantity: it.quantity,
+      price: it.price,
+    }));
+    const result = await confirmBalancePayment(currentOrderId, total, items);
+    if (result.success && result.data?.newBalance != null) {
+      setPaymentState("success");
+      toast.success("Thanh toán thành công!");
+      onPaymentSuccess(currentOrderId, result.data.newBalance);
+    } else {
+      setPaymentState("ready");
+      setError(result.error || "Xác nhận thanh toán thất bại.");
+      onPaymentFailed(result.error || "Xác nhận thanh toán thất bại.");
+    }
+  }, [orderId, total, cartItems, onPaymentSuccess, onPaymentFailed]);
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -222,6 +239,48 @@ export function PaymentStep({
 
   // Render based on state
   const renderContent = () => {
+    // Balance (MCoin): confirm step
+    if (paymentMethod === "balance" && paymentState === "ready") {
+      return (
+        <div className="flex flex-col items-center justify-center p-8">
+          <h3 className="mb-2 text-lg font-bold text-gray-900 dark:text-white">
+            Thanh toán bằng MCoin
+          </h3>
+          <p className="mb-4 text-gray-600 dark:text-slate-400">
+            Tổng thanh toán: <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(total)}</span>
+          </p>
+          {error && (
+            <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleConfirmBalance}
+            className="rounded-xl bg-blue-600 px-8 py-3 font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]"
+          >
+            Xác nhận thanh toán
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-4 text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    }
+
+    if (paymentMethod === "balance" && paymentState === "processing") {
+      return (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <p className="mt-4 text-gray-600 dark:text-slate-400">
+            Đang xử lý thanh toán...
+          </p>
+        </div>
+      );
+    }
+
     switch (paymentState) {
       case "loading":
         return (

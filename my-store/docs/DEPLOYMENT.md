@@ -4,6 +4,13 @@
 
 This guide covers deploying the my-store application to production environments.
 
+## CI/CD (GitHub Actions)
+
+- **Khi nào chạy:** Mỗi lần push hoặc pull request vào nhánh `main` hoặc `develop`.
+- **Pipeline:** `lint` → `type-check` → `test` → `build` (upload artifacts). Tất cả pass thì coi như **xong nhiệm vụ** (code sẵn sàng).
+- **Deploy staging:** Khi **push trực tiếp lên `main`** (ví dụ merge từ PR), sau khi build thành công sẽ chạy job **Deploy Staging (on main)**. Bạn cần chỉnh bước "Deploy to Staging" trong `.github/workflows/ci.yml` (SSH, API token, hoặc script thực tế). Secrets gợi ý: `DEPLOY_HOST`, SSH key, hoặc `DEPLOY_TOKEN`.
+- **Deploy production:** Vẫn thủ công qua workflow **Deploy** (Actions → Deploy → Run workflow, chọn environment production). Không tự động deploy production khi push.
+
 ## Prerequisites
 
 - Node.js 18+ installed on server
@@ -35,6 +42,9 @@ VITE_API_URL=https://api.yourapp.com
 ```bash
 # Run migrations
 npm run db:migrate
+
+# (Tùy chọn) Tạo index tối ưu variant cho GET /products, /promotions
+npm run db:migrate:variant-index
 
 # Verify connection
 npm run db:studio

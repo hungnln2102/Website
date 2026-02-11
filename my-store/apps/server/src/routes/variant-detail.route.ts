@@ -10,8 +10,7 @@ const router = express.Router();
  */
 router.get('/:id/detail', async (req: Request, res: Response) => {
   try {
-    const variantId = parseInt(req.params.id);
-    
+    const variantId = parseInt(req.params.id ?? "", 10);
     if (isNaN(variantId)) {
       return res.status(400).json({
         success: false,
@@ -47,8 +46,7 @@ router.get('/:id/detail', async (req: Request, res: Response) => {
  */
 router.get('/by-name/:displayName/detail', async (req: Request, res: Response) => {
   try {
-    const { displayName } = req.params;
-    
+    const displayName = req.params.displayName ?? "";
     const detail = await variantDetailService.getVariantDetailByDisplayName(displayName);
 
     if (!detail) {
@@ -77,8 +75,7 @@ router.get('/by-name/:displayName/detail', async (req: Request, res: Response) =
  */
 router.get('/product/:baseName', async (req: Request, res: Response) => {
   try {
-    const { baseName } = req.params;
-    
+    const baseName = req.params.baseName ?? "";
     const variants = await variantDetailService.getVariantsByBaseName(baseName);
 
     res.json({
@@ -100,8 +97,7 @@ router.get('/product/:baseName', async (req: Request, res: Response) => {
  */
 router.get('/product-info/:baseName', async (req: Request, res: Response) => {
   try {
-    const { baseName } = req.params;
-    
+    const baseName = req.params.baseName ?? "";
     const productInfo = await variantDetailService.getProductInfo(baseName);
 
     if (!productInfo) {

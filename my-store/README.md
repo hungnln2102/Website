@@ -89,6 +89,7 @@ Open [http://localhost:3001](http://localhost:3001) to see the application.
 - `npm run db:studio` - Open Prisma Studio
 - `npm run db:generate` - Generate Prisma client
 - `npm run db:migrate` - Run database migrations
+- `npm run db:migrate:variant-index` - Tạo index variant (product_id, is_active) để tối ưu tốc độ /products, /promotions
 - `npm run db:start` - Start local PostgreSQL (Docker)
 - `npm run db:stop` - Stop local PostgreSQL
 

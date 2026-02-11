@@ -8,17 +8,17 @@ import { captchaService } from "../services/captcha.service";
 import { tokenBlacklistService } from "../services/token-blacklist.service";
 import { auditService } from "../services/audit.service";
 import { authService } from "../services/auth.service";
+import {
+  getClientIP,
+  addBannedIP,
+  checkBannedIP,
+  checkHoneypot,
+} from "./security/banned-ip";
+import { limitPayloadSize } from "./security/limit-payload";
+import { additionalSecurityHeaders } from "./security/security-headers";
 
-/**
- * Get client IP from request
- */
-const getClientIP = (req: Request): string => {
-  return (
-    req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
-    req.ip ||
-    "unknown"
-  ).trim();
-};
+export { getClientIP, addBannedIP, checkBannedIP, checkHoneypot };
+export { limitPayloadSize, additionalSecurityHeaders };
 
 /**
  * CAPTCHA verification middleware
@@ -156,7 +156,7 @@ export const requireAuth = async (
  */
 export const optionalAuth = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
@@ -289,111 +289,15 @@ export const validateContentType = (
 };
 
 /**
- * Request size limiter
- * Prevents large payload attacks
- */
-export const limitPayloadSize = (maxSizeKB: number = 100) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-    const maxSize = maxSizeKB * 1024;
-
-    if (contentLength > maxSize) {
-      auditService.logSecurity("SUSPICIOUS_ACTIVITY", req, {
-        type: "large_payload",
-        size: contentLength,
-        maxAllowed: maxSize,
-      });
-      return res.status(413).json({ error: "Payload quá lớn" });
-    }
-
-    next();
-  };
-};
-
-/**
- * IP blocking middleware
- * Blocks requests from banned IPs
- */
-const bannedIPs = new Set<string>();
-const banDuration = 24 * 60 * 60 * 1000; // 24 hours
-
-export const addBannedIP = (ip: string) => {
-  bannedIPs.add(ip);
-  setTimeout(() => bannedIPs.delete(ip), banDuration);
-};
-
-export const checkBannedIP = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const ip = getClientIP(req);
-
-  if (bannedIPs.has(ip)) {
-    return res.status(403).json({ error: "Truy cập bị từ chối" });
-  }
-
-  next();
-};
-
-/**
- * Honeypot field detection
- * Detects bots that fill in hidden honeypot fields
- */
-export const checkHoneypot = (fieldName: string = "_hp_field") => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (req.body[fieldName]) {
-      const ip = getClientIP(req);
-      
-      auditService.logSecurity("SUSPICIOUS_ACTIVITY", req, {
-        type: "honeypot_triggered",
-        ip,
-      });
-
-      // Ban the IP
-      addBannedIP(ip);
-
-      // Return success to confuse bots
-      return res.json({ success: true });
-    }
-
-    next();
-  };
-};
-
-/**
  * Request timing attack prevention
- * Adds random delay to prevent timing-based attacks
  */
 export const preventTimingAttack = (
-  req: Request,
-  res: Response,
+  _req: Request,
+  _res: Response,
   next: NextFunction
 ) => {
-  // Add random delay between 50-150ms
   const delay = 50 + Math.random() * 100;
   setTimeout(next, delay);
-};
-
-/**
- * Security headers middleware (additional to helmet)
- */
-export const additionalSecurityHeaders = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  // Prevent caching of sensitive data
-  if (req.path.includes("/api/auth/")) {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-  }
-
-  // Add additional security headers
-  res.setHeader("X-Request-Id", `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-
-  next();
 };
 
 /**

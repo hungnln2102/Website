@@ -24,6 +24,7 @@
     "db:generate": "npm run db:generate --workspace @my-store/db",
     "db:migrate": "npm run db:migrate --workspace @my-store/db",
     "db:migrate:30d": "npm run db:migrate:30d --workspace @my-store/db",
+    "db:migrate:variant-index": "npm run db:migrate:variant-index --workspace @my-store/db",
     "db:start": "npm run db:start --workspace @my-store/db",
     "db:watch": "npm run db:watch --workspace @my-store/db",
     "db:stop": "npm run db:stop --workspace @my-store/db",

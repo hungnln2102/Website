@@ -3,7 +3,7 @@ import express from "express";
 const app = express();
 const PORT = 4005;
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   console.log("TEST SERVER: Root request received");
   res.send("TEST SERVER OK");
 });

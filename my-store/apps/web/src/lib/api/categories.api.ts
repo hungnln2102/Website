@@ -1,19 +1,22 @@
+import { getApiBase, handleApiError } from "./client";
 import type { CategoryDto } from "../types";
 
-const API_BASE = import.meta.env.VITE_SERVER_URL ?? "http://localhost:4000";
+const API_BASE = getApiBase();
 
-/**
- * Fetches all categories from the API
- */
 export async function fetchCategories(): Promise<CategoryDto[]> {
-  const res = await fetch(`${API_BASE}/categories`);
-  if (!res.ok) {
-    throw new Error(`Fetch categories failed: ${res.status}`);
+  try {
+    const res = await fetch(`${API_BASE}/categories`);
+    if (!res.ok) {
+      handleApiError(res, "Không thể tải danh mục sản phẩm. Vui lòng thử lại sau.");
+    }
+    const body = await res.json();
+    const list = (body?.data ?? []) as CategoryDto[];
+    return list.map((c) => ({
+      ...c,
+      product_ids: (c.product_ids ?? []).map((id) => (typeof id === "number" ? id : Number(id) || 0)),
+    }));
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Không thể tải danh mục sản phẩm. Vui lòng thử lại sau.");
   }
-  const body = await res.json();
-  const list = (body?.data ?? []) as CategoryDto[];
-  return list.map((c) => ({
-    ...c,
-    product_ids: (c.product_ids ?? []).map((id) => String(id)),
-  }));
 }
