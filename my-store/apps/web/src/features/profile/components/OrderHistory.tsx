@@ -85,7 +85,7 @@ export function OrderHistory() {
       return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
     }
 
-    const expDateStr = calculateExpirationDate(order.order_date, duration);
+    const expDateStr = order.items[0]?.order_expired || calculateExpirationDate(order.order_date, duration);
     if (!expDateStr) {
       return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
     }
@@ -359,10 +359,9 @@ export function OrderHistory() {
                   const total = getOrderTotal(order);
                   const status = getDynamicStatus(order);
                   const productNames = order.items.map((i) => formatCompoundProductName(i)).join(", ");
-                  const productNotes = order.items.map((i) => i.note).filter(Boolean).join(" | ");
-                  const duration = order.items[0]?.duration;
-                  const expDateStr = duration ? calculateExpirationDate(order.order_date, duration) : null;
-                  const expDate = expDateStr ? new Date(expDateStr) : null;
+                  const productNotes = order.items.map((i) => i.information_order || i.note).filter(Boolean).join(" | ");
+                  const dbExpDateStr = order.items[0]?.order_expired;
+                  const expDate = dbExpDateStr ? new Date(dbExpDateStr) : null;
                   return (
                     <tr
                       key={order.id_order}

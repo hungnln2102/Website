@@ -126,6 +126,8 @@ export type UserOrderItem = {
   note?: string;
   quantity?: number;
   unitPrice?: number;
+  information_order?: string | null;
+  order_expired?: string | null;
 };
 
 export type UserOrder = {
