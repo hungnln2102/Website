@@ -354,19 +354,19 @@ export function OrderHistory() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 md:block">
-            <table className="w-full text-sm text-left">
+          <div className="hidden overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700 md:block">
+            <table className="w-full table-fixed text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Slot</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
-                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Trạng thái</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16 pr-6"></th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[14%] truncate">Mã đơn hàng</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[22%] truncate">Sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[16%] truncate">Thông tin sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[6%] truncate">Slot</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày mua</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày hết</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Tổng tiền</th>
+                  <th className="px-1 lg:px-2 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-[8%] truncate">Trạng thái</th>
+                  <th className="px-1 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-[4%]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
@@ -383,12 +383,12 @@ export function OrderHistory() {
                       key={order.id_order}
                       className="bg-white transition-colors hover:bg-blue-50/30 dark:bg-slate-900/50 dark:hover:bg-slate-800/50"
                     >
-                      <td className="px-4 py-3.5">
+                      <td className="px-2 lg:px-4 py-3.5 truncate">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-semibold text-gray-900 dark:text-white">{order.id_order}</span>
+                          <span className="font-mono font-semibold text-gray-900 dark:text-white truncate">{order.id_order}</span>
                           <button
                             onClick={() => copyOrderId(order.id_order)}
-                            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+                            className="shrink-0 flex-none rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                             title="Sao chép mã"
                           >
                             {copiedId === order.id_order ? (
@@ -399,45 +399,45 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
+                      <td className="px-2 lg:px-4 py-3.5 truncate">
                         <p className="text-gray-700 dark:text-slate-300 truncate" title={productNames}>
                           {productNames}
                         </p>
                         {order.items.length > 1 && (
-                          <span className="text-xs text-gray-400 dark:text-slate-500 truncate block mt-0.5">
-                            {order.items.length} sản phẩm
+                          <span className="text-xs text-gray-400 dark:text-slate-500 truncate block mt-0.5" title={`${order.items.length} sản phẩm`}>
+                            {order.items.length} sp
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
+                      <td className="px-2 lg:px-4 py-3.5 truncate">
                         <p className="text-gray-600 dark:text-slate-400 truncate" title={productNotes}>
                           {productNotes || "—"}
                         </p>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={productSlots}>
                         {productSlots || "—"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={formatDateTime(order.order_date)}>
                         {formatDateTime(order.order_date)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={expDate ? formatDateTime(expDate.toISOString()) : "—"}>
                         {expDate ? formatDateTime(expDate.toISOString()) : "—"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white">
+                      <td className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white truncate">
                         {formatCurrency(total)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-center">
-                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
-                          {status.label}
+                      <td className="px-1 lg:px-2 py-3.5 text-center truncate">
+                        <span className={`inline-flex items-center truncate rounded-full px-1 lg:px-2 py-1 text-xs font-semibold max-w-full ${status.cls}`} title={status.label}>
+                          <span className="truncate">{status.label}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-center pr-6">
+                      <td className="px-1 py-3.5 text-center">
                         <button
                           onClick={() => setSelectedOrder(order)}
                           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-slate-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
                           title="Xem chi tiết"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-5 w-5" />
                         </button>
                       </td>
                     </tr>
