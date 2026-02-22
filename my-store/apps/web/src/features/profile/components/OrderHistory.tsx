@@ -578,11 +578,13 @@ export function OrderHistory() {
               </h4>
               {selectedOrder.items.map((item, idx) => {
                 const compoundName = formatCompoundProductName(item);
-                const expDate = calculateExpirationDate(selectedOrder.order_date, item.duration);
-                const durationDays = getDurationDays(item.duration);
+                const infoNote = item.information_order || item.note;
+                const slot = item.slot;
+                const expDate = item.order_expired ? new Date(item.order_expired) : null;
+                
                 return (
                   <div key={idx} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-800/80">
-                    <div className="mb-3 border-b border-gray-100 pb-3 dark:border-slate-700 w-full flex items-start justify-between">
+                    <div className="mb-4 border-b border-gray-100 pb-3 dark:border-slate-700 flex items-start justify-between">
                       <div className="min-w-0 pr-4">
                          <h5 className="font-semibold text-gray-900 dark:text-white leading-tight">
                             {compoundName}
@@ -598,33 +600,45 @@ export function OrderHistory() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
-                       <div>
-                          <span className="block text-xs font-medium text-gray-500 dark:text-slate-400">Ngày mua</span>
-                          <span className="font-medium text-gray-800 dark:text-slate-200">{formatDateTime(selectedOrder.order_date)}</span>
-                       </div>
-                       
-                       {durationDays != null && (
-                         <div>
-                            <span className="block text-xs font-medium text-gray-500 dark:text-slate-400">Số ngày</span>
-                            <span className="font-medium text-gray-800 dark:text-slate-200">{durationDays} ngày</span>
+                    <div className="space-y-4">
+                      {/* Dates */}
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="rounded-lg bg-gray-50 p-3 dark:bg-slate-900/50">
+                            <span className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Ngày mua</span>
+                            <span className="font-semibold text-gray-800 dark:text-slate-200">{formatDateTime(selectedOrder.order_date)}</span>
                          </div>
-                       )}
+                         <div className="rounded-lg bg-blue-50/50 p-3 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30">
+                            <span className="block text-xs font-medium text-blue-600/70 dark:text-blue-400/70 mb-1">Ngày hết hạn</span>
+                            <span className="font-semibold text-blue-700 dark:text-blue-300">
+                              {expDate ? formatDateTime(expDate.toISOString()) : "—"}
+                            </span>
+                         </div>
+                      </div>
 
-                       {expDate && (
-                         <div>
-                            <span className="block text-xs font-medium text-gray-500 dark:text-slate-400">Ngày hết hạn</span>
-                            <span className="font-medium text-blue-600 dark:text-blue-400">{formatDateTime(expDate)}</span>
-                         </div>
-                       )}
+                      {/* Info & Slot */}
+                      {(infoNote || slot) && (
+                        <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
+                          {slot && (
+                            <div className="mb-3 border-b border-gray-200 pb-3 dark:border-slate-700 last:mb-0 last:border-0 last:pb-0">
+                               <span className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Slot</span>
+                               <span className="inline-flex rounded-md bg-white px-2.5 py-1 text-sm font-medium text-gray-800 shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200">
+                                 {slot}
+                               </span>
+                            </div>
+                          )}
+                          {infoNote && (
+                            <div className="last:mb-0 last:border-0 last:pb-0">
+                               <span className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">Thông tin sản phẩm</span>
+                               <div className="rounded-lg bg-white p-2.5 text-sm border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-600">
+                                 <code className="text-gray-800 dark:text-slate-200 whitespace-pre-wrap font-mono break-words leading-relaxed">
+                                   {infoNote}
+                                 </code>
+                               </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    
-                    {item.note && (
-                       <div className="mt-4 rounded-lg bg-orange-50/80 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
-                          <span className="mb-1 block text-xs font-semibold text-orange-800 dark:text-orange-400">Ghi chú</span>
-                          <p className="text-sm text-orange-900 dark:text-orange-200 whitespace-pre-wrap leading-relaxed">{item.note}</p>
-                       </div>
-                    )}
                   </div>
                 );
               })}
