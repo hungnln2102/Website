@@ -359,12 +359,11 @@ export function OrderHistory() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
                   <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[12%] truncate">Mã đơn hàng</th>
-                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[20%] truncate">Sản phẩm</th>
-                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[20%] truncate">Thông tin sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[24%] truncate">Sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[24%] truncate">Thông tin sản phẩm</th>
                   <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[6%] truncate">Slot</th>
-                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày mua</th>
-                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày hết</th>
-                  <th className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Tổng tiền</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[14%] truncate">Thời hạn</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-[8%] truncate">Tổng tiền</th>
                   <th className="px-1 lg:px-2 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-[8%] truncate">Trạng thái</th>
                   <th className="px-1 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-[4%]"></th>
                 </tr>
@@ -417,11 +416,8 @@ export function OrderHistory() {
                       <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={productSlots}>
                         {productSlots || "—"}
                       </td>
-                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={formatDateTime(order.order_date)}>
-                        {formatDateTime(order.order_date)}
-                      </td>
-                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={expDate ? formatDateTime(expDate.toISOString()) : "—"}>
-                        {expDate ? formatDateTime(expDate.toISOString()) : "—"}
+                      <td className="px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate" title={`${new Date(order.order_date).toLocaleDateString("vi-VN")} - ${expDate ? expDate.toLocaleDateString("vi-VN") : "—"}`}>
+                        {new Date(order.order_date).toLocaleDateString("vi-VN")} - {expDate ? expDate.toLocaleDateString("vi-VN") : "—"}
                       </td>
                       <td className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white truncate">
                         {formatCurrency(total)}
