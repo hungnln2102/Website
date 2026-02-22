@@ -354,13 +354,13 @@ export function OrderHistory() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden rounded-xl border border-gray-200 dark:border-slate-700 md:block overflow-hidden">
-            <table className="w-full text-sm table-auto">
+          <div className="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 md:block">
+            <table className="min-w-[1000px] text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 min-w-[150px]">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Sản phẩm</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Thông tin sản phẩm</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
                   <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
@@ -398,17 +398,17 @@ export function OrderHistory() {
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="text-gray-700 dark:text-slate-300 break-words" title={productNames}>
+                        <p className="text-gray-700 dark:text-slate-300 whitespace-nowrap" title={productNames}>
                           {productNames}
                         </p>
                         {order.items.length > 1 && (
-                          <span className="text-xs text-gray-400 dark:text-slate-500">
+                          <span className="text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap">
                             {order.items.length} sản phẩm
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="text-gray-600 dark:text-slate-400 break-all" title={productNotes}>
+                        <p className="text-gray-600 dark:text-slate-400 whitespace-nowrap" title={productNotes}>
                           {productNotes || "—"}
                         </p>
                       </td>
