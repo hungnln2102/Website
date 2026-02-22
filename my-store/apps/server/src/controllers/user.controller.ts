@@ -89,19 +89,26 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
   try {
     const userId = getUserId(req);
     const accountId = parseInt(userId, 10);
+    const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
     const result = await pool.query(
-      `SELECT id, ${COLS_OL.ID_ORDER}, ${COLS_OL.ID_PRODUCT}, ${COLS_OL.PRICE}, ${COLS_OL.ORDER_DATE}, ${COLS_OL.STATUS}, ${COLS_OL.INFORMATION_ORDER}
-       FROM ${ORDER_LIST_TABLE}
-       WHERE ${COLS_OL.ACCOUNT_ID} = $1
-       ORDER BY ${COLS_OL.ORDER_DATE} DESC
+      `SELECT ol.id, ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}", 
+              ol.price as "${COLS_OL.PRICE}", ol.order_date as "${COLS_OL.ORDER_DATE}", 
+              ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}"
+       FROM ${ORDER_LIST_TABLE} ol
+       JOIN ${ORDER_CUSTOMER_TABLE} oc ON ol.id_order = oc.id_order
+       WHERE oc.account_id = $1
+       ORDER BY ol.order_date DESC
        LIMIT 200`,
       [accountId]
     );
+    console.log("getOrders Query executing for accountId", accountId);
+    console.log("Rows found:", result.rows.length);
     const orderMap = new Map<
       string,
       { id_order: string; order_date: string; status: string; items: any[] }
     >();
     for (const row of result.rows) {
+      console.log("Processing row:", row[COLS_OL.ID_ORDER], row);
       const idOrder = row[COLS_OL.ID_ORDER];
       if (!orderMap.has(idOrder)) {
         orderMap.set(idOrder, {
@@ -116,8 +123,8 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
         if (row[COLS_OL.INFORMATION_ORDER]) {
           info = JSON.parse(row[COLS_OL.INFORMATION_ORDER]);
         }
-      } catch {
-        //
+      } catch (err) {
+        console.error("JSON parse error:", err);
       }
       orderMap.get(idOrder)!.items.push({
         id_product: row[COLS_OL.ID_PRODUCT],
@@ -131,6 +138,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
       status: o.status,
       items: o.items,
     }));
+    console.log("Returning orders count:", orders.length);
     res.json({ data: orders });
   } catch (err) {
     console.error("Get orders error:", err);

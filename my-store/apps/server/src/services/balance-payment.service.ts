@@ -8,6 +8,7 @@ import { DB_SCHEMA } from "../config/db.config";
 const WALLET_TABLE = `${DB_SCHEMA.WALLET!.SCHEMA}.${DB_SCHEMA.WALLET!.TABLE}`;
 const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
+const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
 
 export interface BalanceOrderItem {
   id_product: string;
@@ -110,11 +111,19 @@ export async function confirmBalancePayment(
       });
       await client.query(
         `INSERT INTO ${ORDER_LIST_TABLE}
-         (id_order, id_product, account_id, price, order_date, status, information_order)
+         (id_order, id_product, customer, price, order_date, status, information_order)
          VALUES ($1, $2, $3, $4, NOW(), 'paid', $5)`,
-        [orderId, item.id_product, accountId, lineTotal, informationOrder]
+        [orderId, item.id_product, String(accountId), lineTotal, informationOrder]
       );
     }
+
+    // 5) Insert order_customer row to link order and account
+    await client.query(
+      `INSERT INTO ${ORDER_CUSTOMER_TABLE}
+       (id_order, account_id, status, payment_method, created_at, updated_at)
+       VALUES ($1, $2, 'paid', 'balance', NOW(), NOW())`,
+      [orderId, accountId]
+    );
 
     await client.query("COMMIT");
 
