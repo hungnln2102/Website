@@ -192,7 +192,7 @@ export default function ProfilePage({
 
       {/* Back Navigation */}
       <div className="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-screen-2xl px-4 py-4 sm:px-6 lg:px-8">
           <button
             onClick={onBack}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 active:scale-95 cursor-pointer dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:border-slate-500 dark:hover:text-white"
@@ -203,7 +203,7 @@ export default function ProfilePage({
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1 w-full">
+      <main className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8 flex-1 w-full">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - Desktop */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
