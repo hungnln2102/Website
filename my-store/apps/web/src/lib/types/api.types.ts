@@ -129,6 +129,7 @@ export type UserOrderItem = {
   information_order?: string | null;
   order_expired?: string | null;
   display_name?: string | null;
+  slot?: string | null;
 };
 
 export type UserOrder = {

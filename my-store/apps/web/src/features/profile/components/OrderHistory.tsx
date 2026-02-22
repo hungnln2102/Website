@@ -361,11 +361,12 @@ export function OrderHistory() {
                   <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
                   <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-1/4">Sản phẩm</th>
                   <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-1/4">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Slot</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
                   <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
                   <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Trạng thái</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-12"></th>
+                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16 pr-6"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
@@ -374,6 +375,7 @@ export function OrderHistory() {
                   const status = getDynamicStatus(order);
                   const productNames = order.items.map((i) => formatCompoundProductName(i)).join(", ");
                   const productNotes = order.items.map((i) => i.information_order || i.note).filter(Boolean).join(" | ");
+                  const productSlots = order.items.map((i) => i.slot).filter(Boolean).join(", ");
                   const dbExpDateStr = order.items[0]?.order_expired;
                   const expDate = dbExpDateStr ? new Date(dbExpDateStr) : null;
                   return (
@@ -413,6 +415,9 @@ export function OrderHistory() {
                         </p>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                        {productSlots || "—"}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
                         {formatDateTime(order.order_date)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
@@ -426,7 +431,7 @@ export function OrderHistory() {
                           {status.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-4 py-3.5 text-center pr-6">
                         <button
                           onClick={() => setSelectedOrder(order)}
                           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-slate-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
