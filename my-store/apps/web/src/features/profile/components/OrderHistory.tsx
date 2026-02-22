@@ -421,8 +421,8 @@ export function OrderHistory() {
                       <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(total)}
                       </td>
-                      <td className="px-4 py-3.5 text-center">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
