@@ -399,7 +399,7 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 max-w-[300px]">
+                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
                         <p className="text-gray-700 dark:text-slate-300 truncate" title={productNames}>
                           {productNames}
                         </p>
@@ -409,7 +409,7 @@ export function OrderHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 max-w-[300px]">
+                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
                         <p className="text-gray-600 dark:text-slate-400 truncate" title={productNotes}>
                           {productNotes || "—"}
                         </p>
