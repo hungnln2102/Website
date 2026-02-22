@@ -354,18 +354,18 @@ export function OrderHistory() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 md:block">
-            <table className="w-full min-w-[900px] text-sm">
+          <div className="hidden rounded-xl border border-gray-200 dark:border-slate-700 md:block overflow-hidden">
+            <table className="w-full text-sm table-auto">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày mua</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày hết hạn</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300">Tổng tiền</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300">Trạng thái</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16"></th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-1/4">Sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-1/4">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
+                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
+                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Trạng thái</th>
+                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
