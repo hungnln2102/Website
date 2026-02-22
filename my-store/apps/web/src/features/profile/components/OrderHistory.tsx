@@ -358,15 +358,15 @@ export function OrderHistory() {
             <table className="w-full table-fixed text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-36 whitespace-nowrap">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-24 whitespace-nowrap">Slot</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-32 whitespace-nowrap">Ngày mua</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-32 whitespace-nowrap">Ngày hết hạn</th>
-                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Tổng tiền</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-36 whitespace-nowrap">Trạng thái</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16 pr-6"></th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-full">Sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-full">Thông tin sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-16 lg:w-24 whitespace-nowrap">Slot</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-20 lg:w-32 whitespace-nowrap">Ngày mua</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-20 lg:w-32 whitespace-nowrap">Ngày hết hạn</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-20 lg:w-28 whitespace-nowrap">Tổng tiền</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-28 lg:w-36 whitespace-nowrap">Trạng thái</th>
+                  <th className="px-2 lg:px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-12 lg:w-16 pr-2 lg:pr-6"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
@@ -383,7 +383,7 @@ export function OrderHistory() {
                       key={order.id_order}
                       className="bg-white transition-colors hover:bg-blue-50/30 dark:bg-slate-900/50 dark:hover:bg-slate-800/50"
                     >
-                      <td className="px-4 py-3.5">
+                      <td className="px-2 lg:px-4 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono font-semibold text-gray-900 dark:text-white">{order.id_order}</span>
                           <button
@@ -399,7 +399,7 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-2 lg:px-4 py-3.5 truncate w-full">
                         <p className="text-gray-700 dark:text-slate-300 truncate" title={productNames}>
                           {productNames}
                         </p>
@@ -409,25 +409,25 @@ export function OrderHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-2 lg:px-4 py-3.5 truncate w-full">
                         <p className="text-gray-600 dark:text-slate-400 truncate" title={productNotes}>
                           {productNotes || "—"}
                         </p>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="whitespace-nowrap px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400 truncate">
                         {productSlots || "—"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="whitespace-nowrap px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400">
                         {formatDateTime(order.order_date)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                      <td className="whitespace-nowrap px-2 lg:px-4 py-3.5 text-gray-600 dark:text-slate-400">
                         {expDate ? formatDateTime(expDate.toISOString()) : "—"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white">
+                      <td className="whitespace-nowrap px-2 lg:px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(total)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-center">
-                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
+                      <td className="whitespace-nowrap px-2 lg:px-4 py-3.5 text-center">
+                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2 lg:px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
                           {status.label}
                         </span>
                       </td>
