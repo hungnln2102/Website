@@ -184,7 +184,6 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       PRICE: "price",
       NOTE: "note",
       STATUS: "status",
-      ACCOUNT_ID: "account_id",
     },
   },
 
@@ -202,7 +201,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "order_customer",
     COLS: {
       ID_ORDER: "id_order",
-      CUSTOMER: "account_id",
+      ACCOUNT_ID: "account_id",
       STATUS: "status",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",

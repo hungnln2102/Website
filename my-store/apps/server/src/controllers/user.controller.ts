@@ -97,7 +97,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
               ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}"
        FROM ${ORDER_LIST_TABLE} ol
        JOIN ${ORDER_CUSTOMER_TABLE} oc ON ol.id_order = oc.id_order
-       WHERE oc.${COLS_OC.CUSTOMER} = $1
+       WHERE oc.${COLS_OC.ACCOUNT_ID} = $1
        ORDER BY ol.order_date DESC
        LIMIT 200`,
       [accountId]
