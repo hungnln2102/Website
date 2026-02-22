@@ -355,17 +355,17 @@ export function OrderHistory() {
         <>
           {/* Desktop Table */}
           <div className="hidden overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700 md:block">
-            <table className="w-full text-sm text-left">
+            <table className="w-full table-fixed text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-1/4">Sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-1/4">Thông tin sản phẩm</th>
-                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Slot</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
-                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Trạng thái</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-36 whitespace-nowrap">Mã đơn hàng</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-24 whitespace-nowrap">Slot</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-32 whitespace-nowrap">Ngày mua</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-32 whitespace-nowrap">Ngày hết hạn</th>
+                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Tổng tiền</th>
+                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-36 whitespace-nowrap">Trạng thái</th>
                   <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16 pr-6"></th>
                 </tr>
               </thead>
@@ -399,7 +399,7 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
+                      <td className="px-4 py-3.5">
                         <p className="text-gray-700 dark:text-slate-300 truncate" title={productNames}>
                           {productNames}
                         </p>
@@ -409,7 +409,7 @@ export function OrderHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 max-w-[150px] lg:max-w-[200px] xl:max-w-[300px]">
+                      <td className="px-4 py-3.5">
                         <p className="text-gray-600 dark:text-slate-400 truncate" title={productNotes}>
                           {productNotes || "—"}
                         </p>
