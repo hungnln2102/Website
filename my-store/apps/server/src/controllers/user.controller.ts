@@ -90,13 +90,14 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     const userId = getUserId(req);
     const accountId = parseInt(userId, 10);
     const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+    const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS;
     const result = await pool.query(
       `SELECT ol.id, ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}", 
               ol.price as "${COLS_OL.PRICE}", ol.order_date as "${COLS_OL.ORDER_DATE}", 
               ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}"
        FROM ${ORDER_LIST_TABLE} ol
        JOIN ${ORDER_CUSTOMER_TABLE} oc ON ol.id_order = oc.id_order
-       WHERE oc.account_id = $1
+       WHERE oc.${COLS_OC.CUSTOMER} = $1
        ORDER BY ol.order_date DESC
        LIMIT 200`,
       [accountId]
