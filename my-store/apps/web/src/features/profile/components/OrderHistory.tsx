@@ -344,11 +344,13 @@ export function OrderHistory() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Thời gian</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300">Tổng tiền</th>
-                  <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300">Trạng thái</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Mã đơn hàng</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày mua</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày hết hạn</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300">Tổng tiền</th>
+                  <th className="whitespace-nowrap px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300">Trạng thái</th>
                   <th className="px-4 py-3.5 text-center font-semibold text-gray-600 dark:text-slate-300 w-16"></th>
                 </tr>
               </thead>
@@ -357,14 +359,15 @@ export function OrderHistory() {
                   const total = getOrderTotal(order);
                   const status = getDynamicStatus(order);
                   const productNames = order.items.map((i) => formatCompoundProductName(i)).join(", ");
+                  const productNotes = order.items.map((i) => i.note).filter(Boolean).join(" | ");
+                  const duration = order.items[0]?.duration;
+                  const expDateStr = duration ? calculateExpirationDate(order.order_date, duration) : null;
+                  const expDate = expDateStr ? new Date(expDateStr) : null;
                   return (
                     <tr
                       key={order.id_order}
                       className="bg-white transition-colors hover:bg-blue-50/30 dark:bg-slate-900/50 dark:hover:bg-slate-800/50"
                     >
-                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
-                        {formatDateTime(order.order_date)}
-                      </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono font-semibold text-gray-900 dark:text-white">{order.id_order}</span>
@@ -381,7 +384,7 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="max-w-[250px] px-4 py-3.5">
+                      <td className="max-w-[200px] px-4 py-3.5">
                         <p className="truncate text-gray-700 dark:text-slate-300" title={productNames}>
                           {productNames}
                         </p>
@@ -390,6 +393,17 @@ export function OrderHistory() {
                             {order.items.length} sản phẩm
                           </span>
                         )}
+                      </td>
+                      <td className="max-w-[200px] px-4 py-3.5">
+                        <p className="truncate text-gray-600 dark:text-slate-400" title={productNotes}>
+                          {productNotes || "—"}
+                        </p>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                        {formatDateTime(order.order_date)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-slate-400">
+                        {expDate ? formatDateTime(expDate.toISOString()) : "—"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(total)}
