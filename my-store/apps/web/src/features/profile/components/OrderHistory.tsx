@@ -358,9 +358,9 @@ export function OrderHistory() {
             <table className="w-full table-fixed text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[14%] truncate">Mã đơn hàng</th>
-                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[22%] truncate">Sản phẩm</th>
-                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[16%] truncate">Thông tin sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[12%] truncate">Mã đơn hàng</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[20%] truncate">Sản phẩm</th>
+                  <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[20%] truncate">Thông tin sản phẩm</th>
                   <th className="px-2 lg:px-4 py-3.5 font-semibold text-gray-600 dark:text-slate-300 w-[6%] truncate">Slot</th>
                   <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày mua</th>
                   <th className="px-2 lg:px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-[10%] truncate">Ngày hết</th>
