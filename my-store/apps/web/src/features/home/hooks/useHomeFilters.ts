@@ -53,7 +53,7 @@ export function useHomeFilters({
         const dateB = new Date(b.created_at!).getTime();
         return dateB - dateA;
       })
-      .slice(0, 4);
+      .slice(0, 10);
   }, [products]);
 
   // Filter and sort products
@@ -111,7 +111,7 @@ export function useHomeFilters({
   // Display mode
   const isDefaultView = !searchQuery && !selectedCategory;
   const isPreviewMode = isDefaultView && !showAllProducts;
-  const displayedProducts = isPreviewMode ? pageProducts.slice(0, 4) : pageProducts;
+  const displayedProducts = isPreviewMode ? pageProducts.slice(0, 5) : pageProducts;
 
   // Handlers
   const handleCategorySelect = useCallback((slug: string | null) => {

@@ -256,13 +256,7 @@ export default function CategoryButton({
             <section className="border-r border-gray-100 dark:border-slate-700 p-3 sm:p-4 flex flex-col min-h-0" aria-label="Danh sách danh mục">
               <div className="mb-3 flex items-center justify-between shrink-0">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Danh mục</h3>
-                <button
-                  onClick={() => setIsMegaMenuOpen(false)}
-                  className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Đóng menu"
-                >
-                  <X className="h-4 w-4 text-gray-500" />
-                </button>
+
               </div>
               <div className="space-y-1 overflow-y-auto flex-1 min-h-0 no-scrollbar">
                 {categories.map((category) => {

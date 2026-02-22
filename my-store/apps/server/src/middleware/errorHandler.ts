@@ -87,3 +87,13 @@ export const asyncHandler = (
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
+
+/**
+ * 404 Not Found handler
+ */
+export function notFoundHandler(req: Request, res: Response) {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+  });
+}

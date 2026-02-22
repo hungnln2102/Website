@@ -172,20 +172,20 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-1 flex min-h-[40px] items-start justify-between gap-2 md:mb-1.5 md:min-h-[38px]">
-            <h3 className={`flex-1 line-clamp-2 text-base font-black tracking-tight text-gray-900 transition-colors drop-shadow-sm ${titleHover} dark:text-white md:line-clamp-1 md:text-lg lg:text-xl [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
+          <div className="mb-1 flex min-h-[36px] items-start justify-between gap-2 md:mb-1.5">
+            <h3 className={`flex-1 line-clamp-2 text-[15px] font-semibold tracking-tight text-gray-800 transition-colors drop-shadow-sm ${titleHover} dark:text-slate-200 md:line-clamp-2 md:text-base [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
               {name}
             </h3>
           </div>
-          {shortDescription && (
-            <p className="mb-2 line-clamp-2 min-h-[2.5em] text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
-              {shortDescription}
-            </p>
-          )}
+          <div className="mb-2 min-h-[34px] flex items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
+            {shortDescription && shortDescription !== "Chưa có mô tả" ? (
+              <p className="line-clamp-2">{shortDescription}</p>
+            ) : null}
+          </div>
 
-          <div className="mb-2 flex min-h-[18px] items-center justify-between gap-1 text-[10px] sm:mb-3 md:min-h-[20px] md:text-xs font-semibold">
+          <div className="mb-2 flex items-center justify-between gap-1 text-[10px] sm:mb-3 md:text-xs font-semibold">
             <div className="flex items-center gap-1" aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}>
-              <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400 sm:h-3 sm:w-3" aria-hidden="true" />
+              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
               <span className="text-yellow-700 dark:text-yellow-500">{average_rating.toFixed(1)}</span>
             </div>
             <div className="ml-auto flex items-center gap-1 text-gray-400">
@@ -193,17 +193,17 @@ export default function ProductCard({
             </div>
           </div>
 
-          <div className="mt-auto flex min-h-[56px] items-end border-t border-gray-50 pt-2 dark:border-slate-900">
+          <div className="mt-auto flex min-h-[64px] items-end border-t border-gray-50 pt-2 dark:border-slate-800/50">
             <div className="flex flex-col justify-end">
               {!hasMultipleCodes && hasDiscount && (
-                <span className="mb-0.5 text-[10px] font-medium text-gray-400 line-through decoration-red-400/50">
+                <span className="mb-0.5 text-[11px] font-medium text-gray-400 line-through decoration-red-400/50">
                   {formatCurrency(base_price)}
                 </span>
               )}
-              <div className={`text-sm font-black tracking-tight sm:text-lg ${priceColor}`}>
+              <div className={`text-lg font-black tracking-tight sm:text-xl md:text-2xl ${priceColor}`}>
                 {hasMultipleCodes ? (
                   <div className="flex items-baseline gap-0.5 sm:gap-1">
-                    <span className="text-[9px] font-medium text-gray-400 sm:text-[10px]">Từ</span>
+                    <span className="text-[10px] font-medium text-gray-400 sm:text-xs">Từ</span>
                     <span>{formatCurrency(discountedPrice)}</span>
                   </div>
                 ) : (

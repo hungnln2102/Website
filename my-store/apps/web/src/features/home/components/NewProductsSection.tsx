@@ -69,9 +69,9 @@ export function NewProductsSection({ products, onProductClick }: NewProductsSect
             </button>
           </div>
 
-          {/* Grid 4 sản phẩm mới - nhiều cột hơn để khối nhỏ gọn */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {products.slice(0, 4).map((product) => (
+          {/* Grid 5 sản phẩm mới - đồng bộ với các phần khác */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {products.slice(0, 5).map((product) => (
               <ProductCard
                 key={product.id}
                 {...product}

@@ -1,4 +1,9 @@
 import prisma from "@my-store/db";
+import { DB_SCHEMA } from "../config/db.config";
+
+const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
+const CART_TABLE = DB_SCHEMA.CART_ITEMS!.TABLE;
+const CART_FULL = `"${CART_SCHEMA}"."${CART_TABLE}"`;
 
 export interface CartItemDB {
   id: string;
@@ -49,12 +54,10 @@ const toAccountId = (id: string | number): number => {
  */
 export async function getCartItems(accountId: string | number): Promise<CartItemDB[]> {
   const accId = toAccountId(accountId);
-  const items = await prisma.$queryRaw<CartItemDB[]>`
-    SELECT id, account_id, variant_id, quantity, extra_info, created_at, updated_at
-    FROM customer.cart_items
-    WHERE account_id = ${accId}
-    ORDER BY created_at DESC
-  `;
+  const items = await prisma.$queryRawUnsafe<CartItemDB[]>(
+    `SELECT id, account_id, variant_id, quantity, extra_info, created_at, updated_at FROM ${CART_FULL} WHERE account_id = $1 ORDER BY created_at DESC`,
+    accId
+  );
   return items;
 }
 
@@ -66,12 +69,11 @@ export async function getCartItem(
   variantId: string
 ): Promise<CartItemDB | null> {
   const accId = toAccountId(accountId);
-  const items = await prisma.$queryRaw<CartItemDB[]>`
-    SELECT id, account_id, variant_id, quantity, extra_info, created_at, updated_at
-    FROM customer.cart_items
-    WHERE account_id = ${accId} AND variant_id = ${variantId}
-    LIMIT 1
-  `;
+  const items = await prisma.$queryRawUnsafe<CartItemDB[]>(
+    `SELECT id, account_id, variant_id, quantity, extra_info, created_at, updated_at FROM ${CART_FULL} WHERE account_id = $1 AND variant_id = $2 LIMIT 1`,
+    accId,
+    variantId
+  );
   return items[0] || null;
 }
 
@@ -85,15 +87,20 @@ export async function addCartItem(input: AddCartItemInput): Promise<CartItemDB> 
   const extraInfoJson = extraInfo ? JSON.stringify(extraInfo) : null;
 
   // Upsert - insert or update if exists
-  const items = await prisma.$queryRaw<CartItemDB[]>`
-    INSERT INTO customer.cart_items (id, account_id, variant_id, quantity, extra_info, created_at, updated_at)
-    VALUES (${id}, ${accId}, ${variantId}, ${quantity}, ${extraInfoJson}::jsonb, NOW(), NOW())
-    ON CONFLICT (id) DO UPDATE SET
-      quantity = customer.cart_items.quantity + ${quantity},
-      extra_info = COALESCE(${extraInfoJson}::jsonb, customer.cart_items.extra_info),
-      updated_at = NOW()
-    RETURNING id, account_id, variant_id, quantity, extra_info, created_at, updated_at
-  `;
+  const items = await prisma.$queryRawUnsafe<CartItemDB[]>(
+    `INSERT INTO ${CART_FULL} (id, account_id, variant_id, quantity, extra_info, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, NOW(), NOW())
+     ON CONFLICT (id) DO UPDATE SET
+       quantity = ${CART_FULL}.quantity + EXCLUDED.quantity,
+       extra_info = COALESCE(EXCLUDED.extra_info, ${CART_FULL}.extra_info),
+       updated_at = NOW()
+     RETURNING id, account_id, variant_id, quantity, extra_info, created_at, updated_at`,
+    id,
+    accId,
+    variantId,
+    quantity,
+    extraInfoJson
+  );
 
   const row = items[0];
   if (!row) throw new Error("Cart insert did not return row");
@@ -114,13 +121,12 @@ export async function updateCartItemQuantity(
     return null;
   }
 
-  const items = await prisma.$queryRaw<CartItemDB[]>`
-    UPDATE customer.cart_items
-    SET quantity = ${quantity}, updated_at = NOW()
-    WHERE account_id = ${accId} AND variant_id = ${variantId}
-    RETURNING id, account_id, variant_id, quantity, extra_info, created_at, updated_at
-  `;
-
+  const items = await prisma.$queryRawUnsafe<CartItemDB[]>(
+    `UPDATE ${CART_FULL} SET quantity = $1, updated_at = NOW() WHERE account_id = $2 AND variant_id = $3 RETURNING id, account_id, variant_id, quantity, extra_info, created_at, updated_at`,
+    quantity,
+    accId,
+    variantId
+  );
   return items[0] || null;
 }
 
@@ -132,10 +138,11 @@ export async function removeCartItem(
   variantId: string
 ): Promise<boolean> {
   const accId = toAccountId(accountId);
-  const result = await prisma.$executeRaw`
-    DELETE FROM customer.cart_items
-    WHERE account_id = ${accId} AND variant_id = ${variantId}
-  `;
+  const result = await prisma.$executeRawUnsafe(
+    `DELETE FROM ${CART_FULL} WHERE account_id = $1 AND variant_id = $2`,
+    accId,
+    variantId
+  );
   return result > 0;
 }
 
@@ -144,10 +151,10 @@ export async function removeCartItem(
  */
 export async function clearCart(accountId: string | number): Promise<number> {
   const accId = toAccountId(accountId);
-  const result = await prisma.$executeRaw`
-    DELETE FROM customer.cart_items
-    WHERE account_id = ${accId}
-  `;
+  const result = await prisma.$executeRawUnsafe(
+    `DELETE FROM ${CART_FULL} WHERE account_id = $1`,
+    accId
+  );
   return result;
 }
 
@@ -156,11 +163,10 @@ export async function clearCart(accountId: string | number): Promise<number> {
  */
 export async function getCartItemCount(accountId: string | number): Promise<number> {
   const accId = toAccountId(accountId);
-  const result = await prisma.$queryRaw<{ total: bigint }[]>`
-    SELECT COALESCE(SUM(quantity), 0) as total
-    FROM customer.cart_items
-    WHERE account_id = ${accId}
-  `;
+  const result = await prisma.$queryRawUnsafe<{ total: bigint }[]>(
+    `SELECT COALESCE(SUM(quantity), 0) as total FROM ${CART_FULL} WHERE account_id = $1`,
+    accId
+  );
   return Number(result[0]?.total || 0);
 }
 

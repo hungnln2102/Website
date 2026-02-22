@@ -118,7 +118,7 @@ export default function Footer() {
             </p>
           </div>
           <a
-            href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73"
+            href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73&refurl=https://mavrykpremium.store/&rlo=true"
             title="DMCA.com Protection Status"
             className="transition-opacity hover:opacity-90"
             target="_blank"

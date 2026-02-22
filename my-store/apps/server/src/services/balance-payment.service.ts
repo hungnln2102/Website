@@ -12,6 +12,9 @@ const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST
 export interface BalanceOrderItem {
   id_product: string;
   name?: string;
+  variant_name?: string;
+  duration?: string;
+  note?: string;
   quantity: number;
   price: number; // unit price; line total = price * quantity
 }
@@ -99,6 +102,9 @@ export async function confirmBalancePayment(
       const lineTotal = item.price * item.quantity;
       const informationOrder = JSON.stringify({
         name: item.name,
+        variant_name: item.variant_name,
+        duration: item.duration,
+        note: item.note,
         quantity: item.quantity,
         unitPrice: item.price,
       });

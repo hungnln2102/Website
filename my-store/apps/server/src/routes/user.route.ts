@@ -2,7 +2,7 @@
  * Protected user routes – register handlers from user.controller.
  */
 import { Router } from "express";
-import { requireAuth, alwaysRequireCaptcha } from "../middleware/apiSecurity";
+import { requireAuth, alwaysRequireCaptcha } from "../middleware/api-security";
 import { veryStrictLimiter } from "../middleware/rateLimiter";
 import * as userController from "../controllers/user.controller";
 

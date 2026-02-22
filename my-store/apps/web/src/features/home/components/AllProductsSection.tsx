@@ -121,20 +121,21 @@ export function AllProductsSection({
 
           {/* Content */}
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {[...Array(10)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 auto-rows-fr">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 auto-rows-fr">
                 {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    {...product}
-                    onClick={() => onProductClick(product.slug)}
-                  />
+                  <div key={product.id} className="w-full sm:max-w-[300px] h-full">
+                    <ProductCard
+                      {...product}
+                      onClick={() => onProductClick(product.slug)}
+                    />
+                  </div>
                 ))}
               </div>
               {!isPreviewMode && totalPages > 1 && (

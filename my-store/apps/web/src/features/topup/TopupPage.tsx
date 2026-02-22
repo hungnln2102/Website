@@ -2,24 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import {
   Wallet,
-  Copy,
-  Check,
   Sparkles,
   Gift,
   Zap,
   Crown,
-  Clock,
-  CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { fetchProducts, fetchCategories, getAuthToken, authFetch } from "@/lib/api";
+import { PackageSelector } from "./components/PackageSelector";
+import { PaymentStatusPanel } from "./components/PaymentStatusPanel";
+import { PaymentQRDisplay } from "./components/PaymentQRDisplay";
 
 // Bank configuration for VietQR (from env variables)
 const BANK_CONFIG = {
@@ -386,310 +384,40 @@ export default function TopupPage() {
         </div>
 
         {step === "select" && (
-          <div className="space-y-6">
-            {/* Package Grid */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {TOPUP_PACKAGES.map((pkg) => {
-                const Icon = pkg.icon;
-                const isSelected = selectedPackage === pkg.id;
-
-                return (
-                  <button
-                    key={pkg.id}
-                    onClick={() => handleSelectPackage(pkg.id)}
-                    className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800"
-                    }`}
-                  >
-                    {pkg.popular && (
-                      <div className="absolute -right-8 top-3 rotate-45 bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-0.5 text-xs font-bold text-white">
-                        HOT
-                      </div>
-                    )}
-
-                    <div
-                      className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${pkg.color}`}
-                    >
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-
-                    <div className="text-lg font-bold text-white">{pkg.label}</div>
-
-                    {pkg.bonusLabel && (
-                      <div className="mt-1 text-sm font-medium text-emerald-400">
-                        {pkg.bonusLabel} bonus
-                      </div>
-                    )}
-
-                    {isSelected && (
-                      <div className="absolute right-3 top-3">
-                        <CheckCircle2 className="h-5 w-5 text-blue-500" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Amount Input */}
-            {selectedPackage === "custom" && (
-              <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4">
-                <label className="mb-2 block text-sm font-medium text-slate-300">
-                  Nhập số tiền muốn nạp
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={customAmount}
-                    onChange={(e) => handleCustomAmountChange(e.target.value)}
-                    placeholder="100.000"
-                    className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 pr-12 text-lg font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    đ
-                  </span>
-                </div>
-                {getSelectedBonus() > 0 && (
-                  <p className="mt-2 text-sm text-emerald-400">
-                    + {formatCurrency(getSelectedBonus())} bonus
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Summary */}
-            {selectedPackage && getSelectedAmount() > 0 && (
-              <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Số tiền nạp</span>
-                  <span className="font-semibold text-white">
-                    {formatCurrency(getSelectedAmount())}
-                  </span>
-                </div>
-                {getSelectedBonus() > 0 && (
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-slate-400">Bonus</span>
-                    <span className="font-semibold text-emerald-400">
-                      +{formatCurrency(getSelectedBonus())}
-                    </span>
-                  </div>
-                )}
-                <div className="mt-3 border-t border-slate-700 pt-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-white">Tổng nhận được</span>
-                    <span className="text-xl font-bold text-emerald-400">
-                      {formatCurrency(getSelectedAmount() + getSelectedBonus())}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Continue Button */}
-            <button
-              onClick={handleProceedToPayment}
-              disabled={!selectedPackage || getSelectedAmount() < 10000}
-              className={`w-full rounded-xl py-4 text-lg font-bold transition-all ${
-                selectedPackage && getSelectedAmount() >= 10000
-                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
-                  : "cursor-not-allowed bg-slate-700 text-slate-400"
-              }`}
-            >
-              Tiếp tục thanh toán
-            </button>
-          </div>
+          <PackageSelector
+            packages={TOPUP_PACKAGES}
+            selectedPackage={selectedPackage}
+            onSelectPackage={handleSelectPackage}
+            customAmount={customAmount}
+            onCustomAmountChange={handleCustomAmountChange}
+            getSelectedAmount={getSelectedAmount}
+            getSelectedBonus={getSelectedBonus}
+            onProceed={handleProceedToPayment}
+            formatCurrency={formatCurrency}
+          />
         )}
 
         {step === "payment" && (
           <div className="space-y-6">
             {topupResult ? (
-              /* Success - Only show success message centered */
-              <div className="flex min-h-[400px] items-center justify-center">
-                <div className="w-full max-w-md rounded-2xl border border-emerald-500/50 bg-emerald-500/10 p-8 text-center">
-                  <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
-                  <h3 className="mt-4 text-2xl font-bold text-white">
-                    Nạp tiền thành công!
-                  </h3>
-                  <p className="mt-3 text-slate-300">
-                    Đã cộng{" "}
-                    <span className="font-semibold text-emerald-400">
-                      {formatCurrency(topupResult.totalAmount)}
-                    </span>{" "}
-                    vào tài khoản
-                  </p>
-                  <p className="mt-2 text-slate-400">
-                    Số dư mới:{" "}
-                    <span className="font-semibold text-white">
-                      {formatCurrency(topupResult.newBalance)}
-                    </span>
-                  </p>
-                  <p className="mt-4 text-sm text-slate-400">
-                    Tự động chuyển về trang chủ sau{" "}
-                    <span className="font-semibold text-blue-400">{countdown}s</span>
-                  </p>
-                  <button
-                    onClick={() => {
-                      window.history.pushState({}, "", "/");
-                      window.dispatchEvent(new PopStateEvent("popstate"));
-                    }}
-                    className="mt-6 rounded-xl bg-emerald-500 px-8 py-3 font-semibold text-white transition-all hover:bg-emerald-600"
-                  >
-                    Về trang chủ
-                  </button>
-                </div>
-              </div>
+              <PaymentStatusPanel
+                topupResult={topupResult}
+                countdown={countdown}
+                formatCurrency={formatCurrency}
+              />
             ) : (
-              /* Pending - Show payment info and QR */
-              <>
-                {/* Two Column Layout: Bank Info (Left) + QR Code (Right) */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {/* Bank Info - Left */}
-                  <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/50 p-4">
-                    <h4 className="font-semibold text-white">Thông tin chuyển khoản</h4>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Ngân hàng</p>
-                          <p className="font-medium text-white">{BANK_CONFIG.bankName}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Số tài khoản</p>
-                          <p className="font-medium text-white">{BANK_CONFIG.accountNo}</p>
-                        </div>
-                        <button
-                          onClick={() => handleCopy(BANK_CONFIG.accountNo, "account")}
-                          className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
-                        >
-                          {copiedField === "account" ? (
-                            <Check className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Chủ tài khoản</p>
-                          <p className="font-medium text-white">{BANK_CONFIG.accountName}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Số tiền</p>
-                          <p className="font-medium text-emerald-400">
-                            {formatCurrency(getSelectedAmount())}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            handleCopy(getSelectedAmount().toString(), "amount")
-                          }
-                          className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
-                        >
-                          {copiedField === "amount" ? (
-                            <Check className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Nội dung chuyển khoản</p>
-                          <p className="font-medium text-amber-400">{transactionCode}</p>
-                        </div>
-                        <button
-                          onClick={() => handleCopy(transactionCode, "code")}
-                          className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
-                        >
-                          {copiedField === "code" ? (
-                            <Check className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-500/10 p-3">
-                      <AlertCircle className="h-5 w-5 shrink-0 text-amber-500" />
-                      <p className="text-xs text-amber-200">
-                        <strong>Quan trọng:</strong> Vui lòng nhập đúng nội dung chuyển
-                        khoản để hệ thống tự động cộng tiền vào tài khoản của bạn.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* QR Code - Right */}
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-700 bg-slate-800/50 p-6">
-                    <h3 className="mb-4 text-lg font-semibold text-white">
-                      Quét mã QR để thanh toán
-                    </h3>
-
-                    <div className="relative inline-block rounded-2xl bg-white p-4">
-                      <img
-                        src={generateQRUrl()}
-                        alt="QR Code"
-                        className="h-52 w-52"
-                      />
-                      {/* Scan line animation */}
-                      <div className="pointer-events-none absolute inset-4 overflow-hidden rounded-lg">
-                        <div className="animate-scan absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-75" />
-                      </div>
-                    </div>
-
-                    <p className="mt-4 text-sm text-slate-400">
-                      Sử dụng app ngân hàng để quét mã
-                    </p>
-                  </div>
-                </div>
-
-                {/* Waiting Status */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-700 bg-slate-800/50 p-4">
-                    <Clock className="h-5 w-5 animate-pulse text-blue-400" />
-                    <span className="text-slate-300">
-                      Đang chờ thanh toán... Số dư sẽ được cập nhật tự động
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    {/* Cancel Button */}
-                    <button
-                      onClick={() => setShowCancelConfirm(true)}
-                      className="flex-1 rounded-xl border border-slate-600 bg-slate-700 py-3 font-medium text-slate-300 transition-all hover:bg-slate-600"
-                    >
-                      Hủy
-                    </button>
-
-                    {/* Test Button (Development) - Comment out for production deploy */}
-                    {/* <button
-                      onClick={handleTestTopup}
-                      disabled={isTestLoading}
-                      className="flex-1 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 py-3 font-medium text-amber-400 transition-all hover:bg-amber-500/20 disabled:opacity-50"
-                    >
-                      {isTestLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <Clock className="h-4 w-4 animate-spin" />
-                          Đang xử lý...
-                        </span>
-                      ) : (
-                        "🧪 Test nạp tiền"
-                      )}
-                    </button> */}
-                  </div>
-                </div>
-              </>
+              <PaymentQRDisplay
+                bankConfig={BANK_CONFIG}
+                generateQRUrl={generateQRUrl}
+                transactionCode={transactionCode}
+                getSelectedAmount={getSelectedAmount}
+                formatCurrency={formatCurrency}
+                handleCopy={handleCopy}
+                copiedField={copiedField}
+                setShowCancelConfirm={setShowCancelConfirm}
+                isTestLoading={isTestLoading}
+                handleTestTopup={handleTestTopup}
+              />
             )}
           </div>
         )}

@@ -64,10 +64,13 @@ export async function confirmBalance(req: Request, res: Response) {
       accountId: parseInt(userId, 10),
       orderId: String(orderId).trim(),
       amount: Math.round(Number(amount)),
-      items: (items as { id_product?: unknown; name?: unknown; quantity?: unknown; price?: unknown }[]).map(
+      items: (items as { id_product?: unknown; name?: unknown; variant_name?: unknown; duration?: unknown; note?: unknown; quantity?: unknown; price?: unknown }[]).map(
         (it) => ({
           id_product: String(it.id_product).trim(),
           name: it.name != null ? String(it.name).trim() : undefined,
+          variant_name: it.variant_name != null ? String(it.variant_name).trim() : undefined,
+          duration: it.duration != null ? String(it.duration).trim() : undefined,
+          note: it.note != null ? String(it.note).trim() : undefined,
           quantity: Math.max(1, parseInt(String(it.quantity), 10) || 1),
           price: Number(it.price) || 0,
         })

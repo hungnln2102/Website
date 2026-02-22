@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, ClipboardList, Menu, X, ShoppingCart, LogIn } from "lucide-react";
 import { createPortal } from "react-dom";
-import CategoryButton from "./CategoryButton";
+import CategoryButton from "@/features/catalog/components/CategoryButton";
 import { getCartItemCount } from "@/hooks/useCart";
 import { useAuth } from "@/features/auth/hooks";
 
@@ -100,7 +100,9 @@ export default function MenuBar({
     <>
       <nav 
         ref={menuRef}
-        className="relative z-50 border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20"
+        className={`sticky z-50 border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20 transition-all duration-500 ${
+          isScrolled ? "top-[60px] sm:top-[64px] md:top-[68px]" : "top-[72px] sm:top-[76px] md:top-[80px]"
+        }`}
         aria-label="Main navigation"
       >
         {/* Accent line */}
@@ -123,12 +125,12 @@ export default function MenuBar({
               <div className="h-5 w-px shrink-0 bg-gray-200 dark:bg-slate-600 mx-1" aria-hidden />
 
               {/* Menu Items - Desktop */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar lg:gap-1.5 xl:gap-2">
+              <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar lg:gap-1">
                 {menuItems.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
-                    className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4 xl:px-4"
+                    className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
                   >
                     <item.icon className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
                     <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
@@ -160,7 +162,7 @@ export default function MenuBar({
               <a
                 href={user ? "/gio-hang" : "#"}
                 onClick={handleCartClick}
-                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
+                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
                 aria-label="Giỏ hàng"
               >
                 <div className="relative">
@@ -184,7 +186,7 @@ export default function MenuBar({
                   window.history.pushState({}, "", "/tai-khoan");
                   window.dispatchEvent(new PopStateEvent("popstate"));
                 }}
-                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-2 lg:px-4"
+                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
               >
                 <ClipboardList className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
                 <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">

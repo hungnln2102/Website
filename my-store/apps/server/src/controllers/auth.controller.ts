@@ -4,6 +4,7 @@
 import type { Request, Response } from "express";
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
+import { getRegistrationCycleBounds } from "../config/tier-cycle.config";
 import { loginAttemptsMap } from "../config/redis";
 import { setCsrfToken, clearCsrfToken } from "../middleware/csrf";
 import { authService } from "../services/auth.service";
@@ -14,11 +15,25 @@ import { captchaService } from "../services/captcha.service";
 import { passwordHistoryService } from "../services/password-history.service";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
+const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
+const COLS_PROFILE = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as {
+  ACCOUNT_ID: string;
+  FIRST_NAME: string;
+  LAST_NAME: string;
+  DATE_OF_BIRTH: string;
+  CREATED_AT: string;
+  UPDATED_AT: string;
+};
 const WALLET_SCHEMA = DB_SCHEMA.WALLET!.SCHEMA;
 const WALLET_TABLE = DB_SCHEMA.WALLET!.TABLE;
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_SECONDS = 15 * 60;
-const ATTEMPT_WINDOW_SECONDS = 15 * 60;
+const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
+const CH = DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.COLS;
+// Tier 1: 3 sai → khóa 5 phút. Tier 2: 3 sai nữa → khóa 10 phút.
+const TIER1_ATTEMPTS = 3;
+const TIER1_LOCK_SECONDS = 5 * 60;
+const TIER2_ATTEMPTS = 3; // thêm 3 lần sau khi unlock tier 1
+const TIER2_LOCK_SECONDS = 10 * 60;
+const ATTEMPT_WINDOW_SECONDS = 30 * 60; // TTL lưu trữ
 
 function getClientIP(req: Request): string {
   return (req.headers["x-forwarded-for"]?.toString().split(",")[0] || req.ip || "unknown").trim();
@@ -47,19 +62,68 @@ async function isAccountLocked(
   return { locked: false };
 }
 
-async function recordFailedAttempt(identifier: string): Promise<void> {
+/** Ghi nhận sai mật khẩu. Trả về { nowLocked, lockedMinutes, remainingAttempts } */
+async function recordFailedAttempt(
+  identifier: string,
+  userId: string | number
+): Promise<{ nowLocked: boolean; lockedMinutes?: number; remainingAttempts: number }> {
   const key = identifier.toLowerCase();
-  const current = (await loginAttemptsMap.get(key)) || { count: 0, lockedUntil: 0 };
-  current.count++;
-  if (current.count >= MAX_LOGIN_ATTEMPTS) {
-    current.lockedUntil = Date.now() + LOCKOUT_DURATION_SECONDS * 1000;
+  const current: { count: number; lockedUntil: number; tier: number } =
+    ((await loginAttemptsMap.get(key)) as any) ?? { count: 0, lockedUntil: 0, tier: 1 };
+
+  // Nếu đang bị khóa, không tăng thêm
+  if (current.lockedUntil > 0 && Date.now() < current.lockedUntil) {
+    return { nowLocked: true, lockedMinutes: Math.ceil((current.lockedUntil - Date.now()) / 1000 / 60), remainingAttempts: 0 };
   }
+
+  // Nếu vừa hết khóa tier1, reset count nhưng nâng lên tier 2
+  if (current.lockedUntil > 0 && Date.now() >= current.lockedUntil) {
+    current.count = 0;
+    current.lockedUntil = 0;
+    current.tier = 2;
+  }
+
+  current.count++;
+  const tier = current.tier || 1;
+  const maxAttempts = tier === 1 ? TIER1_ATTEMPTS : TIER2_ATTEMPTS;
+  const lockSeconds = tier === 1 ? TIER1_LOCK_SECONDS : TIER2_LOCK_SECONDS;
+
+  if (current.count >= maxAttempts) {
+    current.lockedUntil = Date.now() + lockSeconds * 1000;
+    await loginAttemptsMap.set(key, current, ATTEMPT_WINDOW_SECONDS);
+    const lockedMinutes = Math.ceil(lockSeconds / 60);
+
+    // Ghi vào DB: cập nhật suspended_until + ban_reason + updated_at
+    const suspendedUntil = new Date(current.lockedUntil);
+    await pool.query(
+      `UPDATE ${ACCOUNT_TABLE}
+       SET suspended_until = $1, ban_reason = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [suspendedUntil, `Sô sai mật khẩu quá ${maxAttempts} lần (tự động)`, userId]
+    );
+
+    return { nowLocked: true, lockedMinutes, remainingAttempts: 0 };
+  }
+
   await loginAttemptsMap.set(key, current, ATTEMPT_WINDOW_SECONDS);
+  const remainingAttempts = maxAttempts - current.count;
+  return { nowLocked: false, remainingAttempts };
 }
 
-async function clearFailedAttempts(identifier: string): Promise<void> {
+/** Xóa các lần sai và clear suspended_until nếu đã hết hạn (cả admin lẫn auto-lock) */
+async function clearFailedAttempts(identifier: string, userId: string | number): Promise<void> {
   await loginAttemptsMap.delete(identifier.toLowerCase());
+  // Clear suspended_until nếu thời hạn đã qua — áp dụng với mọi loại khóa có thời hạn
+  await pool.query(
+    `UPDATE ${ACCOUNT_TABLE}
+     SET suspended_until = NULL, ban_reason = NULL, updated_at = NOW()
+     WHERE id = $1
+       AND suspended_until IS NOT NULL
+       AND suspended_until <= NOW()`,
+    [userId]
+  );
 }
+
 
 interface RegisterBody {
   username: string;
@@ -67,6 +131,8 @@ interface RegisterBody {
   password: string;
   firstName: string;
   lastName: string;
+  /** Ngày sinh (customer_profiles.date_of_birth), YYYY-MM-DD, tùy chọn */
+  dateOfBirth?: string;
   captchaToken?: string;
 }
 
@@ -104,33 +170,15 @@ export async function checkUser(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function captchaRequired(req: Request, res: Response): Promise<void> {
-  const ip = getClientIP(req);
-  res.json({
-    required: await captchaService.requiresCaptcha(ip),
-    siteKey: captchaService.getSiteKey(),
-  });
-}
+export { captchaRequired, getCsrfToken } from "./token.controller";
+export { refresh } from "./token.controller";
+export { getSessions, revokeSession, logoutAll } from "./session.controller";
 
-export async function getCsrfToken(req: Request, res: Response): Promise<void> {
-  let userId: string | null = null;
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith("Bearer ")) {
-    try {
-      const decoded = authService.verifyAccessToken(authHeader.substring(7));
-      userId = String(decoded.userId);
-    } catch {
-      //
-    }
-  }
-  const token = await setCsrfToken(res, userId);
-  res.json({ csrfToken: token });
-}
 
 export async function register(req: Request, res: Response): Promise<void> {
   const ip = getClientIP(req);
   try {
-    const { username, email, password, firstName, lastName, captchaToken } = req.body as RegisterBody;
+    const { username, email, password, firstName, lastName, dateOfBirth, captchaToken } = req.body as RegisterBody;
 
     if (await captchaService.requiresCaptcha(ip)) {
       if (!captchaToken) {
@@ -196,13 +244,35 @@ export async function register(req: Request, res: Response): Promise<void> {
     const passwordHash = await authService.hashPassword(password);
     const result = await pool.query(
       `INSERT INTO ${ACCOUNT_TABLE}
-        (username, email, password_hash, first_name, last_name, is_active, created_at)
-       VALUES ($1, $2, $3, $4, $5, true, NOW())
-       RETURNING id, username, email, first_name, last_name, created_at`,
-      [sanitizedUsername, email.trim().toLowerCase(), passwordHash, sanitizedFirstName, sanitizedLastName]
+        (username, email, password_hash, is_active, created_at)
+       VALUES ($1, $2, $3, true, NOW())
+       RETURNING id, username, email, created_at`,
+      [sanitizedUsername, email.trim().toLowerCase(), passwordHash]
     );
     const newUser = result.rows[0];
     await passwordHistoryService.initializeHistory(newUser.id, passwordHash);
+
+    const birthDate = dateOfBirth?.trim();
+    const birthDateValid =
+      birthDate &&
+      /^\d{4}-\d{2}-\d{2}$/.test(birthDate) &&
+      !Number.isNaN(new Date(birthDate).getTime());
+    await pool.query(
+      `INSERT INTO ${PROFILE_TABLE} (${COLS_PROFILE.ACCOUNT_ID}, ${COLS_PROFILE.FIRST_NAME}, ${COLS_PROFILE.LAST_NAME}, ${COLS_PROFILE.DATE_OF_BIRTH}, ${COLS_PROFILE.CREATED_AT}, ${COLS_PROFILE.UPDATED_AT})
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [newUser.id, sanitizedFirstName, sanitizedLastName, birthDateValid ? birthDate : null]
+    );
+
+    // Insert initial customer_type_history record
+    // period_start = ngày đăng ký, period_end = cuối chu kỳ hiện tại (lấy từ config)
+    const { periodStart, periodEnd } = getRegistrationCycleBounds();
+    await pool.query(
+      `INSERT INTO ${TYPE_HISTORY_TABLE}
+        (${CH.ACCOUNT_ID}, ${CH.PERIOD_START}, ${CH.PERIOD_END}, ${CH.PREVIOUS_TYPE}, ${CH.NEW_TYPE}, ${CH.TOTAL_SPEND}, ${CH.EVALUATED_AT})
+       VALUES ($1, $2, $3, NULL, 'Member', 0, NOW())`,
+      [newUser.id, periodStart, periodEnd]
+    );
+
     await auditService.logAuth("REGISTER", newUser.id, req, {
       username: newUser.username,
       email: newUser.email,
@@ -215,8 +285,8 @@ export async function register(req: Request, res: Response): Promise<void> {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        firstName: newUser.first_name,
-        lastName: newUser.last_name,
+        firstName: sanitizedFirstName,
+        lastName: sanitizedLastName,
       },
     });
   } catch (err) {
@@ -262,58 +332,98 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const result = await pool.query(
-      `SELECT a.id, a.username, a.email, a.password_hash, a.first_name, a.last_name, a.is_active, a.created_at,
-              COALESCE(w.balance, 0) as balance
-       FROM ${ACCOUNT_TABLE} a
-       LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
-       WHERE LOWER(a.username) = LOWER($1) OR LOWER(a.email) = LOWER($1)
-       LIMIT 1`,
+    // Step 1: Check if username exists (by username only)
+    const usernameCheck = await pool.query(
+      `SELECT 1 FROM ${ACCOUNT_TABLE} WHERE LOWER(username) = LOWER($1) LIMIT 1`,
       [identifier]
     );
 
-    if (result.rows.length === 0) {
-      await recordFailedAttempt(identifier);
+    if (usernameCheck.rows.length === 0) {
+      // username không tồn tại → không có userId, không cần ghi DB
+      await recordFailedAttempt(identifier, 0);
       await captchaService.recordFailedAttempt(ip);
       await auditService.logAuth("LOGIN_FAILED", null, req, { identifier, reason: "user_not_found" }, "failed");
       res.status(401).json({
-        error: "Tài khoản hoặc mật khẩu không đúng",
+        error: "Tài khoản không tồn tại, vui lòng đăng kí mới",
         requireCaptcha: await captchaService.requiresCaptcha(ip),
       });
       return;
     }
 
+    // Step 2: Get full user data for password verification
+    const result = await pool.query(
+      `SELECT a.id, a.username, a.email, a.password_hash, a.is_active,
+              a.suspended_until, a.ban_reason, a.created_at,
+              cp.first_name, cp.last_name,
+              COALESCE(w.balance, 0) as balance
+       FROM ${ACCOUNT_TABLE} a
+       LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
+       LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
+       WHERE LOWER(a.username) = LOWER($1)
+       LIMIT 1`,
+      [identifier]
+    );
+
+    if (result.rows.length === 0) {
+      await recordFailedAttempt(identifier, 0);
+      await captchaService.recordFailedAttempt(ip);
+      await auditService.logAuth("LOGIN_FAILED", null, req, { identifier, reason: "user_not_found" }, "failed");
+      res.status(401).json({
+        error: "Tài khoản không tồn tại",
+        requireCaptcha: await captchaService.requiresCaptcha(ip),
+      });
+      return;
+    }
+
+
     const user = result.rows[0];
+
+    // Check vô hiệu hóa vĩnh viễn
     if (!user.is_active) {
       await auditService.logAuth("LOGIN_FAILED", user.id, req, { reason: "account_disabled" }, "failed");
       res.status(403).json({ error: "Tài khoản đã bị vô hiệu hóa" });
       return;
     }
 
+    // Check tạm khóa thủ công bởi admin
+    if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+      const suspendedUntil = new Date(user.suspended_until);
+      const remaining = Math.ceil((suspendedUntil.getTime() - Date.now()) / 1000 / 60);
+      await auditService.logAuth("LOGIN_FAILED", user.id, req, { reason: "account_suspended" }, "failed");
+      res.status(403).json({
+        error: `Tài khoản bị tạm khóa${user.ban_reason ? `: ${user.ban_reason}` : ""}. Vui lòng thử lại sau ${remaining} phút.`,
+        suspendedUntil: suspendedUntil.toISOString(),
+        banReason: user.ban_reason ?? null,
+      });
+      return;
+    }
+
     const isValidPassword = await authService.verifyPassword(password, user.password_hash);
     if (!isValidPassword) {
-      await recordFailedAttempt(identifier);
+      const failResult = await recordFailedAttempt(identifier, user.id);
       await captchaService.recordFailedAttempt(ip);
       await auditService.logAuth("LOGIN_FAILED", user.id, req, { reason: "wrong_password" }, "failed");
-      const newLockStatus = await isAccountLocked(identifier);
-      if (newLockStatus.locked) {
+
+      if (failResult.nowLocked) {
         await auditService.logAuth("ACCOUNT_LOCKED", user.id, req, {
-          lockedMinutes: newLockStatus.remainingTime,
+          lockedMinutes: failResult.lockedMinutes,
         });
         res.status(429).json({
-          error: `Tài khoản tạm khóa. Vui lòng thử lại sau ${newLockStatus.remainingTime} phút.`,
-          lockedMinutes: newLockStatus.remainingTime,
+          error: `Tài khoản tạm khóa. Vui lòng thử lại sau ${failResult.lockedMinutes} phút.`,
+          lockedMinutes: failResult.lockedMinutes,
         });
         return;
       }
+
       res.status(401).json({
-        error: "Tài khoản hoặc mật khẩu không đúng",
+        error: `Mật khẩu sai. Sai quá ${failResult.remainingAttempts} lần nữa sẽ tạm khóa.`,
+        remainingAttempts: failResult.remainingAttempts,
         requireCaptcha: await captchaService.requiresCaptcha(ip),
       });
       return;
     }
 
-    await clearFailedAttempts(identifier);
+    await clearFailedAttempts(identifier, user.id);
     await captchaService.clearFailedAttempts(ip);
 
     const accessToken = authService.generateAccessToken({
@@ -377,129 +487,4 @@ export async function logout(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function refresh(req: Request, res: Response): Promise<void> {
-  try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      res.status(400).json({ error: "Refresh token là bắt buộc" });
-      return;
-    }
-    const tokenData = await refreshTokenService.validateToken(refreshToken);
-    if (!tokenData) {
-      res.status(401).json({ error: "Refresh token không hợp lệ hoặc đã hết hạn" });
-      return;
-    }
-    const result = await pool.query(
-      `SELECT id, username, email, first_name, last_name, is_active
-       FROM ${ACCOUNT_TABLE} WHERE id = $1 LIMIT 1`,
-      [tokenData.userId]
-    );
-    if (result.rows.length === 0) {
-      res.status(401).json({ error: "Người dùng không tồn tại" });
-      return;
-    }
-    const user = result.rows[0];
-    if (!user.is_active) {
-      res.status(403).json({ error: "Tài khoản đã bị vô hiệu hóa" });
-      return;
-    }
-    const newRefreshToken = await refreshTokenService.rotateToken(refreshToken, {
-      userId: user.id,
-      deviceInfo: getDeviceInfo(req),
-      ipAddress: getClientIP(req),
-    });
-    if (!newRefreshToken) {
-      res.status(401).json({ error: "Không thể làm mới token" });
-      return;
-    }
-    const newAccessToken = authService.generateAccessToken({
-      userId: String(user.id),
-      email: user.email,
-    });
-    await auditService.logAuth("TOKEN_REFRESH", user.id, req);
-    res.json({
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      user: {
-        id: String(user.id),
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-      },
-    });
-  } catch (err) {
-    console.error("Token refresh error:", err);
-    res.status(401).json({ error: "Token không hợp lệ" });
-  }
-}
 
-export async function getSessions(req: Request, res: Response): Promise<void> {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const token = authHeader.substring(7);
-    if (await tokenBlacklistService.isBlacklisted(token)) {
-      res.status(401).json({ error: "Token đã bị vô hiệu hóa" });
-      return;
-    }
-    const decoded = authService.verifyAccessToken(token);
-    const sessions = await refreshTokenService.getUserSessions(decoded.userId);
-    res.json({ sessions });
-  } catch (err) {
-    console.error("Get sessions error:", err);
-    res.status(401).json({ error: "Unauthorized" });
-  }
-}
-
-export async function revokeSession(req: Request, res: Response): Promise<void> {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const token = authHeader.substring(7);
-    const decoded = authService.verifyAccessToken(token);
-    const sessionId = parseInt(req.params.sessionId ?? "", 10);
-    const sessions = await refreshTokenService.getUserSessions(decoded.userId as string);
-    if (!sessions.some((s) => s.id === sessionId)) {
-      res.status(403).json({ error: "Không có quyền xóa phiên này" });
-      return;
-    }
-    await refreshTokenService.revokeTokenById(sessionId);
-    res.json({ message: "Đã xóa phiên đăng nhập", success: true });
-  } catch (err) {
-    console.error("Revoke session error:", err);
-    res.status(401).json({ error: "Unauthorized" });
-  }
-}
-
-export async function logoutAll(req: Request, res: Response): Promise<void> {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const token = authHeader.substring(7);
-    const decoded = authService.verifyAccessToken(token);
-    const revokedCount = await refreshTokenService.revokeAllUserTokens(decoded.userId);
-    await tokenBlacklistService.blacklist(token, 15 * 60);
-    await auditService.logAuth("LOGOUT", decoded.userId, req, {
-      type: "logout_all",
-      revokedSessions: revokedCount,
-    });
-    res.json({
-      message: "Đã đăng xuất khỏi tất cả thiết bị",
-      success: true,
-      revokedSessions: revokedCount,
-    });
-  } catch (err) {
-    console.error("Logout all error:", err);
-    res.status(401).json({ error: "Unauthorized" });
-  }
-}

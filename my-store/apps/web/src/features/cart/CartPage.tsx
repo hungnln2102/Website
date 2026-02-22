@@ -60,6 +60,14 @@ export default function CartPage({
       status: "in_stock" as const,
       additionalInfo: item.additionalInfo,
       additionalInfoLabels: item.additionalInfoLabels,
+      variant_name: item.packageName || undefined,
+      duration: item.duration,
+      note: item.additionalInfo 
+        ? Object.entries(item.additionalInfo)
+            .filter(([, val]) => val.trim() !== "")
+            .map(([k, v]) => `${item.additionalInfoLabels?.[k] || k}: ${v}`)
+            .join(' | ') 
+        : undefined,
     })),
   [cartStorageItems]);
 

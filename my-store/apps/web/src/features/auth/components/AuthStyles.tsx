@@ -17,6 +17,40 @@ export function AuthStyles() {
       .animate-float-delayed {
         animation: float-delayed 3s ease-in-out infinite 0.5s;
       }
+
+      /* Mobile form switch animations */
+      @keyframes mobile-slide-in-right {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes mobile-slide-in-left {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @media (max-width: 1023px) {
+        .mobile-form-login-active {
+          animation: mobile-slide-in-left 0.4s ease-out forwards;
+        }
+        .mobile-form-register-active {
+          animation: mobile-slide-in-right 0.4s ease-out forwards;
+        }
+        .mobile-form-hidden {
+          display: none !important;
+        }
+      }
     `}</style>
   );
 }

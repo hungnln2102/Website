@@ -68,18 +68,19 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
           </div>
 
           {/* Grid đồng bộ với Sản Phẩm Mới & Tất cả sản phẩm */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {promotionProducts.map((product: any) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                onClick={() => {
-                  const original = promotions.find((x) => x.slug === product.slug);
-                  if (original) onPromotionClick(original);
-                  else onProductClick(product.slug);
-                }}
-                variant="deal"
-              />
+              <div key={product.id} className="w-full sm:max-w-[210px]">
+                <ProductCard
+                  {...product}
+                  onClick={() => {
+                    const original = promotions.find((x) => x.slug === product.slug);
+                    if (original) onPromotionClick(original);
+                    else onProductClick(product.slug);
+                  }}
+                  variant="deal"
+                />
+              </div>
             ))}
           </div>
         </div>

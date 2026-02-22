@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { reportWebVitals, measurePerformance } from '@/lib/performance/web-vitals';
 import { errorTracker } from '@/lib/error-tracking/error-tracker';

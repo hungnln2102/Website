@@ -1,0 +1,15 @@
+ 12489 total
+   740 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/topup/TopupPage.tsx
+   577 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/cart/components/PaymentStep.tsx
+   528 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/profile/components/OrderHistory.tsx
+   433 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/auth/components/RegisterForm.tsx
+   366 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/components/MenuBar.tsx
+   345 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/components/CategoryButton.tsx
+   334 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/App.tsx
+   333 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/product/ProductDetailPage.tsx
+   323 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/auth/LoginPage.tsx
+   288 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/profile/ProfilePage.tsx
+   283 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/components/SiteHeader.tsx
+   269 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/cart/CartPage.tsx
+   253 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/home/HomePage.tsx
+   250 d:/Desktop/Personal/Project/admin_store/Website/my-store/apps/web/src/features/product/components/BuyButton.tsx

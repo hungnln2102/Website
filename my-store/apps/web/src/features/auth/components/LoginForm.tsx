@@ -79,7 +79,7 @@ export function LoginForm({
   return (
     <div
       className={`relative p-8 sm:p-10 bg-white dark:bg-slate-900 transition-opacity duration-500 ${
-        isActive ? "opacity-100" : "lg:opacity-0 lg:pointer-events-none"
+        isActive ? "opacity-100 mobile-form-login-active" : "lg:opacity-0 lg:pointer-events-none mobile-form-hidden"
       }`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5" />
@@ -191,15 +191,16 @@ export function LoginForm({
           </button>
         </form>
 
-        {/* <p className="mt-4 text-center text-sm text-gray-500">
+        {/* Mobile-only toggle link */}
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-slate-400 lg:hidden">
           Chưa có tài khoản?{" "}
           <button
             onClick={onSwitchToRegister}
-            className="font-semibold text-blue-600 hover:text-blue-700"
+            className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
           >
             Đăng ký ngay
           </button>
-        </p> */}
+        </p>
 
       </div>
     </div>

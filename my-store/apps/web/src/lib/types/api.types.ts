@@ -109,6 +109,9 @@ export type PaymentHealthResponse = {
 export type ConfirmBalancePaymentItem = {
   id_product: string;
   name?: string;
+  variant_name?: string;
+  duration?: string;
+  note?: string;
   quantity: number;
   price: number;
 };
@@ -118,6 +121,9 @@ export type UserOrderItem = {
   id_product: string;
   price: number;
   name?: string;
+  variant_name?: string;
+  duration?: string;
+  note?: string;
   quantity?: number;
   unitPrice?: number;
 };

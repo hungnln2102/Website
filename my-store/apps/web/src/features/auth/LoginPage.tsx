@@ -13,98 +13,23 @@ import {
 } from "./components";
 import type { FieldErrors, RegisterFormData } from "./components/RegisterForm";
 import type { LoginFormData } from "./components/LoginForm";
+import {
+  checkCaptchaRequired,
+  checkExistingUser,
+  registerUser,
+  loginUser,
+} from "./services/auth.service";
 
 interface LoginPageProps {
   onBack: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  initialMode?: "login" | "register";
 }
 
-// API base URL - adjust based on environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
-// SECURITY: Warn if using HTTP in production
-if (import.meta.env.PROD && API_BASE_URL.startsWith('http://')) {
-  console.warn('⚠️ SECURITY WARNING: Using HTTP in production. Configure HTTPS for VITE_API_URL.');
-}
-
-// Check if CAPTCHA is required
-const checkCaptchaRequired = async (): Promise<{ required: boolean; siteKey?: string }> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/captcha-required`, {
-      credentials: "include",
-    });
-    if (!response.ok) return { required: false };
-    return await response.json();
-  } catch {
-    return { required: false };
-  }
-};
-
-// Check if username or email already exists in database
-const checkExistingUser = async (username: string, email: string): Promise<FieldErrors> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/check-user`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ username, email }),
-    });
-    
-    if (!response.ok) {
-      throw new Error("API error");
-    }
-    
-    return await response.json();
-  } catch (error) {
-    // Don't log full error in production
-    if (import.meta.env.DEV) {
-      console.error("Check user error:", error);
-    }
-    // Return empty errors on API failure to allow form submission attempt
-    return {};
-  }
-};
-
-// Register new user in database
-const registerUser = async (data: RegisterFormData): Promise<{ success: boolean; error?: string; field?: string }> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      }),
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      return { 
-        success: false, 
-        error: result.error || "Đăng ký thất bại",
-        field: result.field,
-      };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    // Don't log full error in production
-    if (import.meta.env.DEV) {
-      console.error("Register error:", error);
-    }
-    return { success: false, error: "Không thể kết nối đến server" };
-  }
-};
-
-export default function LoginPage({ onBack }: LoginPageProps) {
+export default function LoginPage({ onBack, initialMode = "login" }: LoginPageProps) {
   const { isAuthenticated, isLoading, login } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -135,9 +60,11 @@ export default function LoginPage({ onBack }: LoginPageProps) {
     });
   }, []);
 
-  // Clear field errors when switching forms
+  // Clear field errors and sync URL when switching forms
   useEffect(() => {
     setFieldErrors({});
+    const newPath = isLogin ? "/login" : "/register";
+    window.history.replaceState({}, "", newPath);
   }, [isLogin]);
 
   const showNotification = useCallback((message: string, type: "success" | "error" = "success") => {
@@ -150,54 +77,36 @@ export default function LoginPage({ onBack }: LoginPageProps) {
 
   const handleLoginSubmit = async (data: LoginFormData) => {
     setIsLoggingIn(true);
-    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          usernameOrEmail: data.email,
-          password: data.password,
-          captchaToken: data.captchaToken,
-        }),
+      const result = await loginUser({
+        usernameOrEmail: data.email,
+        password: data.password,
+        captchaToken: data.captchaToken,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        // Check if server requires CAPTCHA
+      if (!result.ok) {
         if (result.requireCaptcha) {
           setCaptchaRequired(true);
-          if (result.siteKey) {
-            setCaptchaSiteKey(result.siteKey);
-          }
+          if (result.siteKey) setCaptchaSiteKey(result.siteKey);
         }
         showNotification(result.error || "Đăng nhập thất bại!", "error");
         return;
       }
 
-      // Store tokens securely
-      if (result.accessToken) {
-        sessionStorage.setItem("accessToken", result.accessToken);
-      }
-      if (result.refreshToken) {
-        sessionStorage.setItem("refreshToken", result.refreshToken);
-      }
-
-      // Clear CAPTCHA requirement on successful login
+      if (result.accessToken) sessionStorage.setItem("accessToken", result.accessToken);
+      if (result.refreshToken) sessionStorage.setItem("refreshToken", result.refreshToken);
       setCaptchaRequired(false);
 
       login({
-        id: result.user.id,
-        email: result.user.email,
-        username: result.user.username,
-        firstName: result.user.firstName,
-        lastName: result.user.lastName,
+        id: result.user!.id,
+        email: result.user!.email,
+        username: result.user!.username,
+        firstName: result.user!.firstName,
+        lastName: result.user!.lastName,
       });
 
       showNotification("Đăng nhập thành công!", "success");
-    } catch (error) {
+    } catch {
       showNotification("Không thể kết nối đến server!", "error");
     } finally {
       setIsLoggingIn(false);
@@ -302,7 +211,6 @@ export default function LoginPage({ onBack }: LoginPageProps) {
                 onSubmit={handleRegisterSubmit}
                 onSwitchToLogin={() => setIsLogin(true)}
                 isActive={!isLogin}
-                isHidden={isLogin}
                 fieldErrors={fieldErrors}
                 isLoading={isRegistering}
               />

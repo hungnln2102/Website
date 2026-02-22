@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Lock, Eye, EyeOff, UserCircle, IdCard, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, UserCircle, IdCard, AlertCircle, Calendar } from "lucide-react";
 
 export interface RegisterFormData {
   lastName: string;
@@ -10,6 +10,8 @@ export interface RegisterFormData {
   email: string;
   password: string;
   confirmPassword: string;
+  /** Ngày sinh (customer_profiles.date_of_birth), format YYYY-MM-DD, tùy chọn */
+  dateOfBirth?: string;
 }
 
 export interface FieldErrors {
@@ -17,13 +19,14 @@ export interface FieldErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  dateOfBirth?: string;
 }
 
 interface RegisterFormProps {
   onSubmit: (data: RegisterFormData) => void;
   onSwitchToLogin: () => void;
   isActive: boolean;
-  isHidden: boolean;
+  isHidden?: boolean;
   fieldErrors?: FieldErrors;
   isLoading?: boolean;
 }
@@ -45,6 +48,7 @@ export function RegisterForm({
     email: "",
     password: "",
     confirmPassword: "",
+    dateOfBirth: "",
   });
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
 
@@ -84,6 +88,21 @@ export function RegisterForm({
       newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
     }
 
+    if (formData.dateOfBirth?.trim()) {
+      const dobParts = formData.dateOfBirth.split("/");
+      if (dobParts.length !== 3 || !/^\d{2}\/\d{2}\/\d{4}$/.test(formData.dateOfBirth)) {
+        newErrors.dateOfBirth = "Ngày sinh phải có định dạng dd/mm/yyyy";
+      } else {
+        const [dd, mm, yyyy] = dobParts;
+        const d = new Date(`${yyyy}-${mm}-${dd}`);
+        if (Number.isNaN(d.getTime()) || d.getDate() !== Number(dd) || d.getMonth() + 1 !== Number(mm)) {
+          newErrors.dateOfBirth = "Ngày sinh không hợp lệ";
+        } else if (d > new Date()) {
+          newErrors.dateOfBirth = "Ngày sinh không thể ở tương lai";
+        }
+      }
+    }
+
     setLocalErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -91,7 +110,13 @@ export function RegisterForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      // Convert dd/mm/yyyy → YYYY-MM-DD for backend
+      let submittedData = { ...formData };
+      if (formData.dateOfBirth?.trim()) {
+        const [dd, mm, yyyy] = formData.dateOfBirth.split("/");
+        submittedData.dateOfBirth = `${yyyy}-${mm}-${dd}`;
+      }
+      onSubmit(submittedData);
     }
   };
 
@@ -107,6 +132,21 @@ export function RegisterForm({
     }
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, "");
+    if (value.length > 8) value = value.slice(0, 8);
+    // Auto-insert slashes: dd/mm/yyyy
+    if (value.length >= 5) {
+      value = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
+    } else if (value.length >= 3) {
+      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+    }
+    setFormData({ ...formData, dateOfBirth: value });
+    if (errors.dateOfBirth) {
+      setLocalErrors((prev) => ({ ...prev, dateOfBirth: undefined }));
+    }
+  };
+
   const getInputClassName = (fieldName: keyof FieldErrors, baseClass: string) => {
     const hasError = errors[fieldName];
     return `${baseClass} ${
@@ -119,8 +159,8 @@ export function RegisterForm({
   return (
     <div
       className={`relative p-8 sm:p-10 bg-white dark:bg-slate-900 transition-opacity duration-500 ${
-        isActive ? "opacity-100" : "lg:opacity-0 lg:pointer-events-none"
-      } ${isHidden ? "hidden lg:block" : ""}`}
+        isActive ? "opacity-100 mobile-form-register-active" : "lg:opacity-0 lg:pointer-events-none mobile-form-hidden"
+      }`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-indigo-500/5 to-blue-500/5" />
       <div className="relative h-full flex flex-col justify-center">
@@ -207,6 +247,41 @@ export function RegisterForm({
               <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.username}
+              </p>
+            )}
+          </div>
+
+          {/* Ngày sinh (customer_profiles.date_of_birth) */}
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+              Ngày sinh
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Calendar className={`h-5 w-5 ${errors.dateOfBirth ? "text-red-500" : "text-gray-400"}`} />
+              </div>
+              <input
+                type="text"
+                name="dateOfBirth"
+                value={formData.dateOfBirth || ""}
+                onChange={handleDateChange}
+                maxLength={10}
+                className={getInputClassName(
+                  "dateOfBirth",
+                  "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                )}
+                placeholder="dd/mm/yyyy"
+              />
+              {errors.dateOfBirth && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                </div>
+              )}
+            </div>
+            {errors.dateOfBirth && (
+              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {errors.dateOfBirth}
               </p>
             )}
           </div>
@@ -341,15 +416,16 @@ export function RegisterForm({
           </button>
         </form>
 
-        {/* <p className="mt-4 text-center text-sm text-gray-500">
+        {/* Mobile-only toggle link */}
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-slate-400 lg:hidden">
           Đã có tài khoản?{" "}
           <button
             onClick={onSwitchToLogin}
-            className="font-semibold text-blue-600 hover:text-blue-700"
+            className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
           >
             Đăng nhập
           </button>
-        </p> */}
+        </p>
 
       </div>
     </div>

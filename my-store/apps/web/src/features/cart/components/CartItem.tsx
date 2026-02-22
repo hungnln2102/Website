@@ -17,6 +17,10 @@ export interface CartItemData {
   additionalInfo?: Record<string, string>;
   /** Label tương ứng: { [input_id]: input_name } */
   additionalInfoLabels?: Record<string, string>;
+  /** Dữ liệu map cho Order lưu database */
+  variant_name?: string;
+  duration?: string;
+  note?: string;
 }
 
 interface CartItemProps {

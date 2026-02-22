@@ -202,7 +202,7 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       <StructuredData data={structuredData} />
 
       {/* Main Content */}
-      <main id="main-content" className="relative z-0 mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+      <main id="main-content" className="relative z-0 mx-auto max-w-7xl px-3 pt-6 pb-8 sm:px-6 sm:pt-10 lg:px-8">
         {/* Banner */}
         <section className="mb-6 overflow-hidden rounded-xl shadow-lg shadow-blue-900/5 sm:mb-8 sm:rounded-2xl sm:shadow-xl">
           <BannerSlider />

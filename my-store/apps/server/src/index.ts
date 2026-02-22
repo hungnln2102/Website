@@ -15,7 +15,7 @@ import { generalLimiter } from "./middleware/rateLimiter";
 import {
   apiSecurityMiddleware,
   limitPayloadSize,
-} from "./middleware/apiSecurity";
+} from "./middleware/api-security";
 import { csrfProtection } from "./middleware/csrf";
 import paymentRouter from "./routes/payment.route";
 import variantDetailRouter from "./routes/variant-detail.route";
@@ -30,6 +30,9 @@ import debugRouter from "./routes/debug.route";
 // Import cron job for auto-refresh materialized views
 import "./jobs/refresh-variant-sold-count.job";
 import "./jobs/refresh-product-sold-30d.job";
+
+// Import cron job for customer tier cycle reset (23:59 on Jun 30 & Dec 31)
+import "./jobs/reset-customer-tier-cycle.job";
 
 const app = express();
 

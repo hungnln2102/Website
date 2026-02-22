@@ -10,7 +10,10 @@ import { refreshTokenService } from "../services/refresh-token.service";
 import { passwordHistoryService } from "../services/password-history.service";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
+const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
+const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
+const TIERS_TABLE = `${DB_SCHEMA.CUSTOMER_TIERS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TIERS!.TABLE}`;
 const WALLET_SCHEMA = DB_SCHEMA.WALLET!.SCHEMA;
 const WALLET_TABLE = DB_SCHEMA.WALLET!.TABLE;
 const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as {
@@ -32,27 +35,49 @@ function getUserId(req: Request): string {
 export async function getProfile(req: Request, res: Response): Promise<void> {
   try {
     const userId = getUserId(req);
-    const result = await pool.query(
-      `SELECT a.id, a.username, a.email, a.first_name, a.last_name, a.created_at,
-              COALESCE(w.balance, 0) as balance
-       FROM ${ACCOUNT_TABLE} a
-       LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
-       WHERE a.id = $1`,
-      [userId]
-    );
+    const [result, tiersResult] = await Promise.all([
+      pool.query(
+        `SELECT a.id, a.username, a.email, a.created_at,
+                cp.first_name, cp.last_name, cp.date_of_birth,
+                COALESCE(w.balance, 0) as balance,
+                COALESCE(cth.new_type, 'Member') as customer_type,
+                COALESCE(cth.total_spend, 0) as total_spend
+         FROM ${ACCOUNT_TABLE} a
+         LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
+         LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
+         LEFT JOIN (
+           SELECT DISTINCT ON (account_id) account_id, new_type, total_spend
+           FROM ${TYPE_HISTORY_TABLE}
+           ORDER BY account_id, evaluated_at DESC
+         ) cth ON cth.account_id = a.id
+         WHERE a.id = $1`,
+        [userId]
+      ),
+      pool.query(
+        `SELECT name, min_total_spend FROM ${TIERS_TABLE} ORDER BY min_total_spend ASC`
+      ),
+    ]);
     if (result.rows.length === 0) {
       res.status(404).json({ error: "Người dùng không tồn tại" });
       return;
     }
     const user = result.rows[0];
+    const tiers = tiersResult.rows.map((r: any) => ({
+      name: r.name,
+      minTotalSpend: parseFloat(r.min_total_spend) || 0,
+    }));
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,
+      dateOfBirth: user.date_of_birth,
       createdAt: user.created_at,
       balance: parseInt(user.balance, 10) || 0,
+      customerType: user.customer_type,
+      totalSpend: parseFloat(user.total_spend) || 0,
+      tiers,
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -86,7 +111,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
           items: [],
         });
       }
-      let info: { name?: string; quantity?: number; unitPrice?: number } = {};
+      let info: { name?: string; quantity?: number; unitPrice?: number; variant_name?: string; duration?: string; note?: string } = {};
       try {
         if (row[COLS_OL.INFORMATION_ORDER]) {
           info = JSON.parse(row[COLS_OL.INFORMATION_ORDER]);
@@ -124,7 +149,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     const sanitizedFirstName = firstName.trim().replace(/[<>'"&]/g, "");
     const sanitizedLastName = lastName.trim().replace(/[<>'"&]/g, "");
     await pool.query(
-      `UPDATE ${ACCOUNT_TABLE} SET first_name = $1, last_name = $2 WHERE id = $3`,
+      `UPDATE ${PROFILE_TABLE} SET first_name = $1, last_name = $2, updated_at = NOW() WHERE account_id = $3`,
       [sanitizedFirstName, sanitizedLastName, userId]
     );
     await auditService.logAuth("PROFILE_UPDATE", userId, req, {
