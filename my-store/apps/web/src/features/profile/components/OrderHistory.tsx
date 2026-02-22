@@ -340,13 +340,13 @@ export function OrderHistory() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700 md:block">
-            <table className="w-full text-sm">
+          <div className="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 md:block">
+            <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
                   <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Mã đơn hàng</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
-                  <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Thông tin sản phẩm</th>
                   <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày mua</th>
                   <th className="whitespace-nowrap px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Ngày hết hạn</th>
                   <th className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300">Tổng tiền</th>
