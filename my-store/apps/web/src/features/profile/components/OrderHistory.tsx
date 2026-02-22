@@ -125,14 +125,30 @@ export function OrderHistory() {
   };
 
   const formatCompoundProductName = (item: any) => {
-    const baseName = item.name || item.id_product;
-    if (!item.variant_name && !item.duration) return baseName;
+    // Determine the base product name (e.g., "Netflix Premium")
+    const baseName = item.display_name || item.name || item.id_product.split("--")[0] || item.id_product;
     
+    // Extract duration from id_product pattern like "--1m" if item.duration is not explicitly set
+    let duration = item.duration;
+    if (!duration && item.id_product && item.id_product.includes("--")) {
+       duration = item.id_product.split("--").pop();
+    }
+
     let parts = [];
-    if (item.variant_name) parts.push(item.variant_name);
-    if (item.duration) parts.push(`(${item.duration})`);
+    if (item.variant_name && item.variant_name !== baseName) parts.push(item.variant_name);
     
-    return parts.length > 0 ? `${baseName} - ${parts.join(" ")}` : baseName;
+    if (duration) {
+      let formattedDuration = duration;
+      const amount = parseInt(duration, 10);
+      if (!isNaN(amount)) {
+        if (duration.endsWith("m")) formattedDuration = `${amount} Tháng`;
+        else if (duration.endsWith("y")) formattedDuration = `${amount} Năm`;
+        else if (duration.endsWith("d")) formattedDuration = `${amount} Ngày`;
+      }
+      parts.push(`(${formattedDuration})`);
+    }
+    
+    return parts.length > 0 ? `${baseName} ${parts.join(" ")}` : baseName;
   };
 
   // Apply filters
