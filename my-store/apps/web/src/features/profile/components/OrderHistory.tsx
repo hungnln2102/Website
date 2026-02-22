@@ -358,9 +358,9 @@ export function OrderHistory() {
             <table className="w-full text-sm table-auto">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-28 whitespace-nowrap">Mã đơn hàng</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-1/4">Sản phẩm</th>
-                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 w-1/4">Thông tin sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Mã đơn hàng</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300">Sản phẩm</th>
+                  <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 min-w-[150px]">Thông tin sản phẩm</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày mua</th>
                   <th className="px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Ngày hết hạn</th>
                   <th className="px-4 py-3.5 text-right font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap">Tổng tiền</th>
@@ -397,8 +397,8 @@ export function OrderHistory() {
                           </button>
                         </div>
                       </td>
-                      <td className="max-w-[200px] px-4 py-3.5">
-                        <p className="truncate text-gray-700 dark:text-slate-300" title={productNames}>
+                      <td className="px-4 py-3.5">
+                        <p className="text-gray-700 dark:text-slate-300 break-words" title={productNames}>
                           {productNames}
                         </p>
                         {order.items.length > 1 && (
@@ -407,8 +407,8 @@ export function OrderHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="max-w-[200px] px-4 py-3.5">
-                        <p className="truncate text-gray-600 dark:text-slate-400" title={productNotes}>
+                      <td className="px-4 py-3.5">
+                        <p className="text-gray-600 dark:text-slate-400 break-all" title={productNotes}>
                           {productNotes || "—"}
                         </p>
                       </td>
