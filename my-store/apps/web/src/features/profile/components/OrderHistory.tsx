@@ -51,33 +51,6 @@ export function OrderHistory() {
   const getOrderTotal = (order: UserOrder) =>
     order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity ?? 1), 0);
 
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case "paid":
-        return { label: "Đã thanh toán", cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" };
-      case "pending":
-        return { label: "Chờ xử lý", cls: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" };
-      case "cancelled":
-        return { label: "Đã hủy", cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
-      case "refunded":
-        return { label: "Hoàn tiền", cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" };
-      default:
-        return { label: status, cls: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" };
-    }
-  };
-
-  const formatDateTime = (dateString: string) => {
-    const d = new Date(dateString);
-    const day = d.getDate().toString().padStart(2, "0");
-    const month = (d.getMonth() + 1).toString().padStart(2, "0");
-    const year = d.getFullYear();
-    const hours = d.getHours().toString().padStart(2, "0");
-    const minutes = d.getMinutes().toString().padStart(2, "0");
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
-  };
-
-  const formatCurrency = (v: number) => `${v.toLocaleString("vi-VN")}đ`;
-
   const calculateExpirationDate = (purchaseDate: string, duration?: string) => {
     if (!duration) return null;
     const d = new Date(purchaseDate);
@@ -95,6 +68,53 @@ export function OrderHistory() {
     }
     return d.toISOString();
   };
+
+  const getDynamicStatus = (order: UserOrder) => {
+    if (order.status === "cancelled") {
+      return { label: "Đã Hủy", cls: "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700" };
+    }
+    if (order.status === "refunded") {
+      return { label: "Hoàn Tiền", cls: "bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30" };
+    }
+    if (order.status === "pending") {
+      return { label: "Đang Xử Lý", cls: "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30" };
+    }
+
+    let duration = order.items[0]?.duration;
+    if (!duration) {
+      return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
+    }
+
+    const expDateStr = calculateExpirationDate(order.order_date, duration);
+    if (!expDateStr) {
+      return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
+    }
+
+    const expDate = new Date(expDateStr);
+    const now = new Date();
+    const diffTime = expDate.getTime() - now.getTime();
+    const remaining_days = diffTime / (1000 * 60 * 60 * 24);
+
+    if (remaining_days <= 0) {
+      return { label: "Hết Hạn", cls: "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30" };
+    } else if (remaining_days <= 4) {
+      return { label: "Cần Gia Hạn", cls: "bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30" };
+    } else {
+      return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const d = new Date(dateString);
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+  const formatCurrency = (v: number) => `${v.toLocaleString("vi-VN")}đ`;
 
   const getDurationDays = (duration?: string) => {
     if (!duration) return null;
@@ -335,7 +355,7 @@ export function OrderHistory() {
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
                 {paginatedOrders.map((order) => {
                   const total = getOrderTotal(order);
-                  const status = getStatusInfo(order.status);
+                  const status = getDynamicStatus(order);
                   const productNames = order.items.map((i) => formatCompoundProductName(i)).join(", ");
                   return (
                     <tr
@@ -399,7 +419,7 @@ export function OrderHistory() {
           <div className="space-y-3 md:hidden">
             {paginatedOrders.map((order) => {
               const total = getOrderTotal(order);
-              const status = getStatusInfo(order.status);
+              const status = getDynamicStatus(order);
               return (
                 <div
                   key={order.id_order}
@@ -517,8 +537,8 @@ export function OrderHistory() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-slate-400">Trạng thái</span>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusInfo(selectedOrder.status).cls}`}>
-                  {getStatusInfo(selectedOrder.status).label}
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getDynamicStatus(selectedOrder).cls}`}>
+                  {getDynamicStatus(selectedOrder).label}
                 </span>
               </div>
             </div>
