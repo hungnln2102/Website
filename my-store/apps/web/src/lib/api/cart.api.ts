@@ -22,13 +22,14 @@ function handleCartResponse(res: Response, body: any, fallbackError: string): { 
   return { success: false, error: body?.message || fallbackError };
 }
 
-/** accessToken có thể null khi đăng nhập bằng httpOnly cookie */
+/** accessToken có thể null khi đăng nhập bằng httpOnly cookie. Thêm cache-bust để tránh trình duyệt trả response cache (giỏ trống sau khi vừa thêm). */
 export async function fetchCart(accessToken: string | null): Promise<CartResponse> {
   try {
     const headers: Record<string, string> = {};
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+    const url = `${API_BASE}/api/cart?t=${Date.now()}`;
     const res = await fetchWithTimeoutAndRetry(
-      `${API_BASE}/api/cart`,
+      url,
       { headers, credentials: "include" },
       CART_FETCH_OPTIONS
     );

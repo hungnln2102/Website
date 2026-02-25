@@ -36,6 +36,11 @@ export async function getCart(req: Request, res: Response) {
     const items = await cartService.getCartItemsEnriched(accountId);
     const count = await cartService.getCartItemCount(accountId);
 
+    // Tránh cache trình duyệt: sau khi thêm vào giỏ, vào trang giỏ phải thấy sản phẩm mới
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     // Log để kiểm tra giỏ hàng
     console.log("[Cart] getCart response", {
       accountId,
