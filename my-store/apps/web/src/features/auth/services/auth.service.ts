@@ -1,13 +1,6 @@
 import type { FieldErrors, RegisterFormData } from "../components/RegisterForm";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
-// SECURITY: Warn if using HTTP in production
-if (import.meta.env.PROD && API_BASE_URL.startsWith("http://")) {
-  console.warn(
-    "⚠️ SECURITY WARNING: Using HTTP in production. Configure HTTPS for VITE_API_URL."
-  );
-}
+import { getApiBase } from "@/lib/api";
+import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 
 /** Check if CAPTCHA is required */
 export const checkCaptchaRequired = async (): Promise<{
@@ -15,9 +8,11 @@ export const checkCaptchaRequired = async (): Promise<{
   siteKey?: string;
 }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/captcha-required`, {
-      credentials: "include",
-    });
+    const response = await fetchWithTimeoutAndRetry(
+      `${getApiBase()}/api/auth/captcha-required`,
+      { credentials: "include" },
+      { timeoutMs: 10000, retries: 1 }
+    );
     if (!response.ok) return { required: false };
     return await response.json();
   } catch {
@@ -31,12 +26,16 @@ export const checkExistingUser = async (
   email: string
 ): Promise<FieldErrors> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/check-user`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ username, email }),
-    });
+    const response = await fetchWithTimeoutAndRetry(
+      `${getApiBase()}/api/auth/check-user`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, email }),
+      },
+      { timeoutMs: 10000, retries: 1 }
+    );
 
     if (!response.ok) throw new Error("API error");
 
@@ -53,19 +52,23 @@ export const registerUser = async (
   data: RegisterFormData
 ): Promise<{ success: boolean; error?: string; field?: string }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        dateOfBirth: data.dateOfBirth || undefined,
-      }),
-    });
+    const response = await fetchWithTimeoutAndRetry(
+      `${getApiBase()}/api/auth/register`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          dateOfBirth: data.dateOfBirth || undefined,
+        }),
+      },
+      { timeoutMs: 15000, retries: 2 }
+    );
 
     const result = await response.json();
 
@@ -96,6 +99,7 @@ export const loginUser = async (data: {
   error?: string;
   accessToken?: string;
   refreshToken?: string;
+  useHttpOnlyCookie?: boolean;
   user?: {
     id: string;
     email: string;
@@ -105,12 +109,16 @@ export const loginUser = async (data: {
   };
 }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(data),
-    });
+    const response = await fetchWithTimeoutAndRetry(
+      `${getApiBase()}/api/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      },
+      { timeoutMs: 15000, retries: 2 }
+    );
 
     const result = await response.json();
 
@@ -127,6 +135,7 @@ export const loginUser = async (data: {
       ok: true,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
+      useHttpOnlyCookie: result.useHttpOnlyCookie,
       user: result.user,
     };
   } catch {

@@ -37,7 +37,7 @@ export interface CategoryUI {
 export function useHomeData() {
   const queryClient = useQueryClient();
 
-  // Fetch products
+  // Fetch products (timeout 20s, retry 2 lần khi lỗi)
   const {
     data: products = [],
     isLoading: loading,
@@ -45,6 +45,8 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
   // Fetch promotions

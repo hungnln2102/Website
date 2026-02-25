@@ -117,6 +117,20 @@ export type ConfirmBalancePaymentItem = {
 };
 
 // ----- User / Orders -----
+/** Lịch sử giao dịch từ wallet_transactions: id = transaction_id, status = type (PURCHASE, TOPUP, ...) */
+export type WalletTransactionDto = {
+  id: string;
+  orderId: string | null;
+  balanceAfter: number;
+  amount: number;
+  direction: string;
+  type: string;
+  createdAt: string;
+  method: string | null;
+  promoCode: string | null;
+  status: string | null;
+};
+
 export type UserOrderItem = {
   id_product: string;
   price: number;
@@ -136,6 +150,8 @@ export type UserOrder = {
   id_order: string;
   order_date: string;
   status: string;
+  /** ID thanh toán (order_customer.payment_id, liên kết wallet_transactions.transaction_id) */
+  payment_id?: string | null;
   items: UserOrderItem[];
 };
 

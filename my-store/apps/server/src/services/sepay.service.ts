@@ -1,6 +1,8 @@
 import { SePayPgClient } from 'sepay-pg-node';
 import { logPaymentEvent, logSecurityEvent } from '../utils/logger';
 import crypto from 'crypto';
+import pool from '../config/database';
+import { DB_SCHEMA } from '../config/db.config';
 
 const SEPAY_ENV = (process.env.SEPAY_ENV || 'sandbox') as 'sandbox' | 'production';
 const SEPAY_MERCHANT_ID = process.env.SEPAY_MERCHANT_ID || '';
@@ -168,15 +170,51 @@ export class SepayService {
     });
 
     if (payment_status === 'SUCCESS' || payment_status === 'PAID') {
-      // TODO: Update order status in database
-      // await prisma.order.update({
-      //   where: { id: order_invoice_number },
-      //   data: {
-      //     status: 'PAID',
-      //     paidAt: new Date(payment_time || Date.now()),
-      //     transactionId: transaction_id,
-      //   },
-      // });
+      const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+      const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
+      const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+      const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+      const txIdCol = COLS_WT.TRANSACTION_ID;
+      const paymentIdCol = COLS_OC.PAYMENT_ID;
+
+      const ocResult = await pool.query(
+        `SELECT account_id, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
+        [order_invoice_number]
+      );
+
+      if (ocResult.rows.length > 0) {
+        const accountId = parseInt(String(ocResult.rows[0].account_id), 10);
+        const paymentId = ocResult.rows[0][paymentIdCol] as string | null;
+        await pool.query(
+          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE id_order = $1`,
+          [order_invoice_number]
+        );
+
+        const useTxId = paymentId ?? `TX${accountId}${Date.now().toString(36).toUpperCase()}SEPAY`;
+        const existingTx = await pool.query(
+          `SELECT id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 AND account_id = $2 LIMIT 1`,
+          [useTxId, accountId]
+        );
+        if (existingTx.rows.length > 0) {
+          await pool.query(
+            `UPDATE ${WALLET_TX_TABLE} SET amount = $1 WHERE ${txIdCol} = $2 AND account_id = $3`,
+            [order_amount, useTxId, accountId]
+          );
+        } else {
+          if (!paymentId) {
+            await pool.query(
+              `UPDATE ${ORDER_CUSTOMER_TABLE} SET ${paymentIdCol} = $1, updated_at = NOW() WHERE id_order = $2`,
+              [useTxId, order_invoice_number]
+            );
+          }
+          await pool.query(
+            `INSERT INTO ${WALLET_TX_TABLE}
+             (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, method, created_at)
+             VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, 0, 0, 'BANK_TRANSFER', NOW())`,
+            [useTxId, accountId, order_amount]
+          );
+        }
+      }
 
       logPaymentEvent('PAYMENT_CONFIRMED', {
         orderId: order_invoice_number,
@@ -216,23 +254,56 @@ export class SepayService {
   }
 
   /**
-   * Get payment status from order ID
-   * This is a placeholder - implement based on your database
+   * Get payment status from order ID (đọc từ DB: order_customer / wallet_transactions)
    */
-  async getPaymentStatus(_orderId: string): Promise<{
+  async getPaymentStatus(orderId: string): Promise<{
     status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
     transactionId?: string;
     paidAt?: Date;
   }> {
-    // TODO: Query from database
-    // const payment = await prisma.payment.findUnique({
-    //   where: { orderId },
-    // });
-    
-    // For now, return pending
-    return {
-      status: 'PENDING',
-    };
+    const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+    const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+    const txIdCol = COLS_WT.TRANSACTION_ID;
+    const paymentIdCol = COLS_OC.PAYMENT_ID;
+
+    const ocRow = await pool.query(
+      `SELECT status, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
+      [orderId]
+    );
+    if (ocRow.rows.length > 0 && ocRow.rows[0].status === 'paid') {
+      const paymentId = ocRow.rows[0][paymentIdCol];
+      if (paymentId) {
+        const txRow = await pool.query(
+          `SELECT ${txIdCol}, created_at FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 ORDER BY created_at DESC LIMIT 1`,
+          [paymentId]
+        );
+        return {
+          status: 'PAID',
+          transactionId: txRow.rows[0]?.[txIdCol],
+          paidAt: txRow.rows[0]?.created_at ?? undefined,
+        };
+      }
+      return { status: 'PAID', transactionId: paymentId };
+    }
+
+    if (ocRow.rows.length > 0 && ocRow.rows[0][paymentIdCol]) {
+      const paymentId = ocRow.rows[0][paymentIdCol];
+      const txRow = await pool.query(
+        `SELECT ${txIdCol}, created_at FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
+        [paymentId]
+      );
+      if (txRow.rows.length > 0) {
+        return {
+          status: 'PAID',
+          transactionId: txRow.rows[0][txIdCol],
+          paidAt: txRow.rows[0].created_at ?? undefined,
+        };
+      }
+    }
+
+    return { status: 'PENDING' };
   }
 }
 

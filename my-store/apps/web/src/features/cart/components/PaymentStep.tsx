@@ -10,7 +10,16 @@ import {
   checkPaymentStatus,
   generateOrderId,
   confirmBalancePayment,
+  confirmTransfer,
+  getAuthToken,
 } from "@/lib/api";
+import {
+  CART_BANK_CONFIG,
+  PAYMENT_TIMEOUT_SECONDS,
+  SUCCESS_REDIRECT_SECONDS,
+  formatPaymentCurrency,
+  formatPaymentTime,
+} from "../constants";
 import { MCoinPaymentConfirm } from "./MCoinPaymentConfirm";
 import { PaymentOutcome } from "./PaymentOutcome";
 import { BankTransferInfo } from "./BankTransferInfo";
@@ -26,21 +35,6 @@ interface PaymentStepProps {
 
 type PaymentState = "loading" | "ready" | "processing" | "success" | "failed" | "expired";
 
-const formatCurrency = (value: number) =>
-  `${value.toLocaleString("vi-VN")}đ`;
-
-const PAYMENT_TIMEOUT = 15 * 60; // 15 minutes in seconds
-const SUCCESS_REDIRECT_SECONDS = 5;
-
-// Bank configuration - Cấu hình thông tin ngân hàng
-const BANK_CONFIG = {
-  bankId: "ACB", // Mã ngân hàng VietQR
-  bankName: "Ngân hàng Á Châu (ACB)",
-  bankLogo: "https://api.vietqr.io/img/ACB.png",
-  accountNo: "46282537", // Số tài khoản
-  accountName: "NGUYEN THI THU TRANG", // Tên chủ tài khoản
-};
-
 export function PaymentStep({
   cartItems,
   total,
@@ -51,16 +45,14 @@ export function PaymentStep({
 }: PaymentStepProps) {
   const [paymentState, setPaymentState] = useState<PaymentState>("loading");
   const [orderId, setOrderId] = useState<string>("");
-  const [timeLeft, setTimeLeft] = useState<number>(PAYMENT_TIMEOUT);
+  const [timeLeft, setTimeLeft] = useState<number>(PAYMENT_TIMEOUT_SECONDS);
   const [error, setError] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [redirectSeconds, setRedirectSeconds] = useState<number>(SUCCESS_REDIRECT_SECONDS);
+  const [isConfirmingTransfer, setIsConfirmingTransfer] = useState(false);
 
-  // Generate transfer content (nội dung chuyển khoản)
   const transferContent = orderId.replace(/-/g, "").slice(-8).toUpperCase();
-
-  // Generate VietQR URL (template: compact = QR + logo only, no account info)
-  const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNo}-compact.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
+  const qrUrl = `https://img.vietqr.io/image/${CART_BANK_CONFIG.bankId}-${CART_BANK_CONFIG.accountNo}-compact.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(CART_BANK_CONFIG.accountName)}`;
 
   // Initialize payment
   const initializePayment = useCallback(async () => {
@@ -72,25 +64,26 @@ export function PaymentStep({
 
     try {
       // Call API to create payment record
-      const response = await createPayment({
-        orderId: newOrderId,
-        amount: total,
-        description: `Thanh toán đơn hàng ${newOrderId}`,
-      });
+      const response = await createPayment(
+        {
+          orderId: newOrderId,
+          amount: total,
+          description: `Thanh toán đơn hàng ${newOrderId}`,
+        },
+        getAuthToken() ?? undefined
+      );
 
       if (response.success) {
         setPaymentState("ready");
-        setTimeLeft(PAYMENT_TIMEOUT);
+        setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
       } else {
-        // Even if API fails, still show payment info for manual transfer
         setPaymentState("ready");
-        setTimeLeft(PAYMENT_TIMEOUT);
+        setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
         console.warn("Payment API warning:", response.error);
       }
     } catch (err) {
-      // Still show payment info even if API fails
       setPaymentState("ready");
-      setTimeLeft(PAYMENT_TIMEOUT);
+      setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
       console.warn("Payment init warning:", err);
     }
   }, [total]);
@@ -100,7 +93,10 @@ export function PaymentStep({
     if (paymentMethod === "balance" || !orderId || paymentState !== "ready") return;
 
     try {
-      const response = await checkPaymentStatus(orderId);
+      const response = await checkPaymentStatus(
+        orderId,
+        getAuthToken() ?? undefined
+      );
 
       if (response.success && response.data) {
         const { status } = response.data;
@@ -118,7 +114,7 @@ export function PaymentStep({
     } catch (err) {
       console.error("Error checking payment status:", err);
     }
-  }, [orderId, paymentState, onPaymentSuccess, onPaymentFailed]);
+  }, [orderId, paymentState, paymentMethod, onPaymentSuccess, onPaymentFailed]);
 
   // Initialize payment on mount: bank/QR flow or balance "ready" with orderId
   useEffect(() => {
@@ -154,7 +150,6 @@ export function PaymentStep({
     return () => clearInterval(pollInterval);
   }, [paymentMethod, paymentState, checkStatus]);
 
-  // Redirect countdown after success (balance payment)
   useEffect(() => {
     if (paymentMethod !== "balance" || paymentState !== "success") return;
     setRedirectSeconds(SUCCESS_REDIRECT_SECONDS);
@@ -199,13 +194,6 @@ export function PaymentStep({
     }
   }, [orderId, total, cartItems, onPaymentSuccess, onPaymentFailed]);
 
-  // Format time
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
   // Copy to clipboard
   const handleCopy = async (text: string, field: string) => {
     try {
@@ -218,6 +206,26 @@ export function PaymentStep({
     }
   };
 
+  // Xác nhận đã chuyển khoản/QR → ghi lịch sử giao dịch, sau đó kiểm tra trạng thái
+  const handleConfirmTransfer = useCallback(async () => {
+    const currentOrderId = orderId || generateOrderId();
+    if (!currentOrderId || total <= 0) return;
+    setOrderId(currentOrderId);
+    setIsConfirmingTransfer(true);
+    setError("");
+    try {
+      const result = await confirmTransfer(currentOrderId, total);
+      if (result.success) {
+        toast.success(result.message || "Đã ghi nhận thanh toán.");
+        await checkStatus();
+      } else {
+        toast.error(result.error || "Xác nhận thất bại.");
+      }
+    } finally {
+      setIsConfirmingTransfer(false);
+    }
+  }, [orderId, total, checkStatus]);
+
   // Render based on state
   const renderContent = () => {
     // Balance (MCoin): confirm step
@@ -229,7 +237,7 @@ export function PaymentStep({
           error={error}
           handleConfirmBalance={handleConfirmBalance}
           onBack={onBack}
-          formatCurrency={formatCurrency}
+          formatCurrency={formatPaymentCurrency}
         />
       );
     }
@@ -256,16 +264,18 @@ export function PaymentStep({
     if (paymentState === "ready" && paymentMethod !== "balance") {
       return (
         <BankTransferInfo
-          bankConfig={BANK_CONFIG}
+          bankConfig={CART_BANK_CONFIG}
           total={total}
           transferContent={transferContent}
           qrUrl={qrUrl}
           timeLeft={timeLeft}
-          formatCurrency={formatCurrency}
-          formatTime={formatTime}
+          formatCurrency={formatPaymentCurrency}
+          formatTime={formatPaymentTime}
           handleCopy={handleCopy}
           copiedField={copiedField}
           onBack={onBack}
+          onConfirmTransfer={handleConfirmTransfer}
+          isConfirmingTransfer={isConfirmingTransfer}
         />
       );
     }

@@ -35,7 +35,7 @@ export function initRedis(): Promise<boolean> {
         },
         maxRetriesPerRequest: 3,
         enableReadyCheck: true,
-        connectTimeout: 5000,
+        connectTimeout: 2000,
       });
 
       redisClient.on("connect", () => {
@@ -55,13 +55,15 @@ export function initRedis(): Promise<boolean> {
         isRedisConnected = false;
       });
 
-      // Timeout for initial connection
+      // Timeout for initial connection (short so server can start without waiting)
       setTimeout(() => {
         if (!isRedisConnected) {
+          redisClient?.disconnect?.();
+          redisClient = null;
           console.warn("[Redis] Connection timeout, using in-memory fallback");
           resolve(false);
         }
-      }, 5000);
+      }, 2000);
 
     } catch (error) {
       console.warn("[Redis] Failed to initialize:", error);

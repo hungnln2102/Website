@@ -9,8 +9,8 @@ CREATE INDEX IF NOT EXISTS idx_variant_product_id ON variant(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_category_id ON product(category_id);
 CREATE INDEX IF NOT EXISTS idx_product_name ON product(name);
 
--- Supplier cost indexes
-CREATE INDEX IF NOT EXISTS idx_supplier_cost_product_id ON supplier_cost(product_id);
+-- Supplier cost indexes (cột đã đổi tên product_id -> variant_id)
+CREATE INDEX IF NOT EXISTS idx_supplier_cost_variant_id ON supplier_cost(variant_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_cost_price ON supplier_cost(price);
 
 -- Price config indexes

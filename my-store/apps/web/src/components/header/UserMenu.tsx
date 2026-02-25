@@ -54,7 +54,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
                 {user.username}
               </span>
               <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                Số dư: {(user.balance ?? 0).toLocaleString("vi-VN")}đ
+                Số dư: {(user.balance ?? 0).toLocaleString("vi-VN")} Mcoin
               </span>
             </div>
             <ChevronDown
@@ -72,18 +72,18 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
               </div>
               <div className="py-1">
                 <button
-                  onClick={() => navigate("/nap-tien")}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  <Wallet className="h-4 w-4 text-emerald-500" />
-                  <span>Nạp tiền</span>
-                </button>
-                <button
                   onClick={() => navigate("/tai-khoan")}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   <User className="h-4 w-4" />
                   Tài khoản của tôi
+                </button>
+                <button
+                  onClick={() => navigate("/nap-tien")}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  <Wallet className="h-4 w-4 text-emerald-500" />
+                  <span>Nạp tiền</span>
                 </button>
                 <button
                   onClick={() => { setIsUserMenuOpen(false); onLogout?.(); }}

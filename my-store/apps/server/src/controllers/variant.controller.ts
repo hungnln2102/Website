@@ -4,6 +4,7 @@
  */
 import type { Request, Response } from "express";
 import { variantDetailService } from "../services/variant-detail.service";
+import * as cartService from "../services/cart.service";
 
 export async function getVariantDetail(req: Request, res: Response): Promise<void> {
   try {
@@ -70,5 +71,29 @@ export async function getProductInfo(req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error("Get product info error:", error);
     res.status(500).json({ success: false, error: "Failed to get product info" });
+  }
+}
+
+/** Đủ dữ liệu sản phẩm theo variant_id (tên, giá, hình, mô tả, quy tắc mua). */
+export async function getVariantFullData(req: Request, res: Response): Promise<void> {
+  try {
+    const variantId = (req.params.id ?? "").trim();
+    const priceType = (req.query.priceType as cartService.CartPriceType) || "retail";
+    if (!variantId) {
+      res.status(400).json({ success: false, error: "Variant ID is required" });
+      return;
+    }
+
+    const data = await cartService.getVariantProductData(variantId, priceType);
+
+    if (!data) {
+      res.status(404).json({ success: false, error: "Variant not found" });
+      return;
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error("Get variant full data error:", error);
+    res.status(500).json({ success: false, error: "Failed to get variant data" });
   }
 }

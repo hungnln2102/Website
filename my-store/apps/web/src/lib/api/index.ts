@@ -9,15 +9,16 @@ export { fetchProducts } from "./products.api";
 export { fetchPromotions } from "./promotions.api";
 export { fetchCategories } from "./categories.api";
 export { fetchProductPackages } from "./product-packages.api";
-export { fetchVariantDetail, fetchProductInfo } from "./variant.api";
+export { fetchVariantDetail, fetchVariantFullData, fetchProductInfo } from "./variant.api";
 export {
   checkPaymentHealth,
   createPayment,
   checkPaymentStatus,
   generateOrderId,
   confirmBalancePayment,
+  confirmTransfer,
 } from "./payment.api";
-export { fetchUserOrders } from "./user.api";
+export { fetchUserOrders, fetchUserTransactions } from "./user.api";
 export { fetchFormFields } from "./forms.api";
 export {
   fetchCart,
@@ -43,6 +44,7 @@ export type {
   ConfirmBalancePaymentItem,
   UserOrderItem,
   UserOrder,
+  WalletTransactionDto,
   FormFieldDto,
   FormFieldsResponse,
   CartItemDto,
@@ -50,3 +52,4 @@ export type {
   CartAddResponse,
   CartCountResponse,
 } from "../types";
+export type { VariantFullDataDto } from "./variant.api";

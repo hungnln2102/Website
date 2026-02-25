@@ -20,6 +20,9 @@ export interface WalletTransaction {
   refType?: string;
   refId?: string;
   description?: string;
+  method?: string | null;
+  promoCode?: string | null;
+  status?: string | null;
   createdAt: Date;
 }
 
@@ -60,6 +63,8 @@ export async function addFunds(
     refType?: string;
     refId?: string;
     description?: string;
+    method?: string;
+    promoCode?: string;
   }
 ): Promise<{ newBalance: number; transaction: WalletTransaction }> {
   const client = await pool.connect();
@@ -94,12 +99,16 @@ export async function addFunds(
       [newBalance, accountId]
     );
 
-    // Create transaction record
+    // Create transaction record (id bigserial; business key = transaction_id)
     const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const txIdCol = COLS_WT.TRANSACTION_ID;
+    const methodCol = COLS_WT.METHOD;
+    const promoCol = COLS_WT.PROMO_CODE;
     await client.query(
-      `INSERT INTO ${WALLET_TX_TABLE} 
-       (id, account_id, type, direction, amount, balance_before, balance_after, ref_type, ref_id, description, created_at)
-       VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, $9, NOW())`,
+      `INSERT INTO ${WALLET_TX_TABLE}
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promoCol}, created_at)
+       VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, NOW())`,
       [
         txId,
         accountId,
@@ -107,9 +116,8 @@ export async function addFunds(
         amount,
         currentBalance,
         newBalance,
-        options?.refType || null,
-        options?.refId || null,
-        options?.description || null,
+        options?.method || (type === "TOPUP" ? "topup" : type.toLowerCase()),
+        options?.promoCode || null,
       ]
     );
 
@@ -128,6 +136,9 @@ export async function addFunds(
         refType: options?.refType,
         refId: options?.refId,
         description: options?.description,
+        method: options?.method ?? (type === "TOPUP" ? "topup" : type.toLowerCase()),
+        promoCode: options?.promoCode,
+        status: "completed",
         createdAt: new Date(),
       },
     };
@@ -150,6 +161,8 @@ export async function deductFunds(
     refType?: string;
     refId?: string;
     description?: string;
+    method?: string;
+    promoCode?: string;
   }
 ): Promise<{ newBalance: number; transaction: WalletTransaction }> {
   const client = await pool.connect();
@@ -181,12 +194,16 @@ export async function deductFunds(
       [newBalance, accountId]
     );
 
-    // Create transaction record
+    // Create transaction record (id bigserial; business key = transaction_id)
     const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const txIdCol = COLS_WT.TRANSACTION_ID;
+    const methodCol = COLS_WT.METHOD;
+    const promoCol = COLS_WT.PROMO_CODE;
     await client.query(
-      `INSERT INTO ${WALLET_TX_TABLE} 
-       (id, account_id, type, direction, amount, balance_before, balance_after, ref_type, ref_id, description, created_at)
-       VALUES ($1, $2, $3, 'DEBIT', $4, $5, $6, $7, $8, $9, NOW())`,
+      `INSERT INTO ${WALLET_TX_TABLE}
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promoCol}, created_at)
+       VALUES ($1, $2, $3, 'DEBIT', $4, $5, $6, $7, $8, NOW())`,
       [
         txId,
         accountId,
@@ -194,9 +211,8 @@ export async function deductFunds(
         amount,
         currentBalance,
         newBalance,
-        options?.refType || null,
-        options?.refId || null,
-        options?.description || null,
+        options?.method ?? (type === "PURCHASE" ? "balance" : "adjust"),
+        options?.promoCode || null,
       ]
     );
 
@@ -215,6 +231,9 @@ export async function deductFunds(
         refType: options?.refType,
         refId: options?.refId,
         description: options?.description,
+        method: options?.method ?? (type === "PURCHASE" ? "balance" : "adjust"),
+        promoCode: options?.promoCode,
+        status: "completed",
         createdAt: new Date(),
       },
     };
@@ -227,33 +246,47 @@ export async function deductFunds(
 }
 
 /**
- * Get transaction history
+ * Get transaction history from wallet_transactions (đầy đủ thông tin).
+ * Mã đơn = transaction_id, Số dư = balance_after, Số tiền = amount (theo method),
+ * Thời gian = created_at, Phương thức = method, Khuyến mãi = promo_code, Trạng thái = type.
+ * LEFT JOIN order_customer để lấy id_order khi có (payment_id = transaction_id).
  */
 export async function getTransactions(
   accountId: number,
   limit: number = 20
 ): Promise<WalletTransaction[]> {
+  const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+  const txIdCol = COLS_WT.TRANSACTION_ID;
+  const methodCol = COLS_WT.METHOD;
+  const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+  const OC_PAYMENT_ID = DB_SCHEMA.ORDER_CUSTOMER!.COLS.PAYMENT_ID;
+
   const result = await pool.query(
-    `SELECT id, account_id, type, direction, amount, balance_before, balance_after, 
-            ref_type, ref_id, description, created_at
-     FROM ${WALLET_TX_TABLE}
-     WHERE account_id = $1
-     ORDER BY created_at DESC
+    `SELECT wt.id, wt.${txIdCol}, wt.account_id, wt.type, wt.direction, wt.amount,
+            wt.balance_before, wt.balance_after, wt.${methodCol}, wt.promo_code, wt.created_at,
+            oc.id_order
+     FROM ${WALLET_TX_TABLE} wt
+     LEFT JOIN ${ORDER_CUSTOMER_TABLE} oc ON oc.${OC_PAYMENT_ID} = wt.${txIdCol} AND oc.account_id = wt.account_id
+     WHERE wt.account_id = $1
+     ORDER BY wt.created_at DESC
      LIMIT $2`,
     [accountId, limit]
   );
 
-  return result.rows.map((row) => ({
-    id: row.id,
+  return result.rows.map((row: Record<string, unknown>) => ({
+    id: String(row[txIdCol] ?? row.id),
     accountId: row.account_id,
     type: row.type,
     direction: row.direction,
-    amount: parseInt(row.amount) || 0,
-    balanceBefore: parseInt(row.balance_before) || 0,
-    balanceAfter: parseInt(row.balance_after) || 0,
-    refType: row.ref_type,
-    refId: row.ref_id,
-    description: row.description,
+    amount: parseInt(String(row.amount)) || 0,
+    balanceBefore: parseInt(String(row.balance_before)) || 0,
+    balanceAfter: parseInt(String(row.balance_after)) || 0,
+    refType: row.id_order ? "ORDER" : undefined,
+    refId: (row.id_order as string) ?? undefined,
+    description: undefined,
+    method: row[methodCol] ?? null,
+    promoCode: row.promo_code ?? null,
+    status: (row.type as string) ?? undefined,
     createdAt: row.created_at,
   }));
 }

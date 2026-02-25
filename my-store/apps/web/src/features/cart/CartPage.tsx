@@ -9,7 +9,7 @@ import { CartProgressSteps, CartItem, CartSummary, CartConfirmation, PaymentStep
 import type { CartItemData, PaymentMethod } from "./components";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
-import { useCart } from "@/hooks/useCart";
+import { useCartPageData } from "./hooks/useCartPageData";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
@@ -41,66 +41,33 @@ export default function CartPage({
     queryKey: ["categories"],
     queryFn: fetchCategories,
   });
-  const { items: cartStorageItems, updateQuantity, removeItem, clearCart } = useCart();
+  const {
+    cartItems,
+    cartStorageItems,
+    subtotal,
+    discount,
+    total,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    isLoggedIn,
+  } = useCartPageData();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
 
-  // Convert cart storage items to CartItemData format
-  const cartItems: CartItemData[] = useMemo(() => 
-    cartStorageItems.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.duration,
-      image_url: item.imageUrl || "https://placehold.co/200x200?text=Product",
-      price: item.price,
-      original_price: item.originalPrice,
-      discount_percentage: item.discountPercentage,
-      quantity: item.quantity,
-      tags: [item.packageName, item.duration].filter(Boolean),
-      status: "in_stock" as const,
-      additionalInfo: item.additionalInfo,
-      additionalInfoLabels: item.additionalInfoLabels,
-      variant_name: item.packageName || undefined,
-      duration: item.duration,
-      note: item.additionalInfo 
-        ? Object.entries(item.additionalInfo)
-            .filter(([, val]) => val.trim() !== "")
-            .map(([k, v]) => `${item.additionalInfoLabels?.[k] || k}: ${v}`)
-            .join(' | ') 
-        : undefined,
-    })),
-  [cartStorageItems]);
-
-  // Handle category click
   const handleCategoryClick = (catSlug: string) => {
     window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
     window.dispatchEvent(new Event("popstate"));
   };
 
-  // Calculate totals
-  const { subtotal, discount, total } = useMemo(() => {
-    const sub = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const disc = cartItems.reduce((sum, item) => {
-      if (item.original_price && item.discount_percentage) {
-        return sum + (item.original_price - item.price) * item.quantity;
-      }
-      return sum;
-    }, 0);
-    return {
-      subtotal: sub,
-      discount: disc,
-      total: sub,
-    };
-  }, [cartItems]);
-
   const balance = typeof user?.balance === "number" ? user.balance : 0;
 
-  const handleQuantityChange = (id: string, quantity: number) => {
-    // Find the item to get its duration for the updateQuantity call
+  const handleQuantityChange = async (id: string, quantity: number) => {
     const item = cartStorageItems.find((i) => i.id === id);
-    if (item) {
-      updateQuantity(id, item.duration, quantity);
-    }
+    if (!item) return;
+    const ok = await updateQuantity(id, item.duration ?? "", quantity);
+    if (ok) toast.success("Đã cập nhật số lượng");
+    else toast.error("Không thể cập nhật số lượng");
   };
 
   const handleRemoveItem = (id: string) => {
@@ -208,6 +175,26 @@ export default function CartPage({
             onBack={handleBackToCart}
             onConfirm={handleConfirmPayment}
           />
+        ) : !isLoggedIn ? (
+          /* Chưa đăng nhập */
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white py-16 dark:border-slate-700 dark:bg-slate-800">
+            <ShoppingCart className="mb-4 h-16 w-16 text-gray-300 dark:text-slate-600" />
+            <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white">
+              Vui lòng đăng nhập
+            </h2>
+            <p className="mb-6 text-gray-500 dark:text-slate-400">
+              Đăng nhập để xem giỏ hàng và mua hàng
+            </p>
+            <button
+              onClick={() => {
+                window.history.pushState({}, "", "/dang-nhap");
+                window.dispatchEvent(new Event("popstate"));
+              }}
+              className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 cursor-pointer"
+            >
+              Đăng nhập
+            </button>
+          </div>
         ) : cartItems.length === 0 ? (
           /* Empty Cart */
           <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white py-16 dark:border-slate-700 dark:bg-slate-800">

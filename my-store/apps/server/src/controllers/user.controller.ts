@@ -8,12 +8,24 @@ import { auditService } from "../services/audit.service";
 import { authService } from "../services/auth.service";
 import { refreshTokenService } from "../services/refresh-token.service";
 import { passwordHistoryService } from "../services/password-history.service";
+import { walletService } from "../services/wallet.service";
+import { getCurrentTierCycle } from "../config/tier-cycle.config";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
-const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
-const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 const TIERS_TABLE = `${DB_SCHEMA.CUSTOMER_TIERS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TIERS!.TABLE}`;
+const SPEND_STATS_TABLE = `${DB_SCHEMA.CUSTOMER_SPEND_STATS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_SPEND_STATS!.TABLE}`;
+const TIER_CYCLES_TABLE = `${DB_SCHEMA.TIER_CYCLES!.SCHEMA}.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
+const COLS_TC = DB_SCHEMA.TIER_CYCLES!.COLS as {
+  ID: string;
+  CYCLE_START_AT: string;
+  CYCLE_END_AT: string;
+  STATUS: string;
+};
+const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
+const COLS_CP = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as { TIER_ID: string };
+const COLS_CT = DB_SCHEMA.CUSTOMER_TIERS!.COLS as { ID: string; NAME: string; MIN_TOTAL_SPEND: string };
+const COLS_CSS = DB_SCHEMA.CUSTOMER_SPEND_STATS!.COLS as { LIFETIME_SPEND: string };
 const WALLET_SCHEMA = DB_SCHEMA.WALLET!.SCHEMA;
 const WALLET_TABLE = DB_SCHEMA.WALLET!.TABLE;
 const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as {
@@ -23,7 +35,8 @@ const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as {
   INFORMATION_ORDER: string;
   ID_PRODUCT: string;
   PRICE: string;
-  ACCOUNT_ID: string;
+  ORDER_EXPIRED: string;
+  SLOT: string;
 };
 
 function getUserId(req: Request): string {
@@ -40,21 +53,18 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
         `SELECT a.id, a.username, a.email, a.created_at,
                 cp.first_name, cp.last_name, cp.date_of_birth,
                 COALESCE(w.balance, 0) as balance,
-                COALESCE(cth.new_type, 'Member') as customer_type,
-                COALESCE(cth.total_spend, 0) as total_spend
+                COALESCE(ct.name, 'Member') as customer_type,
+                COALESCE(css.${COLS_CSS.LIFETIME_SPEND}, 0) as total_spend
          FROM ${ACCOUNT_TABLE} a
          LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
+         LEFT JOIN ${TIERS_TABLE} ct ON ct.${COLS_CT.ID} = cp.${COLS_CP.TIER_ID}
+         LEFT JOIN ${SPEND_STATS_TABLE} css ON css.account_id = a.id
          LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
-         LEFT JOIN (
-           SELECT DISTINCT ON (account_id) account_id, new_type, total_spend
-           FROM ${TYPE_HISTORY_TABLE}
-           ORDER BY account_id, evaluated_at DESC
-         ) cth ON cth.account_id = a.id
          WHERE a.id = $1`,
         [userId]
       ),
       pool.query(
-        `SELECT name, min_total_spend FROM ${TIERS_TABLE} ORDER BY min_total_spend ASC`
+        `SELECT ${COLS_CT.NAME} as name, ${COLS_CT.MIN_TOTAL_SPEND} as min_total_spend FROM ${TIERS_TABLE} ORDER BY ${COLS_CT.MIN_TOTAL_SPEND} ASC`
       ),
     ]);
     if (result.rows.length === 0) {
@@ -66,6 +76,100 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       name: r.name,
       minTotalSpend: parseFloat(r.min_total_spend) || 0,
     }));
+
+    // Ngày kết thúc chu kỳ hiện tại (từ config, dùng khi chưa có bản ghi tier_cycles)
+    const now = new Date();
+    const currentCycleConfig = getCurrentTierCycle(now);
+    const tierCycleEnd = currentCycleConfig
+      ? new Date(now.getFullYear(), currentCycleConfig.endMonth - 1, currentCycleConfig.endDay)
+      : new Date(now.getFullYear(), 11, 31);
+
+    // Chu kỳ hiện tại từ bảng tier_cycles: lấy đúng cycle_start_at, cycle_end_at trong DB (không đổi timezone)
+    let currentCycle: { id: number; cycleStartAt: string; cycleEndAt: string; status: string } | null = null;
+    const startCol = COLS_TC.CYCLE_START_AT;
+    const endCol = COLS_TC.CYCLE_END_AT;
+
+    const runCycleQuery = async (table: string) => {
+      const sql = `SELECT tc.${COLS_TC.ID},
+        to_char(tc.${startCol}, 'YYYY-MM-DD HH24:MI:SS') AS cycle_start,
+        to_char(tc.${endCol}, 'YYYY-MM-DD HH24:MI:SS') AS cycle_end,
+        tc.${COLS_TC.STATUS}
+        FROM ${table} tc
+        ORDER BY tc.${startCol} DESC LIMIT 1`;
+      const cycleResult = await pool.query(sql);
+      if (cycleResult.rows.length > 0) {
+        const row = cycleResult.rows[0];
+        return {
+          id: Number(row[COLS_TC.ID]),
+          cycleStartAt: String(row.cycle_start ?? ""),
+          cycleEndAt: String(row.cycle_end ?? ""),
+          status: String(row[COLS_TC.STATUS] ?? "active"),
+        };
+      }
+      return null;
+    };
+
+    const publicTable = `public.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
+    // Thử schema config (cycles.tier_cycles) trước để tránh lỗi "public.tier_cycles does not exist" khi bảng chỉ có ở cycles
+    const tablesToTry = [TIER_CYCLES_TABLE, publicTable].filter((t, i, a) => a.indexOf(t) === i);
+    try {
+      for (const table of tablesToTry) {
+        currentCycle = await runCycleQuery(table);
+        if (currentCycle) {
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[Profile] tier_cycles: found from " + table + ", id=" + currentCycle.id);
+          }
+          break;
+        }
+      }
+      if (!currentCycle && process.env.NODE_ENV !== "production") {
+        console.log("[Profile] tier_cycles: no row from " + tablesToTry.join(", "));
+      }
+    } catch (e) {
+      const err = e as Error & { code?: string };
+      console.warn("[Profile] Could not load current tier cycle from DB:", err?.message ?? e, "code=" + (err?.code ?? ""));
+      for (const table of tablesToTry) {
+        try {
+          currentCycle = await runCycleQuery(table);
+          if (currentCycle) break;
+        } catch {
+          // thử bảng tiếp
+        }
+      }
+    }
+
+    // Fallback: nếu DB không trả về chu kỳ (bảng trống, sai schema, hoặc không có bản ghi chứa NOW()), dùng config
+    if (!currentCycle) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[Profile] currentCycle fallback: using config or full year, currentCycleConfig=" + (currentCycleConfig ? currentCycleConfig.name : "null"));
+      }
+      if (currentCycleConfig) {
+        const cycleStartAt = new Date(now.getFullYear(), currentCycleConfig.startMonth - 1, currentCycleConfig.startDay);
+        const cycleEndAt = new Date(now.getFullYear(), currentCycleConfig.endMonth - 1, currentCycleConfig.endDay);
+        const fmt = (d: Date) => d.toLocaleString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }).slice(0, 19);
+        currentCycle = {
+          id: 0,
+          cycleStartAt: fmt(cycleStartAt),
+          cycleEndAt: fmt(cycleEndAt),
+          status: "config",
+        };
+      } else {
+        // Config cũng không có (lỗi config): dùng cả năm để ít nhất vẫn có "Còn lại"
+        const y = now.getFullYear();
+        const fmt = (d: Date) => d.toLocaleString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }).slice(0, 19);
+        currentCycle = {
+          id: 0,
+          cycleStartAt: fmt(new Date(y, 0, 1)),
+          cycleEndAt: fmt(new Date(y, 11, 31)),
+          status: "config",
+        };
+      }
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Profile] response currentCycle:", currentCycle ? { id: currentCycle.id, cycleStartAt: currentCycle.cycleStartAt, cycleEndAt: currentCycle.cycleEndAt, status: currentCycle.status } : "null");
+    }
+
     res.json({
       id: user.id,
       username: user.username,
@@ -78,6 +182,9 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       customerType: user.customer_type,
       totalSpend: parseFloat(user.total_spend) || 0,
       tiers,
+      tierCycleEnd: tierCycleEnd.toISOString(),
+      serverNow: now.toISOString(),
+      currentCycle,
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -91,12 +198,19 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     const accountId = parseInt(userId, 10);
     const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
     const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS;
+    const VARIANT_TABLE = `${DB_SCHEMA.VARIANT!.SCHEMA}.${DB_SCHEMA.VARIANT!.TABLE}`;
+    const COLS_V = DB_SCHEMA.VARIANT!.COLS;
+
     const result = await pool.query(
       `SELECT ol.id, ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}", 
               ol.price as "${COLS_OL.PRICE}", ol.order_date as "${COLS_OL.ORDER_DATE}", 
-              ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}"
+              ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}",
+              ol.order_expired as "${COLS_OL.ORDER_EXPIRED}", ol.slot as "${COLS_OL.SLOT}",
+              oc.${COLS_OC.PAYMENT_ID} as payment_id,
+              v.${COLS_V.VARIANT_NAME} as product_display_name
        FROM ${ORDER_LIST_TABLE} ol
        JOIN ${ORDER_CUSTOMER_TABLE} oc ON ol.id_order = oc.id_order
+       LEFT JOIN ${VARIANT_TABLE} v ON ol.id_product = v.${COLS_V.DISPLAY_NAME}
        WHERE oc.${COLS_OC.ACCOUNT_ID} = $1
        ORDER BY ol.order_date DESC
        LIMIT 200`,
@@ -106,7 +220,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     console.log("Rows found:", result.rows.length);
     const orderMap = new Map<
       string,
-      { id_order: string; order_date: string; status: string; items: any[] }
+      { id_order: string; order_date: string; status: string; payment_id: string | null; items: any[] }
     >();
     for (const row of result.rows) {
       console.log("Processing row:", row[COLS_OL.ID_ORDER], row);
@@ -116,13 +230,15 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
           id_order: idOrder,
           order_date: row[COLS_OL.ORDER_DATE],
           status: row[COLS_OL.STATUS] || "pending",
+          payment_id: row.payment_id ?? null,
           items: [],
         });
       }
-      let info: { name?: string; quantity?: number; unitPrice?: number; variant_name?: string; duration?: string; note?: string } = {};
+      let info: any = {};
+      const infoText = row[COLS_OL.INFORMATION_ORDER];
       try {
-        if (row[COLS_OL.INFORMATION_ORDER]) {
-          info = JSON.parse(row[COLS_OL.INFORMATION_ORDER]);
+        if (infoText && (infoText.startsWith("{") || infoText.startsWith("["))) {
+          info = JSON.parse(infoText);
         }
       } catch (err) {
         console.error("JSON parse error:", err);
@@ -130,6 +246,10 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
       orderMap.get(idOrder)!.items.push({
         id_product: row[COLS_OL.ID_PRODUCT],
         price: parseFloat(row[COLS_OL.PRICE]) || 0,
+        information_order: infoText,
+        order_expired: row[COLS_OL.ORDER_EXPIRED],
+        display_name: row.product_display_name,
+        slot: row[COLS_OL.SLOT],
         ...info,
       });
     }
@@ -137,6 +257,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
       id_order: o.id_order,
       order_date: o.order_date,
       status: o.status,
+      payment_id: o.payment_id ?? null,
       items: o.items,
     }));
     console.log("Returning orders count:", orders.length);
@@ -350,5 +471,31 @@ export async function getActivity(req: Request, res: Response): Promise<void> {
   } catch (err) {
     console.error("Get activity error:", err);
     res.status(500).json({ error: "Lỗi lấy lịch sử hoạt động" });
+  }
+}
+
+export async function getTransactions(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = getUserId(req);
+    const accountId = parseInt(userId, 10);
+    const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
+    const transactions = await walletService.getTransactions(accountId, limit);
+    res.json({
+      data: transactions.map((t) => ({
+        id: t.id,
+        orderId: t.refId ?? null,
+        balanceAfter: t.balanceAfter,
+        amount: t.amount,
+        direction: t.direction,
+        type: t.type,
+        createdAt: t.createdAt,
+        method: t.method,
+        promoCode: t.promoCode,
+        status: t.type,
+      })),
+    });
+  } catch (err) {
+    console.error("Get transactions error:", err);
+    res.status(500).json({ error: "Lỗi lấy lịch sử giao dịch" });
   }
 }

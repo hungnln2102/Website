@@ -1,5 +1,6 @@
 import { getApiBase } from "./client";
 import { authFetch } from "./auth";
+import { fetchWithTimeoutAndRetry } from "../utils/fetchWithRetry";
 import type {
   PaymentHealthResponse,
   CreatePaymentRequest,
@@ -9,10 +10,15 @@ import type {
 } from "../types";
 
 const API_BASE = getApiBase();
+const PAYMENT_FETCH_OPTIONS = { timeoutMs: 15000, retries: 2 };
 
 export async function checkPaymentHealth(): Promise<PaymentHealthResponse> {
   try {
-    const res = await fetch(`${API_BASE}/api/payment/health`);
+    const res = await fetchWithTimeoutAndRetry(
+      `${API_BASE}/api/payment/health`,
+      undefined,
+      { timeoutMs: 10000, retries: 1 }
+    );
     if (!res.ok) {
       return { success: false, configured: false };
     }
@@ -31,12 +37,16 @@ export async function createPayment(
     if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
-    const res = await fetch(`${API_BASE}/api/payment/create`, {
-      method: "POST",
-      headers,
-      credentials: "include",
-      body: JSON.stringify(data),
-    });
+    const res = await fetchWithTimeoutAndRetry(
+      `${API_BASE}/api/payment/create`,
+      {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(data),
+      },
+      PAYMENT_FETCH_OPTIONS
+    );
     const body = await res.json();
     if (!res.ok) {
       return {
@@ -62,10 +72,11 @@ export async function checkPaymentStatus(
     if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
-    const res = await fetch(`${API_BASE}/api/payment/status/${encodeURIComponent(orderId)}`, {
-      headers,
-      credentials: "include",
-    });
+    const res = await fetchWithTimeoutAndRetry(
+      `${API_BASE}/api/payment/status/${encodeURIComponent(orderId)}`,
+      { headers, credentials: "include" },
+      PAYMENT_FETCH_OPTIONS
+    );
     const body = await res.json();
     if (!res.ok) {
       return {
@@ -99,6 +110,30 @@ export async function confirmBalancePayment(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId, amount, items }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      return { success: false, error: body.error || "Xác nhận thanh toán thất bại." };
+    }
+    return body;
+  } catch {
+    return {
+      success: false,
+      error: "Lỗi kết nối máy chủ. Vui lòng thử lại sau.",
+    };
+  }
+}
+
+/** Xác nhận đã chuyển khoản/QR → ghi vào lịch sử giao dịch (cần đăng nhập) */
+export async function confirmTransfer(
+  orderId: string,
+  amount: number
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/payment/confirm-transfer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, amount }),
     });
     const body = await res.json();
     if (!res.ok) {

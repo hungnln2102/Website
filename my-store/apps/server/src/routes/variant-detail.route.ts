@@ -4,6 +4,7 @@ import * as variantController from "../controllers/variant.controller";
 const router = express.Router();
 
 router.get("/:id/detail", variantController.getVariantDetail);
+router.get("/:id/full", variantController.getVariantFullData);
 router.get("/by-name/:displayName/detail", variantController.getVariantByName);
 router.get("/product/:baseName", variantController.getVariantsByBaseName);
 router.get("/product-info/:baseName", variantController.getProductInfo);

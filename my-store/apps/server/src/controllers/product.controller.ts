@@ -10,11 +10,11 @@ import { getProductPackages } from "../services/product-packages.service";
 import { cache } from "../utils/cache";
 
 // ── Cache config ────────────────────────────────────────────────────
-
-const PRODUCTS_TTL = 120;     // 2 minutes
-const PROMOTIONS_TTL = 120;   // 2 minutes
-const CATEGORIES_TTL = 300;   // 5 minutes
-const PACKAGES_TTL = 180;     // 3 minutes
+// TTL dài hơn để giảm truy vấn DB khi Redis không dùng (cache in-memory)
+const PRODUCTS_TTL = 600;    // 10 phút
+const PROMOTIONS_TTL = 600;  // 10 phút
+const CATEGORIES_TTL = 900;  // 15 phút
+const PACKAGES_TTL = 300;    // 5 phút
 
 const CACHE_KEYS = {
   products: "products:list",

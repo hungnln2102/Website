@@ -81,21 +81,17 @@ export async function confirmBalancePayment(
       [newBalance, accountId]
     );
 
-    // 3) Insert wallet transaction (Lịch sử giao dịch - trừ Coin)
+    // 3) Insert wallet transaction (chỉ các cột có trong bảng: transaction_id, account_id, type, direction, amount, balance_before, balance_after, method, promo_code, created_at)
     const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const txIdCol = COLS_WT.TRANSACTION_ID;
+    const methodCol = COLS_WT.METHOD;
+    const promoCol = COLS_WT.PROMO_CODE;
     await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
-       (id, account_id, type, direction, amount, balance_before, balance_after, ref_type, ref_id, description, created_at)
-       VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, $4, $5, 'ORDER', $6, $7, NOW())`,
-      [
-        txId,
-        accountId,
-        amount,
-        currentBalance,
-        newBalance,
-        orderId,
-        `Thanh toán đơn hàng ${orderId}`,
-      ]
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promoCol}, created_at)
+       VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, $4, $5, 'balance', $6, NOW())`,
+      [txId, accountId, amount, currentBalance, newBalance, null]
     );
 
     // 4) Insert order_list rows (Lịch sử đơn hàng) - one row per line item
@@ -117,12 +113,14 @@ export async function confirmBalancePayment(
       );
     }
 
-    // 5) Insert order_customer row to link order and account
+    // 5) Insert order_customer (payment_id = transaction_id để join lịch sử giao dịch)
+    const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+    const paymentIdCol = COLS_OC.PAYMENT_ID;
     await client.query(
       `INSERT INTO ${ORDER_CUSTOMER_TABLE}
-       (id_order, account_id, status, payment_method, created_at, updated_at)
-       VALUES ($1, $2, 'paid', 'balance', NOW(), NOW())`,
-      [orderId, accountId]
+       (id_order, account_id, status, ${paymentIdCol}, created_at, updated_at)
+       VALUES ($1, $2, 'paid', $3, NOW(), NOW())`,
+      [orderId, accountId, txId]
     );
 
     await client.query("COMMIT");

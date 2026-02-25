@@ -18,6 +18,7 @@ const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
 const COLS_PROFILE = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as {
   ACCOUNT_ID: string;
+  TIER_ID: string;
   FIRST_NAME: string;
   LAST_NAME: string;
   DATE_OF_BIRTH: string;
@@ -28,6 +29,13 @@ const WALLET_SCHEMA = DB_SCHEMA.WALLET!.SCHEMA;
 const WALLET_TABLE = DB_SCHEMA.WALLET!.TABLE;
 const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
 const CH = DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.COLS;
+const SPEND_STATS_TABLE = `${DB_SCHEMA.CUSTOMER_SPEND_STATS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_SPEND_STATS!.TABLE}`;
+const COLS_SPEND = DB_SCHEMA.CUSTOMER_SPEND_STATS!.COLS as {
+  ACCOUNT_ID: string;
+  LIFETIME_SPEND: string;
+  SPEND_6M: string;
+  UPDATED_AT: string;
+};
 // Tier 1: 3 sai → khóa 5 phút. Tier 2: 3 sai nữa → khóa 10 phút.
 const TIER1_ATTEMPTS = 3;
 const TIER1_LOCK_SECONDS = 5 * 60;
@@ -258,8 +266,8 @@ export async function register(req: Request, res: Response): Promise<void> {
       /^\d{4}-\d{2}-\d{2}$/.test(birthDate) &&
       !Number.isNaN(new Date(birthDate).getTime());
     await pool.query(
-      `INSERT INTO ${PROFILE_TABLE} (${COLS_PROFILE.ACCOUNT_ID}, ${COLS_PROFILE.FIRST_NAME}, ${COLS_PROFILE.LAST_NAME}, ${COLS_PROFILE.DATE_OF_BIRTH}, ${COLS_PROFILE.CREATED_AT}, ${COLS_PROFILE.UPDATED_AT})
-       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      `INSERT INTO ${PROFILE_TABLE} (${COLS_PROFILE.ACCOUNT_ID}, ${COLS_PROFILE.TIER_ID}, ${COLS_PROFILE.FIRST_NAME}, ${COLS_PROFILE.LAST_NAME}, ${COLS_PROFILE.DATE_OF_BIRTH}, ${COLS_PROFILE.CREATED_AT}, ${COLS_PROFILE.UPDATED_AT})
+       VALUES ($1, 1, $2, $3, $4, NOW(), NOW())`,
       [newUser.id, sanitizedFirstName, sanitizedLastName, birthDateValid ? birthDate : null]
     );
 
@@ -271,6 +279,13 @@ export async function register(req: Request, res: Response): Promise<void> {
         (${CH.ACCOUNT_ID}, ${CH.PERIOD_START}, ${CH.PERIOD_END}, ${CH.PREVIOUS_TYPE}, ${CH.NEW_TYPE}, ${CH.TOTAL_SPEND}, ${CH.EVALUATED_AT})
        VALUES ($1, $2, $3, NULL, 'Member', 0, NOW())`,
       [newUser.id, periodStart, periodEnd]
+    );
+
+    // Khởi tạo thống kê chi tiêu: tổng trọn đời và 6 tháng = 0
+    await pool.query(
+      `INSERT INTO ${SPEND_STATS_TABLE} (${COLS_SPEND.ACCOUNT_ID}, ${COLS_SPEND.LIFETIME_SPEND}, ${COLS_SPEND.SPEND_6M}, ${COLS_SPEND.UPDATED_AT})
+       VALUES ($1, 0, 0, NOW())`,
+      [newUser.id]
     );
 
     await auditService.logAuth("REGISTER", newUser.id, req, {
@@ -438,8 +453,26 @@ export async function login(req: Request, res: Response): Promise<void> {
     await auditService.logAuth("LOGIN_SUCCESS", user.id, req, { device: getDeviceInfo(req) });
     const csrfToken = await setCsrfToken(res, String(user.id));
 
+    // httpOnly cookie: token không đọc được bởi JS, giảm rủi ro XSS
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOptions: {
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: "strict" | "lax" | "none";
+      maxAge: number;
+      path: string;
+    } = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000, // 15 phút, khớp access token
+      path: "/",
+    };
+    res.cookie("mavryk_at", accessToken, cookieOptions);
+
     res.json({
       message: "Đăng nhập thành công",
+      useHttpOnlyCookie: true,
       user: {
         id: String(user.id),
         username: user.username,
@@ -463,16 +496,23 @@ export async function logout(req: Request, res: Response): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
     const refreshToken = req.body.refreshToken;
+    const cookieToken = req.cookies?.mavryk_at;
+
     if (authHeader?.startsWith("Bearer ")) {
       await tokenBlacklistService.blacklist(authHeader.substring(7), 15 * 60);
+    }
+    if (cookieToken) {
+      await tokenBlacklistService.blacklist(cookieToken, 15 * 60);
     }
     if (refreshToken) {
       await refreshTokenService.revokeToken(refreshToken);
     }
+
     let userId: string | null = null;
-    if (authHeader?.startsWith("Bearer ")) {
+    const tokenToDecode = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : cookieToken;
+    if (tokenToDecode) {
       try {
-        const decoded = authService.verifyAccessToken(authHeader.substring(7));
+        const decoded = authService.verifyAccessToken(tokenToDecode);
         userId = decoded.userId;
       } catch {
         //
@@ -480,6 +520,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
     }
     await auditService.logAuth("LOGOUT", userId, req);
     clearCsrfToken(res);
+    res.clearCookie("mavryk_at", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
     res.json({ message: "Đăng xuất thành công", success: true });
   } catch (err) {
     console.error("Logout error:", err);

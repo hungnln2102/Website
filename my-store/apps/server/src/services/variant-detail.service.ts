@@ -1,4 +1,5 @@
 import prisma from '@my-store/db';
+import { TABLES } from '../config/db.config';
 
 export interface VariantDetailInfo {
   variant_id: number;
@@ -29,9 +30,8 @@ export class VariantDetailService {
         pd.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
       FROM product.variant v
-      LEFT JOIN product.product_desc pd 
-        ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
-      LEFT JOIN product.variant_sold_count vsc
+      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.id = $1
     `;
@@ -56,9 +56,8 @@ export class VariantDetailService {
         pd.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
       FROM product.variant v
-      LEFT JOIN product.product_desc pd 
-        ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
-      LEFT JOIN product.variant_sold_count vsc
+      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.display_name = $1
     `;
@@ -73,9 +72,9 @@ export class VariantDetailService {
   async getVariantsByBaseName(baseName: string): Promise<any[]> {
     const query = `
       WITH supply_max AS (
-        SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+        SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
         FROM product.supplier_cost sc
-        GROUP BY sc.product_id
+        GROUP BY sc.variant_id
       )
       SELECT 
         v.id as variant_id,
@@ -94,9 +93,8 @@ export class VariantDetailService {
         pc.pct_promo,
         COALESCE(sm.price_max, 0) as price_max
       FROM product.variant v
-      LEFT JOIN product.product_desc pd 
-        ON SPLIT_PART(v.display_name, '--', 1) = pd.product_id
-      LEFT JOIN product.variant_sold_count vsc
+      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       LEFT JOIN LATERAL (
         SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
@@ -105,7 +103,7 @@ export class VariantDetailService {
         ORDER BY pc.updated_at DESC NULLS LAST
         LIMIT 1
       ) pc ON TRUE
-      LEFT JOIN supply_max sm ON sm.product_id = v.id
+      LEFT JOIN supply_max sm ON sm.variant_id = v.id
       WHERE SPLIT_PART(v.display_name, '--', 1) = $1
       ORDER BY 
         CASE 
@@ -120,6 +118,7 @@ export class VariantDetailService {
 
   /**
    * Get product info (shared across all variants)
+   * Trả về object JSON-safe (không có BigInt) để tránh lỗi serialize.
    */
   async getProductInfo(baseName: string): Promise<{
     base_name: string;
@@ -135,8 +134,36 @@ export class VariantDetailService {
       return null;
     }
 
-    // Get total sold count for all variants
-    const totalSoldCount = variants.reduce((sum, v) => sum + (v.sold_count || 0), 0);
+    const toNum = (v: unknown): number => {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === "bigint") return Number(v);
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      if (typeof v === "string") {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      }
+      return 0;
+    };
+
+    const totalSoldCount = variants.reduce((sum, v) => sum + toNum(v.sold_count), 0);
+
+    const variantsSafe = variants.map((v) => ({
+      variant_id: toNum(v.variant_id),
+      display_name: v.display_name,
+      variant_name: v.variant_name,
+      product_id: toNum(v.product_id),
+      form_id: v.form_id != null ? toNum(v.form_id) : null,
+      base_name: v.base_name,
+      duration: v.duration,
+      description: v.description,
+      image_url: v.image_url,
+      purchase_rules: v.purchase_rules,
+      sold_count: toNum(v.sold_count),
+      pct_ctv: toNum(v.pct_ctv),
+      pct_khach: toNum(v.pct_khach),
+      pct_promo: v.pct_promo != null ? toNum(v.pct_promo) : null,
+      price_max: toNum(v.price_max),
+    }));
 
     return {
       base_name: baseName,
@@ -144,7 +171,7 @@ export class VariantDetailService {
       image_url: variants[0].image_url,
       purchase_rules: variants[0].purchase_rules,
       total_sold_count: totalSoldCount,
-      variants: variants,
+      variants: variantsSafe,
     };
   }
 }

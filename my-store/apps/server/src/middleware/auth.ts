@@ -3,8 +3,20 @@ import { authService } from '../services/auth.service';
 import { tokenBlacklistService } from '../services/token-blacklist.service';
 
 /**
+ * Get access token from request: httpOnly cookie (mavryk_at) or Authorization Bearer.
+ * Ưu tiên cookie để dùng cơ chế httpOnly an toàn hơn.
+ */
+function getAccessToken(req: Request): string | null {
+  const cookieToken = (req as Request & { cookies?: Record<string, string> }).cookies?.mavryk_at;
+  if (cookieToken) return cookieToken;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) return authHeader.substring(7);
+  return null;
+}
+
+/**
  * Authentication middleware
- * Verifies JWT access token from Authorization header
+ * Verifies JWT access token from cookie (mavryk_at) or Authorization header
  * SECURITY: Also checks token blacklist for logged-out tokens
  */
 export const authenticate = async (
@@ -13,16 +25,14 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        error: 'Unauthorized',
-        message: 'No token provided' 
+    const token = getAccessToken(req);
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "No token provided",
       });
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
     // SECURITY: Check if token has been blacklisted (logged out)
     if (await tokenBlacklistService.isBlacklisted(token)) {
@@ -84,7 +94,7 @@ export const authorize = (...roles: string[]) => {
 
 /**
  * Optional authentication middleware
- * Attaches user info if token is present, but doesn't require it
+ * Attaches user info if token is present (cookie or Bearer), but doesn't require it
  * SECURITY: Also checks token blacklist
  */
 export const optionalAuth = async (
@@ -93,10 +103,9 @@ export const optionalAuth = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    const token = getAccessToken(req);
+
+    if (token) {
       
       // SECURITY: Check if token has been blacklisted
       if (await tokenBlacklistService.isBlacklisted(token)) {

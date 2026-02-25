@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Lock, Eye, EyeOff, ShieldAlert, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
 import { Turnstile, resetTurnstile } from "./Turnstile";
+import { validateLoginForm, type LoginFormData as LoginFormDataBase, type LoginFieldErrors } from "../lib/loginValidation";
 
-export interface LoginFormData {
-  email: string;
-  password: string;
+export interface LoginFormData extends LoginFormDataBase {
   captchaToken?: string;
 }
 
@@ -29,43 +28,48 @@ export function LoginForm({
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [localErrors, setLocalErrors] = useState<LoginFieldErrors>({});
 
-  // Reset captcha when form becomes active
   useEffect(() => {
     if (isActive && requireCaptcha) {
       setCaptchaToken(null);
     }
   }, [isActive, requireCaptcha]);
 
+  const validateForm = (): boolean => {
+    const nextErrors = validateLoginForm(formData);
+    setLocalErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // If captcha required but not verified
-    if (requireCaptcha && !captchaToken) {
-      return;
-    }
-    
+    if (!validateForm()) return;
+    if (requireCaptcha && !captchaToken) return;
+
     onSubmit({
       ...formData,
       captchaToken: captchaToken || undefined,
     });
 
-    // Reset captcha after submission
     if (requireCaptcha) {
       resetTurnstile();
       setCaptchaToken(null);
     }
   };
 
+  const getInputClassName = (field: keyof LoginFieldErrors, base: string) => {
+    const hasError = localErrors[field];
+    return `${base} ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (localErrors[name as keyof LoginFieldErrors]) {
+      setLocalErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleCaptchaVerify = (token: string) => {
@@ -108,10 +112,18 @@ export function LoginForm({
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className={getInputClassName("email", "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white")}
                 placeholder="Tài khoản hoặc Email"
+                aria-invalid={!!localErrors.email}
+                aria-describedby={localErrors.email ? "login-email-error" : undefined}
               />
             </div>
+            {localErrors.email && (
+              <p id="login-email-error" className="mt-1 flex items-center gap-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {localErrors.email}
+              </p>
+            )}
           </div>
 
           <div>
@@ -128,8 +140,10 @@ export function LoginForm({
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-12 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className={getInputClassName("password", "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-12 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white")}
                 placeholder="••••••••"
+                aria-invalid={!!localErrors.password}
+                aria-describedby={localErrors.password ? "login-password-error" : undefined}
               />
               <button
                 type="button"
@@ -139,6 +153,12 @@ export function LoginForm({
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            {localErrors.password && (
+              <p id="login-password-error" className="mt-1 flex items-center gap-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {localErrors.password}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between">

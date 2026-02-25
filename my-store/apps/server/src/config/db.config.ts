@@ -39,6 +39,7 @@ export const SCHEMA_WALLET        = pickSchema(process.env.DB_SCHEMA_WALLET,    
 export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_REVIEW,        process.env.SCHEMA_REVIEW,        "review");
 export const SCHEMA_AUDIT         = pickSchema(process.env.DB_SCHEMA_AUDIT,         process.env.SCHEMA_AUDIT,         "audit");
 export const SCHEMA_FORM_DESC     = pickSchema(process.env.DB_SCHEMA_FORM_DESC,     process.env.SCHEMA_FORM_DESC,     "form_desc");
+export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CYCLES,        process.env.SCHEMA_CYCLES,        "cycles");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Table & Column Definitions
@@ -89,10 +90,11 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "product_desc",
     COLS: {
       ID: "id",
-      PRODUCT_ID: "product_id",
+      VARIANT_ID: "variant_id",
       DESCRIPTION: "description",
       RULES: "rules",
       IMAGE_URL: "image_url",
+      SHORT_DESC: "short_desc",
     },
   },
 
@@ -121,9 +123,47 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "supplier_cost",
     COLS: {
       ID: "id",
-      PRODUCT_ID: "product_id",
+      VARIANT_ID: "variant_id",
       SUPPLIER_ID: "supplier_id",
       PRICE: "price",
+    },
+  },
+
+  /** Materialized view: thống kê bán 30 ngày theo product_id */
+  PRODUCT_SOLD_30D: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "product_sold_30d",
+    COLS: {
+      PRODUCT_ID: "product_id",
+      PACKAGE_NAME: "package_name",
+      SOLD_COUNT_30D: "sold_count_30d",
+      REVENUE_30D: "revenue_30d",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  /** Materialized view: tổng số đã bán theo package */
+  PRODUCT_SOLD_COUNT: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "product_sold_count",
+    COLS: {
+      PRODUCT_ID: "product_id",
+      PACKAGE_NAME: "package_name",
+      TOTAL_SALES_COUNT: "total_sales_count",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  /** Materialized view: số đã bán theo từng variant */
+  VARIANT_SOLD_COUNT: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "variant_sold_count",
+    COLS: {
+      VARIANT_DISPLAY_NAME: "variant_display_name",
+      VARIANT_ID: "variant_id",
+      PRODUCT_ID: "product_id",
+      SALES_COUNT: "sales_count",
+      UPDATED_AT: "updated_at",
     },
   },
 
@@ -205,7 +245,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       STATUS: "status",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
-      PAYMENT_METHOD: "payment_method",
+      PAYMENT_ID: "payment_id",
     },
   },
 
@@ -262,10 +302,23 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ACCOUNT_ID: "account_id",
+      TIER_ID: "tier_id",
       FIRST_NAME: "first_name",
       LAST_NAME: "last_name",
       DATE_OF_BIRTH: "date_of_birth",
       CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  /** Thống kê tổng chi tiêu và chi tiêu 6 tháng của tài khoản */
+  CUSTOMER_SPEND_STATS: {
+    SCHEMA: SCHEMA_CUSTOMER,
+    TABLE: "customer_spend_stats",
+    COLS: {
+      ACCOUNT_ID: "account_id",
+      LIFETIME_SPEND: "lifetime_spend",
+      SPEND_6M: "spend_6m",
       UPDATED_AT: "updated_at",
     },
   },
@@ -295,8 +348,25 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
-  // ── Cart ───────────────────────────────────────────────────────────────────
+  // ── Cycles (chu kỳ tier — dùng chung cho mọi account) ─────────────────────────
 
+  /** Chu kỳ: start_at, end_at. Thời gian hiện tại nằm trong [start_at, end_at] của bản ghi nào thì đó là chu kỳ hiện tại. */
+  TIER_CYCLES: {
+    SCHEMA: SCHEMA_CYCLES,
+    TABLE: "tier_cycles",
+    COLS: {
+      ID: "id",
+      CYCLE_START_AT: "cycle_start_at",
+      CYCLE_END_AT: "cycle_end_at",
+      STATUS: "status",
+      CREATED_AT: "created_at",
+    },
+  },
+
+  // ── Cart ───────────────────────────────────────────────────────────────────
+  // cart.cart_items: id (int PK, SERIAL/IDENTITY auto-generated), account_id (int4 FK), variant_id (text/int FK),
+  // quantity (int4), extra_info (jsonb), created_at, updated_at, price_type (varchar: retail|promo|ctv).
+  // UNIQUE(account_id, variant_id) cho INSERT ... ON CONFLICT.
   CART_ITEMS: {
     SCHEMA: SCHEMA_CART,
     TABLE: "cart_items",
@@ -308,6 +378,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       EXTRA_INFO: "extra_info",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
+      PRICE_TYPE: "price_type",
     },
   },
 
@@ -329,16 +400,16 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "wallet_transactions",
     COLS: {
       ID: "id",
+      TRANSACTION_ID: "transaction_id",
       ACCOUNT_ID: "account_id",
       TYPE: "type",
       DIRECTION: "direction",
       AMOUNT: "amount",
       BALANCE_BEFORE: "balance_before",
       BALANCE_AFTER: "balance_after",
-      REF_TYPE: "ref_type",
-      REF_ID: "ref_id",
-      DESCRIPTION: "description",
+      PROMO_CODE: "promo_code",
       CREATED_AT: "created_at",
+      METHOD: "method",
     },
   },
 
@@ -392,6 +463,9 @@ export const TABLES = {
   CATEGORY:         t("CATEGORY"),
   PRODUCT_CATEGORY: t("PRODUCT_CATEGORY"),
   SUPPLIER_COST:    t("SUPPLIER_COST"),
+  PRODUCT_SOLD_30D: t("PRODUCT_SOLD_30D"),
+  PRODUCT_SOLD_COUNT: t("PRODUCT_SOLD_COUNT"),
+  VARIANT_SOLD_COUNT: t("VARIANT_SOLD_COUNT"),
   ORDER_LIST:       t("ORDER_LIST"),
   ORDER_EXPIRED:    t("ORDER_EXPIRED"),
 } as const;

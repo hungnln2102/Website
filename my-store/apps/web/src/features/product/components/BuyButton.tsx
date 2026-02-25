@@ -1,17 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, MessageCircle, PhoneCall, Send, X } from "lucide-react";
+import { ShoppingCart, X, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { useCart } from "@/hooks/useCart";
+import { CONTACT_LINKS } from "../constants";
 import type { DurationOption } from "./DurationSelector";
-
-const CONTACT_LINKS = [
-  { label: "Telegram", bg: "#229ED9", icon: Send, href: "https://t.me/hung_culi" },
-  { label: "Messenger", bg: "#0084FF", icon: MessageCircle, href: "https://m.me/cyrusdemons" },
-  { label: "Zalo", bg: "#0068FF", icon: PhoneCall, href: "https://zalo.me/0378304963" },
-];
 
 interface BuyButtonProps {
   selectedPackage: string | null;
@@ -37,9 +32,16 @@ export function BuyButton({
   additionalInfo,
   additionalInfoLabels,
 }: BuyButtonProps) {
-  const { addItem } = useCart();
+  const { addItem, isLoggedIn } = useCart();
   const [showContactPopup, setShowContactPopup] = useState(false);
-  const isEnabled = selectedPackage && selectedDuration && additionalInfoValid;
+  const isEnabled =
+    selectedPackage &&
+    selectedDuration &&
+    additionalInfoValid &&
+    selectedDurationData != null &&
+    selectedDurationData.id != null &&
+    selectedDurationData.id !== "" &&
+    isLoggedIn;
 
   const getFinalPrice = () => {
     if (!selectedDurationData) return null;
@@ -69,12 +71,18 @@ export function BuyButton({
   const isFreeProduct = isEnabled && finalPrice !== null && finalPrice === 0;
 
   const handleAddToCart = () => {
-    if (!isEnabled || !selectedDurationData || finalPrice === null) return;
+    if (!isLoggedIn) {
+      toast.error("Vui lòng đăng nhập để thêm vào giỏ hàng.");
+      return;
+    }
+    if (!isEnabled || !selectedDurationData || finalPrice === null || selectedDurationData.id == null) return;
 
     const hasAdditionalInfo = additionalInfo && Object.values(additionalInfo).some((v) => v.trim() !== "");
+    const variantId = selectedDurationData.id;
     const cartItem = {
       id: `${selectedPackage}-${selectedDuration}`,
-      variantId: (selectedDurationData as any).id,
+      variantId: String(variantId),
+      priceType: discountPercentage > 0 ? ("promo" as const) : ("retail" as const),
       name: productName || selectedPackage || "Sản phẩm",
       packageName: selectedPackage || "",
       duration: selectedDurationData.label,
@@ -89,13 +97,19 @@ export function BuyButton({
     toast.success(`Đã thêm "${productName || selectedPackage}" vào giỏ hàng!`);
   };
 
-  const handleBuyNow = () => {
-    if (!isEnabled || !selectedDurationData || finalPrice === null) return;
+  const handleBuyNow = async () => {
+    if (!isLoggedIn) {
+      toast.error("Vui lòng đăng nhập để mua hàng.");
+      return;
+    }
+    if (!isEnabled || !selectedDurationData || finalPrice === null || selectedDurationData.id == null) return;
 
     const hasAdditionalInfo = additionalInfo && Object.values(additionalInfo).some((v) => v.trim() !== "");
+    const variantId = selectedDurationData.id;
     const cartItem = {
       id: `${selectedPackage}-${selectedDuration}`,
-      variantId: (selectedDurationData as any).id,
+      variantId: String(variantId),
+      priceType: discountPercentage > 0 ? ("promo" as const) : ("retail" as const),
       name: productName || selectedPackage || "Sản phẩm",
       packageName: selectedPackage || "",
       duration: selectedDurationData.label,
@@ -107,33 +121,8 @@ export function BuyButton({
       ...(hasAdditionalInfo ? { additionalInfo, additionalInfoLabels } : {}),
     };
 
-    // Save directly to localStorage before navigating
-    const CART_STORAGE_KEY = "mavryk_cart";
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      const existingItems = stored ? JSON.parse(stored) : [];
-      
-      const existingIndex = existingItems.findIndex(
-        (i: any) => i.id === cartItem.id && i.duration === cartItem.duration
-      );
-
-      if (existingIndex >= 0) {
-        existingItems[existingIndex].quantity += 1;
-      } else {
-        existingItems.push(cartItem);
-      }
-
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(existingItems));
-      
-      // Dispatch event for badge update
-      window.dispatchEvent(new CustomEvent("cart-updated", { detail: existingItems }));
-    } catch (e) {
-      console.error("Failed to save cart:", e);
-    }
-
+    await addItem(cartItem);
     toast.success(`Đã thêm "${productName || selectedPackage}" vào giỏ hàng!`);
-    
-    // Navigate to cart page
     window.history.pushState({}, "", "/gio-hang");
     window.dispatchEvent(new Event("popstate"));
   };
@@ -243,6 +232,11 @@ export function BuyButton({
       {selectedPackage && selectedDuration && !additionalInfoValid && (
         <p className="mt-2 text-center text-[10px] font-semibold text-red-500 animate-pulse">
           * Vui lòng điền đầy đủ thông tin bổ sung
+        </p>
+      )}
+      {selectedPackage && selectedDuration && additionalInfoValid && !isLoggedIn && (
+        <p className="mt-2 text-center text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+          Đăng nhập để mua hoặc thêm vào giỏ
         </p>
       )}
     </div>

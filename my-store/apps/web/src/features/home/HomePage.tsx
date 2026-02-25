@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import BannerSlider from "@/components/BannerSlider";
@@ -14,9 +14,7 @@ import { APP_CONFIG } from "@/lib/constants";
 import { validateSearchQuery } from "@/lib/validation/search";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
-import { authFetch } from "@/lib/api";
-
-import { useHomeData, useHomeFilters } from "./hooks";
+import { useHomeData, useHomeFilters, useSyncUserBalance } from "./hooks";
 import {
   BackgroundEffects,
   DealsSection,
@@ -31,25 +29,10 @@ interface HomePageProps {
   setSearchQuery: (query: string) => void;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
 export default function HomePage({ onProductClick, searchQuery, setSearchQuery }: HomePageProps) {
   const isScrolled = useScroll();
   const { user, logout, updateUser } = useAuth();
-
-  // Fetch and sync user balance on mount (uses authFetch for auto-logout on 401)
-  useEffect(() => {
-    if (!user) return;
-
-    authFetch(`${API_BASE}/api/user/profile`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.balance !== undefined && data.balance !== user.balance) {
-          updateUser({ balance: data.balance });
-        }
-      })
-      .catch(() => {});
-  }, [user?.id]); // Only re-fetch when user changes
+  useSyncUserBalance(user, updateUser);
 
   // Data fetching
   const {

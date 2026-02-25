@@ -1,6 +1,12 @@
 /**
  * Form Controller
  * Handles form template and input field retrieval for product variants.
+ *
+ * Luồng dữ liệu: variant.form_id → form_input (form_id) → inputs (input_id)
+ * - Bảng variant có cột form_id.
+ * - form_input liên kết form_id với các input_id (và sort_order).
+ * - inputs chứa định nghĩa từng input (input_name, input_type).
+ * Frontend: ProductDetailPage lấy form_id từ durationOption → fetchFormFields(formId) → AdditionalInfoSection.
  */
 import type { Request, Response } from "express";
 import pool from "../config/database";
@@ -43,17 +49,21 @@ export async function getFormFields(req: Request, res: Response): Promise<void> 
     );
 
     const form = {
-      id: formRow.id,
+      id: typeof formRow.id === "bigint" ? Number(formRow.id) : Number(formRow.id ?? 0),
       name: (formRow as Record<string, unknown>)[String(CF.NAME)],
       description: ((formRow as Record<string, unknown>)[String(CF.DESCRIPTION)] as string) ?? null,
     };
-    const fields = fieldsResult.rows.map((r: Record<string, unknown>) => ({
-      input_id: r[String(CFI.INPUT_ID)],
-      input_name: r[String(CI.INPUT_NAME)],
-      input_type: (r[String(CI.INPUT_TYPE)] as string) || "text",
-      required: true,
-      sort_order: parseInt(String(r[String(CFI.SORT_ORDER)]), 10) || 0,
-    }));
+    const fields = fieldsResult.rows.map((r: Record<string, unknown>) => {
+      const inputId = r[String(CFI.INPUT_ID)];
+      const sortOrder = r[String(CFI.SORT_ORDER)];
+      return {
+        input_id: typeof inputId === "bigint" ? Number(inputId) : Number(inputId ?? 0),
+        input_name: r[String(CI.INPUT_NAME)],
+        input_type: (r[String(CI.INPUT_TYPE)] as string) || "text",
+        required: true,
+        sort_order: typeof sortOrder === "bigint" ? Number(sortOrder) : parseInt(String(sortOrder ?? 0), 10) || 0,
+      };
+    });
 
     res.json({ data: { form, fields } });
   } catch (err) {

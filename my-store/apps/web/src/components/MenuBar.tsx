@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Home, Package, Gift, Newspaper, ShieldCheck, CreditCard, Phone, ClipboardList, Menu, X, ShoppingCart, LogIn } from "lucide-react";
+import { Phone, ClipboardList, Menu, X, ShoppingCart, LogIn } from "lucide-react";
 import { createPortal } from "react-dom";
 import CategoryButton from "@/features/catalog/components/CategoryButton";
-import { getCartItemCount } from "@/hooks/useCart";
 import { useAuth } from "@/features/auth/hooks";
+import { getCartCount, getAuthToken } from "@/lib/api";
+import { MENU_ITEMS } from "./menu/menuConstants";
 
 interface MenuBarProps {
   isScrolled: boolean;
@@ -34,17 +35,27 @@ export default function MenuBar({
 
   useEffect(() => {
     setIsMounted(true);
-    // Load initial cart count
-    setCartCount(getCartItemCount());
 
-    // Listen for cart updates
-    const handleCartUpdate = () => {
-      setCartCount(getCartItemCount());
+    const handleCartUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<Array<{ quantity?: number }>>;
+      const items = customEvent.detail ?? [];
+      const count = Array.isArray(items) ? items.reduce((s, i) => s + (i.quantity ?? 1), 0) : 0;
+      setCartCount(count);
     };
 
     window.addEventListener("cart-updated", handleCartUpdate);
+
+    if (user) {
+      const token = getAuthToken();
+      getCartCount(token).then((res) => {
+        if (res.success && res.data != null) setCartCount(res.data.totalItems ?? 0);
+      });
+    } else {
+      setCartCount(0);
+    }
+
     return () => window.removeEventListener("cart-updated", handleCartUpdate);
-  }, []);
+  }, [user]);
 
   // Close mobile menu on escape key
   useEffect(() => {
@@ -68,15 +79,6 @@ export default function MenuBar({
       document.body.style.overflow = "";
     };
   }, [isMobileMenuOpen]);
-
-  const menuItems = [
-    { label: "Trang chủ", icon: Home, href: "/" },
-    { label: "Sản phẩm", icon: Package, href: "/tat-ca-san-pham" },
-    { label: "Khuyến mãi", icon: Gift, href: "/khuyen-mai" },
-    { label: "Tin tức", icon: Newspaper, href: "#tin-tuc" },
-    { label: "Bảo hành", icon: ShieldCheck, href: "#bao-hanh" },
-    { label: "Thanh toán", icon: CreditCard, href: "#thanh-toan" },
-  ];
 
   const handleMobileMenuClose = () => {
     setIsMobileMenuOpen(false);
@@ -126,7 +128,7 @@ export default function MenuBar({
 
               {/* Menu Items - Desktop */}
               <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar lg:gap-1">
-                {menuItems.map((item) => (
+                {MENU_ITEMS.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
@@ -258,7 +260,7 @@ export default function MenuBar({
 
               {/* Menu Items */}
               <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-2">
-                {menuItems.map((item, index) => (
+                {MENU_ITEMS.map((item, index) => (
                   <a
                     key={item.label}
                     href={item.href}

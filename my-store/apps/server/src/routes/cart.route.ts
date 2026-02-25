@@ -30,10 +30,14 @@ router.post(
       .optional()
       .isInt({ min: 1 })
       .withMessage("Quantity must be at least 1"),
-    body("extraInfo")
+    body("priceType")
       .optional()
-      .isObject()
-      .withMessage("Extra info must be an object"),
+      .isIn(["retail", "promo", "ctv"])
+      .withMessage("priceType must be retail, promo, or ctv"),
+    body("extraInfo")
+      .optional({ values: "null" })
+      .custom((value) => value === null || (typeof value === "object" && value !== null && !Array.isArray(value)))
+      .withMessage("Extra info must be an object or null"),
     handleValidationErrors,
   ],
   (req: Request, res: Response) => cartController.addItem(req, res)
@@ -75,6 +79,9 @@ router.post(
     body("items.*.quantity")
       .isInt({ min: 1 })
       .withMessage("Quantity must be at least 1"),
+    body("items.*.priceType")
+      .optional()
+      .isIn(["retail", "promo", "ctv"]),
     handleValidationErrors,
   ],
   (req: Request, res: Response) => cartController.syncCart(req, res)

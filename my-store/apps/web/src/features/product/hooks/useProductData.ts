@@ -177,6 +177,7 @@ export function useProductData(slug: string, selectedPackage: string | null) {
         const existing = options.get(key);
         if (!existing || (price > 0 && (existing.price === 0 || price < existing.price))) {
           options.set(key, {
+            id: pkg.id,
             key,
             label,
             price,
@@ -193,9 +194,9 @@ export function useProductData(slug: string, selectedPackage: string | null) {
 
     const base = Math.max(0, roundToNearestThousand(product.base_price));
     return [
-      { key: "12m", label: "12 tháng", price: base, sortValue: 12, is_active: true },
-      { key: "24m", label: "24 tháng", price: roundToNearestThousand(base * 1.8), sortValue: 24, is_active: true },
-      { key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.5), sortValue: 36, is_active: true },
+      { id: undefined, key: "12m", label: "12 tháng", price: base, sortValue: 12, is_active: true },
+      { id: undefined, key: "24m", label: "24 tháng", price: roundToNearestThousand(base * 1.8), sortValue: 24, is_active: true },
+      { id: undefined, key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.5), sortValue: 36, is_active: true },
     ];
   }, [packageData, product, selectedPackage]);
 

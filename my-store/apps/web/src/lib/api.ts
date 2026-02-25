@@ -1,11 +1,13 @@
 /**
- * API barrel – all client-side API and types.
- * Implementations live in lib/api/*.ts; this file keeps `import { ... } from "@/lib/api"` working.
+ * API barrel – re-exports from lib/api/index so `import { ... } from "@/lib/api"` works.
+ * Giữ file này để resolver (Vite/TS) ưu tiên api.ts; nếu xóa thì "@/lib/api" trỏ vào thư mục api/.
  */
 export {
   getAuthToken,
   AUTH_EXPIRED_EVENT,
   authFetch,
+  getApiBase,
+  handleApiError,
   fetchProducts,
   fetchPromotions,
   fetchCategories,
@@ -17,7 +19,9 @@ export {
   checkPaymentStatus,
   generateOrderId,
   confirmBalancePayment,
+  confirmTransfer,
   fetchUserOrders,
+  fetchUserTransactions,
   fetchFormFields,
   fetchCart,
   addToCart,
@@ -42,6 +46,7 @@ export type {
   ConfirmBalancePaymentItem,
   UserOrderItem,
   UserOrder,
+  WalletTransactionDto,
   FormFieldDto,
   FormFieldsResponse,
   CartItemDto,

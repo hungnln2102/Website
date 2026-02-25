@@ -8,9 +8,9 @@ import { resolveImageUrl, slugify, stripHtml, toNumber } from "../utils/product-
 export async function getPromotionsList() {
   const query = `
     WITH supply_max AS (
-      SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+      SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
       FROM ${TABLES.SUPPLIER_COST} sc
-      GROUP BY sc.product_id
+      GROUP BY sc.variant_id
     ),
     priced AS (
       SELECT
@@ -26,7 +26,7 @@ export async function getPromotionsList() {
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         pd.description,
-        COALESCE(pd.image_url, p.image_url) AS image_url
+        pd.image_url AS image_url
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       INNER JOIN LATERAL (
@@ -36,9 +36,9 @@ export async function getPromotionsList() {
         ORDER BY pc.updated_at DESC NULLS LAST
         LIMIT 1
       ) pc ON TRUE
-      LEFT JOIN supply_max sm ON sm.product_id = v.id
-      LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
+      LEFT JOIN supply_max sm ON sm.variant_id = v.id
+      LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
+      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
     )
     SELECT
       product_id,

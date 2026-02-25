@@ -17,5 +17,6 @@ router.put("/email", veryStrictLimiter, alwaysRequireCaptcha, userController.cha
 router.get("/sessions", userController.getSessions);
 router.delete("/sessions/:sessionId", userController.revokeSession);
 router.get("/activity", userController.getActivity);
+router.get("/transactions", userController.getTransactions);
 
 export default router;

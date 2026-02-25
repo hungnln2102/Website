@@ -2,6 +2,7 @@
  * Product package variants by package name (deduplicated by package_product + id_product + cost).
  */
 import prisma from "@my-store/db";
+import { TABLES } from "../config/db.config";
 import { toNumber } from "../utils/product-helpers";
 
 type PackageProductRow = {
@@ -13,11 +14,11 @@ type PackageProductRow = {
 };
 
 export async function getProductPackages(packageName: string) {
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const query = `
     WITH supply_max AS (
-      SELECT sc.product_id, MAX(sc.price::numeric) AS price_max
+      SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
       FROM product.supplier_cost sc
-      GROUP BY sc.product_id
+      GROUP BY sc.variant_id
     ),
     priced AS (
       SELECT
@@ -45,12 +46,10 @@ export async function getProductPackages(packageName: string) {
         ORDER BY pc.updated_at DESC NULLS LAST
         LIMIT 1
       ) pc ON TRUE
-      LEFT JOIN supply_max sm ON sm.product_id = v.id
-      LEFT JOIN product.variant_sold_count vsc ON vsc.variant_id = v.id
-      LEFT JOIN product.product_desc pd ON 
-        TRIM(pd.product_id::text) = TRIM(v.display_name::text)
-        OR TRIM(pd.product_id::text) = TRIM(SPLIT_PART(v.display_name::text, '--', 1))
-      WHERE p.package_name ILIKE ${packageName}
+      LEFT JOIN supply_max sm ON sm.variant_id = v.id
+      LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
+      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      WHERE p.package_name ILIKE $1
     )
     SELECT
       *,
@@ -58,6 +57,7 @@ export async function getProductPackages(packageName: string) {
     FROM priced
     WHERE package_product IS NOT NULL;
   `;
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(query, packageName);
 
   const dedup = new Map<string, PackageProductRow & Record<string, unknown>>();
   rows.forEach((row) => {

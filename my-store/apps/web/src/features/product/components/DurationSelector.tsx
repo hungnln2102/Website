@@ -5,13 +5,14 @@ import { formatCurrency } from "../utils";
 import { roundToNearestThousand } from "@/lib/pricing";
 
 export interface DurationOption {
+  /** Id variant từ DB (product.variant.id) — dùng lưu vào cart_items.variant_id */
+  id?: string | number;
   key: string;
   label: string;
   price: number;
   sortValue: number;
   pct_promo?: number;
   is_active?: boolean;
-  /** form_id từ variant → dùng để lấy form Thông tin bổ sung (form_name + form_input + inputs) */
   form_id?: number | null;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./hooks";
 import {
   AuthLogo,
@@ -28,6 +29,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onBack, initialMode = "login" }: LoginPageProps) {
+  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, login } = useAuth();
   const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -93,8 +95,11 @@ export default function LoginPage({ onBack, initialMode = "login" }: LoginPagePr
         return;
       }
 
-      if (result.accessToken) sessionStorage.setItem("accessToken", result.accessToken);
-      if (result.refreshToken) sessionStorage.setItem("refreshToken", result.refreshToken);
+      // Khi server dùng httpOnly cookie (mavryk_at), không lưu token vào sessionStorage để tránh XSS
+      if (!result.useHttpOnlyCookie) {
+        if (result.accessToken) sessionStorage.setItem("accessToken", result.accessToken);
+        if (result.refreshToken) sessionStorage.setItem("refreshToken", result.refreshToken);
+      }
       setCaptchaRequired(false);
 
       login({
@@ -104,6 +109,8 @@ export default function LoginPage({ onBack, initialMode = "login" }: LoginPagePr
         firstName: result.user!.firstName,
         lastName: result.user!.lastName,
       });
+      // Xóa cache profile cũ để lần vào Tổng quan luôn gọi API lấy currentCycle đúng theo user vừa login
+      queryClient.removeQueries({ queryKey: ["user-profile"] });
 
       showNotification("Đăng nhập thành công!", "success");
     } catch {

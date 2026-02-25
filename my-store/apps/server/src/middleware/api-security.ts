@@ -102,22 +102,29 @@ export const alwaysRequireCaptcha = async (
   next();
 };
 
+/** Lấy access token từ cookie (mavryk_at) hoặc Authorization Bearer */
+function getAccessToken(req: Request): string | null {
+  const cookieToken = (req as Request & { cookies?: Record<string, string> }).cookies?.mavryk_at;
+  if (cookieToken) return cookieToken;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) return authHeader.substring(7);
+  return null;
+}
+
 /**
  * JWT Authentication middleware
- * Verifies access token and checks blacklist
+ * Verifies access token (cookie or Bearer) and checks blacklist
  */
 export const requireAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
+  const token = getAccessToken(req);
 
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!token) {
     return res.status(401).json({ error: "Yêu cầu xác thực" });
   }
-
-  const token = authHeader.substring(7);
 
   // Check if token is blacklisted
   if (await tokenBlacklistService.isBlacklisted(token)) {
@@ -152,20 +159,18 @@ export const requireAuth = async (
 
 /**
  * Optional authentication middleware
- * Attaches user info if token is valid, but doesn't require it
+ * Attaches user info if token (cookie or Bearer) is valid, but doesn't require it
  */
 export const optionalAuth = async (
   req: Request,
   _res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
+  const token = getAccessToken(req);
 
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!token) {
     return next();
   }
-
-  const token = authHeader.substring(7);
 
   // Check if token is blacklisted
   if (await tokenBlacklistService.isBlacklisted(token)) {

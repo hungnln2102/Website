@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { AUTH_EXPIRED_EVENT } from "@/lib/api";
+import { AUTH_EXPIRED_EVENT, getApiBase } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -166,9 +166,7 @@ export function useAuth() {
       const accessToken = storage?.getItem("accessToken");
       const refreshToken = storage?.getItem("refreshToken");
       
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-      
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      await fetch(`${getApiBase()}/api/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

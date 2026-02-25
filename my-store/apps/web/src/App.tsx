@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import FloatingLogo from "@/components/FloatingLogo";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
-import Loader from "@/components/loader";
 import { useRouter } from "@/hooks/useRouter";
 
 const HomePage = lazy(() => import("@/features/home/HomePage"));
@@ -37,7 +36,14 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SkipLinks />
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950"><Loader /></div>}>
+      <Suspense fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950" aria-live="polite" aria-busy="true">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" />
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Đang tải trang...</p>
+          </div>
+        </div>
+      }>
         {view === "home" && <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
         {view === "category" && selectedSlug && (
           <CategoryPage

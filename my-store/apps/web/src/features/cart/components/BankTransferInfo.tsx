@@ -16,6 +16,9 @@ interface BankTransferInfoProps {
   handleCopy: (text: string, field: string) => void;
   copiedField: string | null;
   onBack: () => void;
+  /** Gọi khi user bấm "Tôi đã chuyển khoản" → ghi lịch sử và kiểm tra trạng thái */
+  onConfirmTransfer?: () => Promise<void>;
+  isConfirmingTransfer?: boolean;
 }
 
 export function BankTransferInfo({
@@ -29,6 +32,8 @@ export function BankTransferInfo({
   handleCopy,
   copiedField,
   onBack,
+  onConfirmTransfer,
+  isConfirmingTransfer = false,
 }: BankTransferInfoProps) {
   // Render copy button
   const CopyButton = ({ text, field }: { text: string; field: string }) => (
@@ -188,6 +193,16 @@ export function BankTransferInfo({
 
         {/* Action Buttons underneath QR code on desktop/mobile */}
         <div className="mt-6 flex flex-col items-center justify-center gap-3 border-t border-gray-200 pt-6 dark:border-slate-700">
+          {onConfirmTransfer && (
+            <button
+              type="button"
+              onClick={onConfirmTransfer}
+              disabled={isConfirmingTransfer}
+              className="w-full rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isConfirmingTransfer ? "Đang xử lý..." : "Tôi đã chuyển khoản"}
+            </button>
+          )}
           <div
             className={`flex items-center gap-2 rounded-full px-4 py-2 w-full justify-center ${
               timeLeft < 60

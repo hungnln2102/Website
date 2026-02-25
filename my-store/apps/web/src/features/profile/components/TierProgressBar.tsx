@@ -1,7 +1,8 @@
-// Tier color config
+// Tier color config (Sliver = typo trong DB, dùng chung style Silver)
 export const TIER_COLORS: Record<string, { gradient: string; text: string; bg: string }> = {
   Member:   { gradient: "from-gray-400 to-gray-500",     text: "text-gray-600 dark:text-gray-400",     bg: "bg-gray-100 dark:bg-gray-800" },
   Silver:   { gradient: "from-slate-400 to-slate-500",   text: "text-slate-600 dark:text-slate-300",   bg: "bg-slate-100 dark:bg-slate-800" },
+  Sliver:   { gradient: "from-slate-400 to-slate-500",   text: "text-slate-600 dark:text-slate-300",   bg: "bg-slate-100 dark:bg-slate-800" },
   Gold:     { gradient: "from-amber-400 to-yellow-500",  text: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-900/20" },
   Platinum: { gradient: "from-cyan-400 to-blue-500",     text: "text-cyan-600 dark:text-cyan-400",     bg: "bg-cyan-50 dark:bg-cyan-900/20" },
   Diamond:  { gradient: "from-purple-400 to-pink-500",   text: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20" },

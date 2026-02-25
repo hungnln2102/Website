@@ -50,6 +50,17 @@ router.get(
   (req: Request, res: Response) => paymentController.getPaymentStatus(req, res)
 );
 
+router.post(
+  "/confirm-transfer",
+  authenticate,
+  [
+    validationRules.orderId(),
+    validationRules.amount(),
+    handleValidationErrors,
+  ],
+  (req: Request, res: Response) => paymentController.confirmTransfer(req, res)
+);
+
 router.get("/success", (req: Request, res: Response) =>
   paymentController.successCallback(req, res)
 );

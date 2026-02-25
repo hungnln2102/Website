@@ -14,7 +14,7 @@ import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
 import { APP_CONFIG } from "@/lib/constants";
 
-import { useProductData } from "./hooks";
+import { useProductData, useProductDetailState } from "./hooks";
 import {
   ProductLoadingSkeleton,
   ProductNotFound,
@@ -49,23 +49,16 @@ export default function ProductDetailPage({
 }: ProductDetailPageProps) {
   const isScrolled = useScroll();
   const { user, logout } = useAuth();
+  const {
+    selectedPackage,
+    selectedDuration,
+    additionalInfo,
+    setAdditionalInfo,
+    handlePackageSelect,
+    handleDurationSelect,
+    resetAdditionalInfoForForm,
+  } = useProductDetailState();
 
-  // Product selection state - single instance
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
-  // Thông tin bổ sung: Record<string, string> (key = input_id khi form động, hoặc email/phone/note khi form tĩnh)
-  const [additionalInfo, setAdditionalInfo] = useState<Record<string, string>>(() => getDefaultAdditionalInfo());
-
-  // Load from URL on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlPackage = params.get("package");
-    const urlDuration = params.get("duration");
-    if (urlPackage) setSelectedPackage(urlPackage);
-    if (urlDuration) setSelectedDuration(urlDuration);
-  }, []);
-
-  // Product data - pass selectedPackage for duration options
   const {
     product,
     packages,
@@ -92,7 +85,9 @@ export default function ProductDetailPage({
     [durationOptions, selectedDuration]
   );
 
-  const formId = selectedDurationData?.form_id ?? null;
+  // form_id: ưu tiên duration đang chọn, không thì lấy duration đầu tiên của gói → hiện form ngay khi chọn gói
+  const formId =
+    selectedDurationData?.form_id ?? durationOptions[0]?.form_id ?? null;
   const { data: formFieldsData } = useQuery({
     queryKey: ["form-fields", formId],
     queryFn: () => fetchFormFields(formId!),
@@ -100,36 +95,9 @@ export default function ProductDetailPage({
   });
   const formData = formFieldsData?.success && formFieldsData?.data ? formFieldsData.data : null;
 
-  // Reset thông tin bổ sung khi đổi gói/thời gian (variant có form_id → form động, không → form tĩnh)
   useEffect(() => {
-    if (formId != null && formId > 0) {
-      setAdditionalInfo({});
-    } else {
-      setAdditionalInfo(getDefaultAdditionalInfo());
-    }
-  }, [selectedPackage, selectedDuration, formId]);
-
-  // Update URL helper
-  const updateURL = useCallback((packageId: string | null, durationKey: string | null) => {
-    const url = new URL(window.location.href);
-    if (packageId) url.searchParams.set("package", packageId);
-    else url.searchParams.delete("package");
-    if (durationKey) url.searchParams.set("duration", durationKey);
-    else url.searchParams.delete("duration");
-    window.history.replaceState({}, "", url.toString());
-  }, []);
-
-  // Handlers
-  const handlePackageSelect = useCallback((packageId: string) => {
-    setSelectedPackage(packageId);
-    setSelectedDuration(null);
-    updateURL(packageId, null);
-  }, [updateURL]);
-
-  const handleDurationSelect = useCallback((durationKey: string) => {
-    setSelectedDuration(durationKey);
-    updateURL(selectedPackage, durationKey);
-  }, [selectedPackage, updateURL]);
+    resetAdditionalInfoForForm(formId);
+  }, [selectedPackage, selectedDuration, formId, resetAdditionalInfoForForm]);
 
   const seoMetadata = useMemo(() => {
     if (!product) {
@@ -282,7 +250,7 @@ export default function ProductDetailPage({
               <AdditionalInfoSection
                 values={additionalInfo}
                 onChange={setAdditionalInfo}
-                visible={!!selectedPackage && !!selectedDuration}
+                visible={!!selectedPackage && durationOptions.length > 0}
                 fields={formData?.fields}
               />
               <BuyButton

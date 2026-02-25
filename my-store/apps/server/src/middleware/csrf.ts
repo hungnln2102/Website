@@ -42,6 +42,8 @@ const EXEMPT_PATHS = [
   "/payment/success",
   "/payment/error",
   "/payment/create",    // Has its own validation
+  // Mail webhook – xác thực bằng SIGNING_SECRET (Svix)
+  "/mail/webhook",
   // Topup test endpoint (development only)
   "/topup/test",
 ];

@@ -34,10 +34,10 @@
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Preload critical fonts with Vietnamese subset -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&subset=vietnamese&display=swap" as="style" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&subset=vietnamese&display=swap" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&subset=vietnamese&display=swap" /></noscript>
+    <!-- Non-blocking font: display=swap avoids invisible text; load async -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=vietnamese" as="style" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=vietnamese" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=vietnamese" /></noscript>
     
     <!-- Icons -->
     <link rel="icon" type="image/png" href="/logo1.png" />
@@ -73,7 +73,16 @@
     <title>Mavryk Premium Store - Phần mềm bản quyền chính hãng</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant loading hint (replaced by React); avoids blank white screen -->
+      <div id="app-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#64748b;font-family:system-ui,sans-serif;font-size:0.9375rem;">
+        <span style="display:inline-flex;align-items:center;gap:0.5rem;">
+          <span style="width:1.25rem;height:1.25rem;border:2px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:app-load-spin 0.7s linear infinite;"></span>
+          Đang tải...
+        </span>
+      </div>
+    </div>
+    <style>@keyframes app-load-spin{to{transform:rotate(360deg)}}</style>
     <!-- Hidden H1 for SEO when JS rendering is disabled -->
     <h1 class="sr-only">Mavryk Premium Store - Cửa hàng phần mềm bản quyền chính hãng</h1>
 

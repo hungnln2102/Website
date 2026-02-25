@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star, Check, Send } from "lucide-react";
+import { getRatingLabel } from "../utils/reviewUtils";
 
 interface Review {
   id: string;
@@ -45,17 +46,6 @@ export function ReviewSection({ reviews, averageRating }: ReviewSectionProps) {
       setReviewContent("");
       setReviewSuccess(false);
     }, 3000);
-  };
-
-  const getRatingText = (rating: number) => {
-    switch (rating) {
-      case 5: return "Tuyệt vời";
-      case 4: return "Tốt";
-      case 3: return "Bình thường";
-      case 2: return "Không hài lòng";
-      case 1: return "Rất tệ";
-      default: return "";
-    }
   };
 
   return (
@@ -162,7 +152,7 @@ export function ReviewSection({ reviews, averageRating }: ReviewSectionProps) {
                   ))}
                   {reviewRating > 0 && (
                     <span className="ml-2 text-sm font-medium text-gray-600 dark:text-slate-400">
-                      {getRatingText(reviewRating)}
+                      {getRatingLabel(reviewRating)}
                     </span>
                   )}
                 </div>

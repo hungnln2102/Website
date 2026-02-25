@@ -2,25 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Mail, Lock, Eye, EyeOff, UserCircle, IdCard, AlertCircle, Calendar } from "lucide-react";
+import {
+  validateRegisterForm,
+  dateOfBirthToApi,
+  formatDateOfBirthInput,
+  type RegisterFormData,
+  type FieldErrors,
+} from "../lib/registerValidation";
 
-export interface RegisterFormData {
-  lastName: string;
-  firstName: string;
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  /** Ngày sinh (customer_profiles.date_of_birth), format YYYY-MM-DD, tùy chọn */
-  dateOfBirth?: string;
-}
-
-export interface FieldErrors {
-  username?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-  dateOfBirth?: string;
-}
+export type { RegisterFormData, FieldErrors };
 
 interface RegisterFormProps {
   onSubmit: (data: RegisterFormData) => void;
@@ -66,43 +56,7 @@ export function RegisterForm({
   }, [fieldErrors]);
 
   const validateForm = (): boolean => {
-    const newErrors: FieldErrors = {};
-
-    // Validate username format
-    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-    if (!usernameRegex.test(formData.username)) {
-      newErrors.username = "Tài khoản chỉ được chứa chữ cái, số và dấu gạch dưới (3-30 ký tự)";
-    }
-
-    // Strong password policy
-    if (formData.password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
-    } else {
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-      if (!passwordRegex.test(formData.password)) {
-        newErrors.password = "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số";
-      }
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
-    }
-
-    if (formData.dateOfBirth?.trim()) {
-      const dobParts = formData.dateOfBirth.split("/");
-      if (dobParts.length !== 3 || !/^\d{2}\/\d{2}\/\d{4}$/.test(formData.dateOfBirth)) {
-        newErrors.dateOfBirth = "Ngày sinh phải có định dạng dd/mm/yyyy";
-      } else {
-        const [dd, mm, yyyy] = dobParts;
-        const d = new Date(`${yyyy}-${mm}-${dd}`);
-        if (Number.isNaN(d.getTime()) || d.getDate() !== Number(dd) || d.getMonth() + 1 !== Number(mm)) {
-          newErrors.dateOfBirth = "Ngày sinh không hợp lệ";
-        } else if (d > new Date()) {
-          newErrors.dateOfBirth = "Ngày sinh không thể ở tương lai";
-        }
-      }
-    }
-
+    const newErrors = validateRegisterForm(formData);
     setLocalErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,12 +64,10 @@ export function RegisterForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Convert dd/mm/yyyy → YYYY-MM-DD for backend
-      let submittedData = { ...formData };
-      if (formData.dateOfBirth?.trim()) {
-        const [dd, mm, yyyy] = formData.dateOfBirth.split("/");
-        submittedData.dateOfBirth = `${yyyy}-${mm}-${dd}`;
-      }
+      const submittedData = {
+        ...formData,
+        dateOfBirth: dateOfBirthToApi(formData.dateOfBirth || "") || formData.dateOfBirth,
+      };
       onSubmit(submittedData);
     }
   };
@@ -133,14 +85,7 @@ export function RegisterForm({
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    if (value.length > 8) value = value.slice(0, 8);
-    // Auto-insert slashes: dd/mm/yyyy
-    if (value.length >= 5) {
-      value = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
-    } else if (value.length >= 3) {
-      value = `${value.slice(0, 2)}/${value.slice(2)}`;
-    }
+    const value = formatDateOfBirthInput(e.target.value);
     setFormData({ ...formData, dateOfBirth: value });
     if (errors.dateOfBirth) {
       setLocalErrors((prev) => ({ ...prev, dateOfBirth: undefined }));
