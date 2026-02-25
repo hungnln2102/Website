@@ -1,10 +1,10 @@
 /** Cấu hình ngân hàng VietQR (chuyển khoản) */
 export const CART_BANK_CONFIG = {
-  bankId: "ACB",
-  bankName: "Ngân hàng Á Châu (ACB)",
-  bankLogo: "https://api.vietqr.io/img/ACB.png",
-  accountNo: "46282537",
-  accountName: "NGUYEN THI THU TRANG",
+  bankId: "VBP",
+  bankName: "Ngân hàng TMCP Việt Nam Thịnh Vượng (VP Bank)",
+  bankLogo: "https://api.vietqr.io/img/VPB.png",
+  accountNo: "9183400998",
+  accountName: "NGO LE NGOC HUNG",
 } as const;
 
 export const PAYMENT_TIMEOUT_SECONDS = 15 * 60; // 15 phút
