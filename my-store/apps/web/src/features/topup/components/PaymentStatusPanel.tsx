@@ -1,4 +1,5 @@
 import { CheckCircle2 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 
 interface PaymentStatusPanelProps {
   topupResult: {
@@ -43,7 +44,7 @@ export function PaymentStatusPanel({
         </p>
         <button
           onClick={() => {
-            window.history.pushState({}, "", "/");
+            window.history.pushState({}, "", ROUTES.home);
             window.dispatchEvent(new PopStateEvent("popstate"));
           }}
           className="mt-6 rounded-xl bg-emerald-500 px-8 py-3 font-semibold text-white transition-all hover:bg-emerald-600"

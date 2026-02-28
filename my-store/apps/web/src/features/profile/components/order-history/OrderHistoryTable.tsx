@@ -80,12 +80,18 @@ export function OrderHistoryTable({
                 </td>
                 <td className="px-2 py-3.5 text-gray-600 dark:text-slate-400 align-middle min-w-0">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs whitespace-nowrap">
-                      {formatDateTime(order.order_date)} - {expDate ? formatDateTime(expDate.toISOString()) : "—"}
-                    </span>
-                    <span className={expDate && expDate.getTime() <= now.getTime() ? "text-rose-600 dark:text-rose-400 font-medium text-xs" : "text-xs"}>
-                      {getCountdownLabel(expDate, now)}
-                    </span>
+                    {order.status === "Đang Tạo Đơn" ? (
+                      <span className="text-xs text-gray-500 dark:text-slate-500">—</span>
+                    ) : (
+                      <>
+                        <span className="text-xs whitespace-nowrap">
+                          {formatDateTime(order.order_date)} - {expDate ? formatDateTime(expDate.toISOString()) : "—"}
+                        </span>
+                        <span className={expDate && expDate.getTime() <= now.getTime() ? "text-rose-600 dark:text-rose-400 font-medium text-xs" : "text-xs"}>
+                          {getCountdownLabel(expDate, now)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </td>
                 <td className="px-2 py-3.5 text-right font-semibold text-gray-900 dark:text-white align-middle whitespace-nowrap">

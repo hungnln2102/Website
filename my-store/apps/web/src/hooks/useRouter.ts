@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 
 export type View =
   | "home"
@@ -30,52 +31,60 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
   if (!path) return { view: "home", slug: null, parentPath: null };
 
-  if (path === "gioi-thieu" || path === "about")
-    return { view: "about", slug: null, parentPath: "/" };
+  const aboutPath = ROUTES.about.replace(/^\/+|\/+$/g, "");
+  if (path === aboutPath || path === "about")
+    return { view: "about", slug: null, parentPath: ROUTES.home };
 
-  if (path === "login")
-    return { view: "login", slug: null, parentPath: "/" };
+  const loginPath = ROUTES.login.replace(/^\/+|\/+$/g, "");
+  if (path === loginPath)
+    return { view: "login", slug: null, parentPath: ROUTES.home };
 
   if (path === "register")
-    return { view: "login", slug: "register", parentPath: "/" };
+    return { view: "login", slug: "register", parentPath: ROUTES.home };
 
-  if (path === "gio-hang" || path === "cart")
-    return { view: "cart", slug: null, parentPath: "/" };
+  const cartPath = ROUTES.cart.replace(/^\/+|\/+$/g, "");
+  if (path === cartPath || path === "cart")
+    return { view: "cart", slug: null, parentPath: ROUTES.home };
 
-  if (path === "tai-khoan" || path === "profile")
-    return { view: "profile", slug: null, parentPath: "/" };
+  const profilePath = ROUTES.profile.replace(/^\/+|\/+$/g, "");
+  if (path === profilePath || path === "profile")
+    return { view: "profile", slug: null, parentPath: ROUTES.home };
 
-  if (path === "nap-tien" || path === "topup")
-    return { view: "topup", slug: null, parentPath: "/" };
+  const topupPath = ROUTES.topup.replace(/^\/+|\/+$/g, "");
+  if (path === topupPath || path === "topup")
+    return { view: "topup", slug: null, parentPath: ROUTES.home };
 
   if (path === "payment/success")
-    return { view: "payment-success", slug: null, parentPath: "/" };
+    return { view: "payment-success", slug: null, parentPath: ROUTES.home };
 
   if (path === "payment/error")
-    return { view: "payment-error", slug: null, parentPath: "/" };
+    return { view: "payment-error", slug: null, parentPath: ROUTES.home };
 
   if (path === "payment/cancel")
-    return { view: "payment-cancel", slug: null, parentPath: "/" };
+    return { view: "payment-cancel", slug: null, parentPath: ROUTES.home };
 
-  if (path === "san-pham-moi")
-    return { view: "new-products", slug: null, parentPath: "/" };
-  if (path.startsWith("san-pham-moi/")) {
-    const productSlug = decodeURIComponent(path.replace("san-pham-moi/", ""));
-    return { view: "product", slug: productSlug, parentPath: "/san-pham-moi" };
+  const newProductsPath = ROUTES.newProducts.replace(/^\/+|\/+$/g, "");
+  if (path === newProductsPath)
+    return { view: "new-products", slug: null, parentPath: ROUTES.home };
+  if (path.startsWith(`${newProductsPath}/`)) {
+    const productSlug = decodeURIComponent(path.replace(`${newProductsPath}/`, ""));
+    return { view: "product", slug: productSlug, parentPath: ROUTES.newProducts };
   }
 
-  if (path === "khuyen-mai")
-    return { view: "promotions", slug: null, parentPath: "/" };
-  if (path.startsWith("khuyen-mai/")) {
-    const productSlug = decodeURIComponent(path.replace("khuyen-mai/", ""));
-    return { view: "product", slug: productSlug, parentPath: "/khuyen-mai" };
+  const promotionsPath = ROUTES.promotions.replace(/^\/+|\/+$/g, "");
+  if (path === promotionsPath)
+    return { view: "promotions", slug: null, parentPath: ROUTES.home };
+  if (path.startsWith(`${promotionsPath}/`)) {
+    const productSlug = decodeURIComponent(path.replace(`${promotionsPath}/`, ""));
+    return { view: "product", slug: productSlug, parentPath: ROUTES.promotions };
   }
 
-  if (path === "tat-ca-san-pham")
-    return { view: "all-products", slug: null, parentPath: "/" };
-  if (path.startsWith("tat-ca-san-pham/")) {
-    const productSlug = decodeURIComponent(path.replace("tat-ca-san-pham/", ""));
-    return { view: "product", slug: productSlug, parentPath: "/tat-ca-san-pham" };
+  const allProductsPath = ROUTES.allProducts.replace(/^\/+|\/+$/g, "");
+  if (path === allProductsPath)
+    return { view: "all-products", slug: null, parentPath: ROUTES.home };
+  if (path.startsWith(`${allProductsPath}/`)) {
+    const productSlug = decodeURIComponent(path.replace(`${allProductsPath}/`, ""));
+    return { view: "product", slug: productSlug, parentPath: ROUTES.allProducts };
   }
 
   if (path.startsWith("danh-muc/")) {
@@ -87,19 +96,19 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
     if (isCategory) {
       if (parts.length > 1) {
         const productSlug = decodeURIComponent(parts[1]);
-        return { view: "product", slug: productSlug, parentPath: `/danh-muc/${encodeURIComponent(categorySlug)}` };
+        return { view: "product", slug: productSlug, parentPath: ROUTES.category(categorySlug) };
       }
-      return { view: "category", slug: categorySlug, parentPath: "/" };
+      return { view: "category", slug: categorySlug, parentPath: ROUTES.home };
     }
   }
 
   const decodedPath = decodeURIComponent(path);
   const isCategory = categories.some((c: CategoryDto) => slugify(c.name) === decodedPath);
   if (isCategory) {
-    return { view: "category", slug: decodedPath, parentPath: "/" };
+    return { view: "category", slug: decodedPath, parentPath: ROUTES.home };
   }
 
-  return { view: "product", slug: decodedPath, parentPath: "/" };
+  return { view: "product", slug: decodedPath, parentPath: ROUTES.home };
 };
 
 export function useRouter() {
@@ -136,12 +145,12 @@ export function useRouter() {
 
   const getCurrentBasePath = useCallback(() => {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
-    if (path === "tat-ca-san-pham") return "/tat-ca-san-pham";
-    if (path === "san-pham-moi") return "/san-pham-moi";
-    if (path === "khuyen-mai") return "/khuyen-mai";
+    if (path === ROUTES.allProducts.replace(/^\/+|\/+$/g, "")) return ROUTES.allProducts;
+    if (path === ROUTES.newProducts.replace(/^\/+|\/+$/g, "")) return ROUTES.newProducts;
+    if (path === ROUTES.promotions.replace(/^\/+|\/+$/g, "")) return ROUTES.promotions;
     if (path.startsWith("danh-muc/")) {
       const parts = path.split("/");
-      if (parts.length >= 2) return `/danh-muc/${parts[1]}`;
+      if (parts.length >= 2) return ROUTES.category(decodeURIComponent(parts[1]));
     }
     return "";
   }, []);
@@ -151,17 +160,17 @@ export function useRouter() {
       const isCategory = isCategorySlug || categories.some((c: CategoryDto) => slugify(c.name) === slug);
 
       if (isCategory) {
-        const url = `/danh-muc/${encodeURIComponent(slug)}`;
+        const url = ROUTES.category(slug);
         window.history.pushState({}, "", url);
         setSelectedSlug(slug);
-        setParentPath("/");
+        setParentPath(ROUTES.home);
         setView("category");
       } else {
         const basePath = getCurrentBasePath();
         const url = basePath ? `${basePath}/${encodeURIComponent(slug)}` : `/${encodeURIComponent(slug)}`;
         window.history.pushState({}, "", url);
         setSelectedSlug(slug);
-        setParentPath(basePath || "/");
+        setParentPath(basePath || ROUTES.home);
         setView("product");
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -170,10 +179,10 @@ export function useRouter() {
   );
 
   const handleBack = useCallback(() => {
-    const backPath = parentPath || "/";
+    const backPath = parentPath || ROUTES.home;
     window.history.pushState({}, "", backPath);
     applyRoute(parsePath(categories));
-    if (backPath === "/") setSearchQuery("");
+    if (backPath === ROUTES.home) setSearchQuery("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [parentPath, categories, applyRoute]);
 

@@ -159,8 +159,8 @@ export function PaymentQRDisplay({
             Hủy
           </button>
 
-          {/* Test Button (Development) - Comment out for production deploy */}
-          {/* {handleTestTopup && (
+          {/* Nút test nạp tiền (development / demo) */}
+          {handleTestTopup && (
             <button
               onClick={handleTestTopup}
               disabled={isTestLoading}
@@ -175,7 +175,7 @@ export function PaymentQRDisplay({
                 "🧪 Test nạp tiền"
               )}
             </button>
-          )} */}
+          )}
         </div>
       </div>
     </div>

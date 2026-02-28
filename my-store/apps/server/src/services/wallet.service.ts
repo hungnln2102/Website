@@ -21,7 +21,7 @@ export interface WalletTransaction {
   refId?: string;
   description?: string;
   method?: string | null;
-  promoCode?: string | null;
+  promotionId?: number | null;
   status?: string | null;
   createdAt: Date;
 }
@@ -64,7 +64,7 @@ export async function addFunds(
     refId?: string;
     description?: string;
     method?: string;
-    promoCode?: string;
+    promotionId?: number | null;
   }
 ): Promise<{ newBalance: number; transaction: WalletTransaction }> {
   const client = await pool.connect();
@@ -104,10 +104,10 @@ export async function addFunds(
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
     const txIdCol = COLS_WT.TRANSACTION_ID;
     const methodCol = COLS_WT.METHOD;
-    const promoCol = COLS_WT.PROMO_CODE;
+    const promotionIdCol = COLS_WT.PROMOTION_ID;
     await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
-       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promoCol}, created_at)
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
        VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, NOW())`,
       [
         txId,
@@ -117,7 +117,7 @@ export async function addFunds(
         currentBalance,
         newBalance,
         options?.method || (type === "TOPUP" ? "topup" : type.toLowerCase()),
-        options?.promoCode || null,
+        options?.promotionId ?? null,
       ]
     );
 
@@ -137,7 +137,7 @@ export async function addFunds(
         refId: options?.refId,
         description: options?.description,
         method: options?.method ?? (type === "TOPUP" ? "topup" : type.toLowerCase()),
-        promoCode: options?.promoCode,
+        promotionId: options?.promotionId ?? null,
         status: "completed",
         createdAt: new Date(),
       },
@@ -162,7 +162,7 @@ export async function deductFunds(
     refId?: string;
     description?: string;
     method?: string;
-    promoCode?: string;
+    promotionId?: number | null;
   }
 ): Promise<{ newBalance: number; transaction: WalletTransaction }> {
   const client = await pool.connect();
@@ -199,10 +199,10 @@ export async function deductFunds(
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
     const txIdCol = COLS_WT.TRANSACTION_ID;
     const methodCol = COLS_WT.METHOD;
-    const promoCol = COLS_WT.PROMO_CODE;
+    const promotionIdCol = COLS_WT.PROMOTION_ID;
     await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
-       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promoCol}, created_at)
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
        VALUES ($1, $2, $3, 'DEBIT', $4, $5, $6, $7, $8, NOW())`,
       [
         txId,
@@ -212,7 +212,7 @@ export async function deductFunds(
         currentBalance,
         newBalance,
         options?.method ?? (type === "PURCHASE" ? "balance" : "adjust"),
-        options?.promoCode || null,
+        options?.promotionId ?? null,
       ]
     );
 
@@ -232,7 +232,7 @@ export async function deductFunds(
         refId: options?.refId,
         description: options?.description,
         method: options?.method ?? (type === "PURCHASE" ? "balance" : "adjust"),
-        promoCode: options?.promoCode,
+        promotionId: options?.promotionId ?? null,
         status: "completed",
         createdAt: new Date(),
       },
@@ -249,7 +249,7 @@ export async function deductFunds(
  * Get transaction history from wallet_transactions (đầy đủ thông tin).
  * Mã đơn = transaction_id, Số dư = balance_after, Số tiền = amount (theo method),
  * Thời gian = created_at, Phương thức = method, Khuyến mãi = promo_code, Trạng thái = type.
- * LEFT JOIN order_customer để lấy id_order khi có (payment_id = transaction_id).
+ * LEFT JOIN order_customer để lấy id_order khi có (payment_id = wt.id).
  */
 export async function getTransactions(
   accountId: number,
@@ -258,15 +258,17 @@ export async function getTransactions(
   const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
   const txIdCol = COLS_WT.TRANSACTION_ID;
   const methodCol = COLS_WT.METHOD;
+  const idCol = COLS_WT.ID;
+  const promotionIdCol = COLS_WT.PROMOTION_ID;
   const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
   const OC_PAYMENT_ID = DB_SCHEMA.ORDER_CUSTOMER!.COLS.PAYMENT_ID;
 
   const result = await pool.query(
     `SELECT wt.id, wt.${txIdCol}, wt.account_id, wt.type, wt.direction, wt.amount,
-            wt.balance_before, wt.balance_after, wt.${methodCol}, wt.promo_code, wt.created_at,
+            wt.balance_before, wt.balance_after, wt.${methodCol}, wt.${promotionIdCol}, wt.created_at,
             oc.id_order
      FROM ${WALLET_TX_TABLE} wt
-     LEFT JOIN ${ORDER_CUSTOMER_TABLE} oc ON oc.${OC_PAYMENT_ID} = wt.${txIdCol} AND oc.account_id = wt.account_id
+     LEFT JOIN ${ORDER_CUSTOMER_TABLE} oc ON (oc.account_id = wt.account_id AND oc.${OC_PAYMENT_ID} = wt.${idCol})
      WHERE wt.account_id = $1
      ORDER BY wt.created_at DESC
      LIMIT $2`,
@@ -285,7 +287,7 @@ export async function getTransactions(
     refId: (row.id_order as string) ?? undefined,
     description: undefined,
     method: row[methodCol] ?? null,
-    promoCode: row.promo_code ?? null,
+    promotionId: row[promotionIdCol] ?? null,
     status: (row.type as string) ?? undefined,
     createdAt: row.created_at,
   }));

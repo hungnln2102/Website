@@ -1,271 +1,119 @@
-# HỆ THỐNG LỊCH SỬ ĐƠN HÀNG (v2) — FINAL
+# Hệ thống đơn hàng & thanh toán
 
-> Tài liệu thiết kế hệ thống đơn hàng cho Mavryk Premium Store.  
-> **Trạng thái**: ✅ Đã xác nhận — Sẵn sàng triển khai
-
----
-
-## 1. TỔNG QUAN FLOW
-
-```
-Khách chọn SP → Điền form → Thanh toán (MCoin/SePay)
-                    ↓
-         Server INSERT order_list + order_customer
-                    ↓
-         Gửi thông báo → Telegram Topic
-                    ↓
-    ┌───────────────┴───────────────┐
-    ↓                               ↓
-[✅ Hoàn thành đơn]      [📝 Điền thông tin SP]
-    ↓                               ↓
-status → "Đã Thanh Toán"    Nhập key/tài khoản
-order_expired → NOW()+days          ↓
-                           Gửi JSON về webhook
-                                    ↓
-                           Cập nhật information_order
-                                    ↓
-                           Khách xem trên web
-```
+Tài liệu mô tả quy trình thanh toán từ giỏ hàng, luồng Mcoin & QR, và cấu trúc dữ liệu `order_customer` / `wallet_transaction`.
 
 ---
 
-## 2. DATABASE SCHEMA
+## 1. Giao diện giỏ hàng
 
-### 2.1. Bảng `customer.order_customer` (MỚI)
+- **Nút "Thanh Toán"** → đổi text thành **"Thanh Toán Mcoin"**.
+- **Giữ nguyên** nút **"Mua Siêu Tốc Qua..."** (thanh toán QR).
+- **Loại bỏ** 3 nút thanh toán còn lại.
+- **Loại bỏ** 2 dòng text: "Số dư hiện tại" và "Số tiền cần nạp thêm".
 
-```sql
-CREATE TABLE customer.order_customer (
-    id_order    TEXT        NOT NULL,
-    customer    INT4        NOT NULL,
-    status      TEXT        NOT NULL DEFAULT 'Đang Xử Lý',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    CONSTRAINT pk_order_customer PRIMARY KEY (id_order, customer)
-);
-```
-
-> **Lưu ý**: Chỉ cần lưu `id_order` và `customer`. Các thông tin khác lấy từ JOIN với `order_list`, `order_expired`, `order_canceled`.
-
-### 2.2. Bảng `orders.order_list` (Cập nhật)
-
-| Column              | Type            | Mô tả                                                               |
-| ------------------- | --------------- | ------------------------------------------------------------------- |
-| `id`                | SERIAL PK       | Auto increment                                                      |
-| `id_order`          | VARCHAR(255) UQ | Prefix `MAVL-` (thường) / `MAVK-` (khuyến mãi) + 6 ký tự ngẫu nhiên |
-| `id_product`        | VARCHAR(255)    | `variant.display_name` (vd: `ChatGPT Plus--1m`)                     |
-| `account_id`        | INTEGER FK      | Ref → `customer.accounts(id)`                                       |
-| `information_order` | TEXT (JSON)     | (1) **Thông tin từ khách**: form bổ sung (email, ghi chú…) + name/quantity/unitPrice; (2) **Key/tài khoản** do Shop nhập (Telegram webhook) |
-| `customer`          | VARCHAR(255)    | `accounts.username`                                                 |
-| `contact`           | VARCHAR(255)    | Cố định `"Website"`                                                 |
-| `slot`              | **TEXT**        | Tên vị trí slot (text, không phải số)                               |
-| `order_date`        | TIMESTAMP       | Ngày đăng ký (NOW)                                                  |
-| `days`              | INTEGER         | Số ngày sử dụng (`--1m` → 30, `--3m` → 90…)                         |
-| `order_expired`     | TIMESTAMP       | `order_date + days`                                                 |
-| `price`             | DECIMAL(15,2)   | Giá website                                                         |
-| `status`            | VARCHAR(50)     | Default: `"Đang Xử Lý"`                                             |
-
-### 2.3. Bảng `orders.order_expired` (tham chiếu)
-
-Bảng phụ (vd. mapping id_product → logic hết hạn). Trong code hiện tại có:
-
-| Column     | Type   | Mô tả        |
-| ---------- | ------ | ------------ |
-| `id`       | (PK)   | —            |
-| `id_product` | VARCHAR | Ref sản phẩm |
-
-Chi tiết schema thực tế cần xem migration / DB. Dùng khi JOIN để lấy thông tin hết hạn theo sản phẩm nếu cần.
-
-### 2.4. Bảng `order_canceled` (tùy chọn)
-
-Doc nhắc JOIN với `order_canceled` nhưng **chưa định nghĩa schema** và chưa có trong db.config. Nếu dùng: cần thêm bảng (vd. `id_order`, `canceled_at`, lý do). Nếu không dùng, bỏ qua trong JOIN và chỉ dùng `order_list` + `order_expired`.
+Kết quả: giỏ hàng chỉ còn 2 lựa chọn thanh toán — **Thanh Toán Mcoin** và **Mua Siêu Tốc Qua...**.
 
 ---
 
-## 2.5. Luồng "Thông tin bổ sung" (form khách điền khi mua)
+## 2. Thanh toán Mcoin
 
-| Bước | Mô tả |
-|------|--------|
-| 1. Thu thập | Trang sản phẩm: khách chọn gói + thời gian → form động (theo `form_id` của variant) hiển thị các ô (vd. Email, Ghi chú). Khách điền và bấm "Mua ngay" / "Thêm vào giỏ". |
-| 2. Lưu tạm | Frontend: khi thêm vào giỏ, mỗi item trong giỏ (state + localStorage) có `additionalInfo` và `additionalInfoLabels`. **API cart (addToCart/sync)** hiện **không** gửi/nhận thông tin bổ sung — chỉ có name, packageName, duration, price… |
-| 3. Khi thanh toán | **Hiện tại**: Bước xác nhận thanh toán (MCoin) chỉ gửi lên server `id_product`, `name`, `quantity`, `price`. Server ghi `information_order` = `{ name, quantity, unitPrice }` — **không có** nội dung form bổ sung. |
-| 4. Mong muốn (doc) | `information_order` phải chứa cả (1) thông tin từ khách (form bổ sung) và (2) sau này key/tài khoản do Shop nhập. Khi thanh toán, frontend gửi kèm thông tin bổ sung từng dòng; server merge vào JSON và lưu vào `information_order`. |
+### 2.1 Điều kiện
 
-**Hành động cần làm**: (1) PaymentStep gửi thêm `additionalInfo` (và tùy chọn `additionalInfoLabels`) trong từng item khi gọi `confirmBalancePayment`. (2) API confirm balance nhận và ghi vào `information_order` dạng JSON: `{ name, quantity, unitPrice, ...additionalInfo }`. (3) Tùy chọn: mở rộng cart API để lưu thông tin bổ sung vào `cart_items.extra_info` khi add/sync, để đồng bộ giữa thiết bị và khi fetch lại giỏ.
+- So sánh: **Tổng giá trị thanh toán** với **Số dư Mcoin** (`wallet.balance`).
+- **Số dư không đủ** → disable (không cho bấm) nút "Thanh Toán Mcoin".
+- **Số dư đủ** → cho phép bấm, chuyển sang bước xác nhận.
 
----
+### 2.2 Luồng
 
-## 3. LOGIC TRẠNG THÁI
+1. User bấm **Thanh Toán Mcoin** → sang **bước 2: trang xác nhận thanh toán**.
+2. User bấm **Xác nhận thanh toán** → xử lý thanh toán → **thông báo thanh toán thành công**.
+3. Backend:
+   - Tạo đơn trong `order_customer`.
+   - Tạo giao dịch trong `wallet_transaction` (method = Mcoin, cập nhật balance).
 
-```
-remaining_days = order_expired - NOW()
+### 2.3 Dữ liệu ghi nhận
 
-Khi vừa tạo đơn (chưa xác nhận)   → "Đang Xử Lý"    🟡
-Khi remaining_days > 4            → "Đã Thanh Toán"  🟢
-Khi remaining_days <= 4 và > 0    → "Cần Gia Hạn"    🟠
-Khi remaining_days <= 0           → "Hết Hạn"        🔴
-```
-
-> Status được tính **động** phía client dựa trên `order_expired`.
+- **order_customer**: theo mục 4.1.
+- **wallet_transaction**: theo mục 4.2, với:
+  - `method` = **Mcoin**
+  - `balance_before` / `balance_after`: balance thực tế trước và sau giao dịch (trừ tiền).
 
 ---
 
-## 4. FORMAT MÃ ĐƠN HÀNG
+## 3. Thanh toán QR (Mua Siêu Tốc Qua...)
 
-| Loại đơn       | Prefix   | Ví dụ          |
-| -------------- | -------- | -------------- |
-| Đơn thường     | `MAVL-`  | `MAVL-A3F8K2`  |
-| Đơn khuyến mãi | `MAVK-`  | `MAVK-B7D2X9`  |
+### 3.1 Luồng
 
-- **Random**: 6 ký tự chữ+số viết hoa
-- **Không trùng lặp**: Check DB trước khi insert
+1. User bấm **Mua Siêu Tốc Qua...** → sang **trang xác nhận thanh toán**.
+2. User bấm **Xác nhận thanh toán** → sang **bước 3: thanh toán quét mã QR**.
+3. **Nội dung chuyển khoản** hiển thị cho khách: **mã transaction** (định dạng `MAVPXXXXXX`).
+4. User quét QR và chuyển khoản thành công → **Sepay** gửi **webhook** về backend (đã tích hợp sẵn).
+5. Backend xử lý webhook → cập nhật trạng thái → **thông báo thanh toán thành công** cho user.
 
----
+### 3.2 Dữ liệu ghi nhận
 
-## 5. DURATION MAPPING
-
-| Suffix    | Days | Hiển thị  |
-| --------- | ---- | --------- |
-| `--1d`    | 1    | 1 ngày    |
-| `--1m`    | 30   | 1 tháng   |
-| `--2m`    | 60   | 2 tháng   |
-| `--3m`    | 90   | 3 tháng   |
-| `--6m`    | 180  | 6 tháng   |
-| `--12m`   | 365  | 1 năm     |
+- **order_customer**: giống luồng Mcoin (mục 4.1).
+- **wallet_transaction**: giống mục 4.2, với:
+  - `method` = **QR**
+  - `balance_before` = `balance_after` = balance hiện tại (không đổi, vì tiền chưa cộng khi tạo giao dịch; cập nhật khi webhook xác nhận nếu có quy định riêng).
 
 ---
 
-## 6. TELEGRAM CONFIG
+## 4. Cấu trúc dữ liệu
 
-```env
-# Dùng biến môi trường, KHÔNG commit token/secret thật vào repo
-TELEGRAM_BOT_TOKEN=<your_bot_token>
-TELEGRAM_CHAT_ID=<chat_id>
-TELEGRAM_TOPIC_ID=<topic_id>
-WEBHOOK_URL=https://botapi.mavrykpremium.store/webhook
-WEBHOOK_SECRET=<webhook_secret>
-```
+### 4.1 Bảng `order_customer`
 
-### Flow Telegram
+| Trường       | Mô tả |
+|-------------|--------|
+| `id_order`  | Mã đơn **duy nhất**, không trùng. **Mỗi sản phẩm = 1 dòng = 1 id_order riêng.** Sinh khi thanh toán thành công. Định dạng: **MAVL** (khách lẻ / đơn không khuyến mãi), **MAVC** (khách CTV), **MAVK** (đơn Deal Sốc). Khách: MAVL hoặc MAVK; CTV: chỉ MAVC. Nhiều sản phẩm thanh toán cùng lúc = 1 `wallet_transaction` (cùng `payment_id`) nhưng nhiều dòng `order_customer`, mỗi dòng có `id_order` khác nhau. |
+| `account_id` | ID tài khoản. |
+| `status`    | Khi tạo đơn thành công: luôn **"Đang Tạo Đơn"**. |
+| `payment_id`| FK tham chiếu **`id`** (khóa tự tăng) của bảng `wallet_transaction`. |
 
-1. **Tạo đơn** → Gửi thông báo đến Topic với 2 buttons:
-   - `[✅ Hoàn thành đơn]` → Cập nhật status + order_expired
-   - `[📝 Điền thông tin SP]` → Mở form nhập key/tài khoản
+### 4.2 Bảng `wallet_transaction`
 
-2. **Điền thông tin SP**:
-   - Shop nhập key hoặc tài khoản/mật khẩu qua Telegram
-   - Bot gửi JSON về webhook
-   - Server cập nhật `information_order`
-   - Khách xem thông tin trong trang lịch sử đơn hàng
+| Trường            | Mô tả |
+|-------------------|--------|
+| `id`              | Khóa chính, tự tăng — dùng cho `order_customer.payment_id`. |
+| `transaction_id`  | Mã giao dịch, định dạng **MAVPXXXXXX** (dùng làm nội dung chuyển khoản QR). |
+| `account_id`      | ID tài khoản. |
+| `type`            | **PURCHASE** cho thanh toán đơn hàng. Các type khác: TOP_UP, WITHDRAW, REFUND, TRANSFER_IN, TRANSFER_OUT. |
+| `direction`       | **DEBIT** hoặc **CREDIT**. |
+| `amount`          | Số tiền. |
+| `balance_before`  | Số dư trước giao dịch. |
+| `balance_after`   | Số dư sau giao dịch. |
+| `method`          | **Mcoin** khi thanh toán Mcoin; **QR** khi thanh toán quét QR. |
+| `promotion_id`    | FK đối chiếu bảng `promotion`. |
 
----
-
-## 7. CÁC FILE CẦN THAY ĐỔI
-
-> Dữ liệu lưu vào `customer.order_customer`. Dùng `id_order` để JOIN với `order_list`, `order_expired`, `order_canceled`.
-
-| #   | File                                                   | Thay đổi                                                                                           |
-| --- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| 1   | `apps/server/src/services/balance-payment.service.ts`  | INSERT vào `customer.order_customer` với `id_order` + `customer` (account_id)                      |
-| 2   | `apps/server/src/controllers/user.controller.ts`       | `getOrders()` JOIN `order_customer` với `order_list`, `order_expired`, `order_canceled` + `variant` |
-| 3   | `apps/web/src/lib/types/api.types.ts`                  | Cập nhật `UserOrder` type: thêm `slot`, `days`, `order_expired`, `variant_name`                    |
-| 4   | `apps/web/src/features/profile/ProfilePage.tsx`        | Redesign bảng, tính status động                                                                    |
-| 5   | **MỚI** `apps/server/src/services/telegram.service.ts` | Service gửi notification + inline keyboard                                                         |
-| 6   | **MỚI** `apps/server/src/routes/telegram.route.ts`     | Webhook endpoint nhận callback                                                                     |
+**Lưu ý:** Cột `promo_code` đã xóa hẳn khỏi database và config; chỉ dùng `promotion_id`.
 
 ---
 
-## 8. GIAO DIỆN FRONTEND
+## 5. Tóm tắt quy tắc
 
-### Bảng lịch sử đơn hàng
-
-| Cột                    | Data source                          |
-| ---------------------- | ------------------------------------ |
-| Mã Đơn Hàng            | `id_order`                           |
-| Sản phẩm               | `variant_name` + duration            |
-| Thông tin đơn hàng     | `information_order` (JSON parsed)    |
-| Slot                   | `slot` hoặc `—`                      |
-| Thời gian              | `order_date` → `order_expired`       |
-| Trạng thái             | Tính động từ `order_expired`         |
-
-### Bộ lọc
-- Mã đơn hàng (text search)
-- Số tiền từ / đến
-- Từ ngày / Đến ngày
+- **id_order:** **Không được trùng; mỗi sản phẩm = 1 id_order riêng** (mỗi dòng `order_customer` có mã duy nhất). Prefix: MAVL (lẻ / không khuyến mãi), MAVC (CTV), MAVK (Deal Sốc). Khách: MAVL hoặc MAVK; CTV: chỉ MAVC.
+- **payment_id:** tham chiếu `wallet_transaction.id` (tự tăng).
+- **direction:** DEBIT | CREDIT.
+- **Nội dung chuyển khoản QR:** mã `transaction_id` (MAVPXXXXXX).
+- **Cổng QR:** Sepay, webhook đã có trong hệ thống.
+- **promo_code:** đã xóa, chỉ dùng `promotion_id`.
 
 ---
 
-## 9. TIẾN ĐỘ TRIỂN KHAI
+## 6. Thông báo Telegram khi thanh toán thành công
 
-| Phase | Nội dung                                   | Trạng thái |
-| ----- | ------------------------------------------ | ---------- |
-| 1     | Cập nhật DB schema + INSERT logic          | ⬜ Chờ     |
-| 2     | Cập nhật API `getOrders` trả đủ fields     | ⬜ Chờ     |
-| 3     | Redesign Frontend bảng lịch sử             | ⬜ Chờ     |
-| 4     | Telegram Bot service + webhook             | ⬜ Chờ     |
-| 5     | Testing + fix bugs                         | ⬜ Chờ     |
+Khi hiển thị thông báo thanh toán thành công, backend **gửi thêm 1 tin nhắn** vào Telegram.
 
----
+- **Đích:** topic có id = **2733**.
 
-## 10. ĐỐI CHIẾU VỚI CODE HIỆN TẠI — ĐIỂM CÒN THIẾU
+### 6.1 Định dạng nội dung tin nhắn
 
-> Phần này liệt kê những gì tài liệu yêu cầu nhưng chưa có trong code, hoặc khác với code.
+- **Mã Đơn Hàng**  
+  Mã đơn (id_order: MAVL/MAVC/MAVK…).
 
-### 10.1. Flow & nguồn đơn
+- **Sản Phẩm:**  
+  Chuỗi sản phẩm: `variant_id` + `--xm` hoặc `--xd` đã được chuyển đổi thành **tháng** hoặc **ngày**.  
+  Trong dự án đã có sẵn component xử lý chuyển đổi `--xm` / `--xd`; dùng component đó để tạo nội dung dòng Sản Phẩm.
 
-| Yêu cầu doc | Hiện trạng code |
-| ----------- | ----------------- |
-| Thanh toán MCoin/SePay → INSERT `order_list` + `order_customer` | **MCoin**: Chỉ INSERT `order_list` (balance-payment.service), chưa INSERT `order_customer`. **SePay**: Webhook chỉ log, chưa insert/update order (TODO trong sepay.service). |
-| Khi "Hoàn thành đơn" → cập nhật status + order_expired | Chưa có: không có Telegram bot, không có endpoint cập nhật. |
-
-**Thiếu trong doc**:  
-- **SePay**: Cần quyết định khi nào tạo bản ghi `order_list` — (A) Tạo đơn "pending" ngay khi user chọn thanh toán SePay (trước redirect), rồi webhook cập nhật status + order_expired; hoặc (B) Chỉ tạo đơn khi webhook PAID. Nên mô tả rõ trong Section 1.
-
-### 10.2. Database
-
-| Yêu cầu doc | Hiện trạng code |
-| ----------- | ----------------- |
-| Bảng `customer.order_customer` | Chưa có trong code (chưa INSERT, chưa dùng). |
-| `order_list`: đủ cột customer, contact, slot, days, order_expired | db.config có đủ COLS. balance-payment INSERT chỉ dùng: id_order, id_product, account_id, price, order_date, status, information_order — **thiếu** customer, contact, slot, days, order_expired. |
-| JOIN với `order_expired`, `order_canceled` | `order_expired` có trong db.config (bảng riêng). **order_canceled** không có trong db.config và không xuất hiện trong code — cần thêm schema trong doc hoặc ghi chú "tùy chọn / chưa triển khai". |
-
-### 10.3. Format mã đơn hàng
-
-| Doc | Code |
-| --- | ----- |
-| Prefix `MAVL-` / `MAVK-` + 6 ký tự | Frontend (payment.api.ts) dùng `ORD-YYYYMMDD-xxxxxx` (vd: ORD-20260221-ABC123). **Chưa thống nhất** với doc — cần đổi client hoặc cập nhật doc. |
-
-### 10.4. API & types
-
-| Yêu cầu doc | Hiện trạng code |
-| ----------- | ----------------- |
-| getOrders() JOIN order_customer, order_list, order_expired, order_canceled, variant | getOrders() chỉ đọc từ `order_list` theo account_id, không JOIN order_customer / order_expired / order_canceled / variant. |
-| UserOrder: thêm slot, days, order_expired, variant_name | api.types.ts: UserOrder chỉ có id_order, order_date, status, items — **chưa có** slot, days, order_expired, variant_name. |
-
-### 10.5. Frontend (ProfilePage)
-
-| Yêu cầu doc | Hiện trạng code |
-| ----------- | ----------------- |
-| Cột: Mã đơn, Sản phẩm (variant_name + duration), Thông tin đơn, Slot, Thời gian (order_date → order_expired), Trạng thái (tính động) | Có Mã đơn, ngày, items (name/id_product), tổng tiền, status từ API — **chưa có** slot, order_expired, variant_name, duration; status chưa tính động từ order_expired. |
-| Bộ lọc: Mã đơn, Số tiền từ/đến, Từ ngày/Đến ngày | Đã có đủ các bộ lọc này. |
-
-### 10.6. Telegram & webhook
-
-| Yêu cầu doc | Hiện trạng code |
-| ----------- | ----------------- |
-| telegram.service.ts, telegram.route.ts | **Chưa tồn tại** (chưa tạo file). |
-| Webhook nhận callback từ bot (điền thông tin SP) → cập nhật information_order | Chưa có endpoint; doc chưa mô tả payload JSON và route (method, path) cho webhook này. |
-
-### 10.7. Bảng order_expired (schema)
-
-Doc nhắc JOIN với `order_expired` nhưng không mô tả schema. Trong db.config: `order_expired` có `id`, `id_product`. Nên thêm vào Section 2 một bảng mô tả ngắn: cột, ý nghĩa, quan hệ với order_list (nếu có).
-
-### 10.8. Tóm tắt hành động đề xuất
-
-1. **Doc**: Thêm schema/ghi chú cho `order_canceled`; thêm mô tả schema `order_expired`; mô tả rõ flow SePay (khi nào tạo/cập nhật đơn); thêm spec webhook Telegram (payload + route).
-2. **Bảo mật**: Token/secret Telegram dùng env, không ghi giá trị thật trong doc (đã sửa Section 6).
-3. **Code**: Làm theo Phase 1–5 trong Section 9; đồng bộ format mã đơn (MAVL/MAVK vs ORD) giữa frontend và doc.
-
----
-
-*Cập nhật lần cuối: 21/02/2026*
+- **Thông tin bổ sung:**  
+  Lấy từ dữ liệu thông tin bổ sung của từng sản phẩm. Nguồn: cột **`extra_info`** (JSON) của bảng **`cart_item`** — mỗi sản phẩm trong giỏ đã được gắn form thông tin bổ sung tương ứng, nội dung gửi Telegram phản ánh đúng các field trong `extra_info` đó.

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Layers, ChevronRight } from "lucide-react";
 import { useCategoryMegaMenu } from "../hooks/useCategoryMegaMenu";
 import { CategoryMegaMenu } from "./CategoryMegaMenu";
+import { ROUTES } from "@/lib/constants";
 
 interface CategoryButtonProps {
   categories?: Array<{ id: string; name: string; slug: string; icon?: string | null }>;
@@ -56,7 +57,7 @@ export default function CategoryButton({
     (slug: string | null) => {
       if (onSelectCategory && slug) {
         onSelectCategory(slug);
-        window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+        window.history.pushState({}, "", ROUTES.category(slug));
         window.dispatchEvent(new Event("popstate"));
       }
       setIsMegaMenuOpen(false);
@@ -73,7 +74,7 @@ export default function CategoryButton({
   const handleSeeAll = useCallback(
     (slug: string) => {
       onSelectCategory?.(slug);
-      window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+      window.history.pushState({}, "", ROUTES.category(slug));
       window.dispatchEvent(new Event("popstate"));
       setIsMegaMenuOpen(false);
     },

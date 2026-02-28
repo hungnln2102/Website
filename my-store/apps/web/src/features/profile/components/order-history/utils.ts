@@ -24,6 +24,9 @@ export function calculateExpirationDate(purchaseDate: string, duration?: string)
 export type OrderStatusInfo = { label: string; cls: string };
 
 export function getDynamicStatus(order: UserOrder): OrderStatusInfo {
+  if (order.status === "Đang Tạo Đơn" || order.status === "dang_tao_don") {
+    return { label: "Đang Tạo Đơn", cls: "bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-400 dark:border-sky-500/30" };
+  }
   if (order.status === "cancelled") {
     return { label: "Đã Hủy", cls: "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700" };
   }
@@ -87,14 +90,15 @@ export function getCountdownLabel(expDate: Date | null, now: Date): string {
 export function formatCompoundProductName(item: {
   display_name?: string | null;
   name?: string;
-  id_product: string;
+  id_product?: string | null;
   variant_name?: string | null;
   duration?: string;
 }): string {
-  const baseName = item.display_name || item.name || item.id_product.split("--")[0] || item.id_product;
+  const rawId = item.id_product ?? "";
+  const baseName = item.display_name || item.name || (rawId ? rawId.split("--")[0] : null) || rawId || "—";
   let duration = item.duration;
-  if (!duration && item.id_product?.includes("--")) {
-    duration = item.id_product.split("--").pop();
+  if (!duration && rawId.includes("--")) {
+    duration = rawId.split("--").pop() ?? undefined;
   }
   const parts: string[] = [];
   if (item.variant_name && item.variant_name !== baseName) parts.push(item.variant_name);
@@ -121,7 +125,7 @@ export type OrderFilters = {
 
 export function filterOrders(orders: UserOrder[], applied: OrderFilters, getOrderTotalFn: (o: UserOrder) => number): UserOrder[] {
   return orders.filter((order) => {
-    if (applied.orderId && !order.id_order.toLowerCase().includes(applied.orderId.toLowerCase())) return false;
+    if (applied.orderId && !(order.id_order ?? "").toLowerCase().includes(applied.orderId.toLowerCase())) return false;
     const total = getOrderTotalFn(order);
     if (applied.amountFrom && total < Number(applied.amountFrom)) return false;
     if (applied.amountTo && total > Number(applied.amountTo)) return false;

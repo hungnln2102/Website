@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { useCart } from "@/hooks/useCart";
 import { CONTACT_LINKS } from "../constants";
+import { ROUTES } from "@/lib/constants";
 import type { DurationOption } from "./DurationSelector";
 
 interface BuyButtonProps {
@@ -123,7 +124,7 @@ export function BuyButton({
 
     await addItem(cartItem);
     toast.success(`Đã thêm "${productName || selectedPackage}" vào giỏ hàng!`);
-    window.history.pushState({}, "", "/gio-hang");
+    window.history.pushState({}, "", ROUTES.cart);
     window.dispatchEvent(new Event("popstate"));
   };
 

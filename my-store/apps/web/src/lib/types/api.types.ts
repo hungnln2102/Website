@@ -73,11 +73,13 @@ export type ProductInfoDto = {
 
 // ----- Payment -----
 export type CreatePaymentRequest = {
-  orderId: string;
+  orderId?: string;
   amount: number;
-  description: string;
+  description?: string;
   customerEmail?: string;
   customerPhone?: string;
+  /** Khi có items: luồng QR, backend tạo 1 wallet_tx + N order_customer, nội dung CK = transaction_id (MAVP...) */
+  items?: { id_product: string; duration?: string; extraInfo?: Record<string, string> }[];
 };
 
 export type CreatePaymentResponse = {
@@ -85,6 +87,7 @@ export type CreatePaymentResponse = {
   data?: {
     checkoutUrl: string;
     orderId: string;
+    transactionId?: string;
     amount: number;
     formFields?: Record<string, string>;
   };
@@ -114,6 +117,8 @@ export type ConfirmBalancePaymentItem = {
   note?: string;
   quantity: number;
   price: number;
+  /** Thông tin bổ sung (cho Telegram) */
+  extraInfo?: Record<string, string>;
 };
 
 // ----- User / Orders -----

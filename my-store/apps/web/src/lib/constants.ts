@@ -11,6 +11,14 @@ export const APP_CONFIG = {
   carouselAutoPlayInterval: 8000,
 } as const;
 
+/** URL các asset (Lottie, ảnh) — dùng chung toàn app */
+export const ASSET_URLS = {
+  successAnimation: "/Success.json",
+} as const;
+
+/** URL trang (đường dẫn app) — định nghĩa đầy đủ trong lib/constants/app.config.ts */
+export { ROUTES } from "./constants/app.config";
+
 export const BREAKPOINTS = {
   sm: 640,
   md: 768,

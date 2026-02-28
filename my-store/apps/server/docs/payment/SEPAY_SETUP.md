@@ -53,7 +53,7 @@ SePay là cổng thanh toán trung gian kết nối website/ứng dụng với c
 
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Client  │────▶│  Server  │────▶│  SePay   │────▶│   Bank   │
+│  Client  │────▶│ Server  │────▶│  SePay  │────▶│   Bank   │
 │ (React)  │     │ (Express)│     │ Gateway  │     │          │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘
      │                │                │                │

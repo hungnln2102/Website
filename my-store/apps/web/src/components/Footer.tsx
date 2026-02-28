@@ -1,5 +1,6 @@
 import { Facebook, Youtube, Mail, MessageCircle } from "lucide-react";
 import logo from "@/asset/logo.png";
+import { ROUTES } from "@/lib/constants";
 
 const socialLinks = [
   { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
@@ -16,10 +17,10 @@ export default function Footer() {
           {/* Left: logo + 2 paragraphs — min-w-0 để scale/wrap đúng khi màn hình nhỏ */}
           <div className="min-w-0 max-w-xl">
             <a
-              href="/"
+              href={ROUTES.home}
               onClick={(e) => {
                 e.preventDefault();
-                window.history.pushState({}, "", "/");
+                window.history.pushState({}, "", ROUTES.home);
                 window.dispatchEvent(new PopStateEvent("popstate"));
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
@@ -66,11 +67,11 @@ export default function Footer() {
             </a>
             <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto text-xs text-slate-400 [&>*]:whitespace-nowrap">
               <a
-                href="/"
+                href={ROUTES.home}
                 className="transition-colors hover:text-white"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.history.pushState({}, "", "/");
+                  window.history.pushState({}, "", ROUTES.home);
                   window.dispatchEvent(new PopStateEvent("popstate"));
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
@@ -79,11 +80,11 @@ export default function Footer() {
               </a>
               <span className="text-slate-600">|</span>
               <a
-                href="/gioi-thieu"
+                href={ROUTES.about}
                 className="transition-colors hover:text-white"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.history.pushState({}, "", "/gioi-thieu");
+                  window.history.pushState({}, "", ROUTES.about);
                   window.dispatchEvent(new PopStateEvent("popstate"));
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
@@ -102,10 +103,10 @@ export default function Footer() {
         <div className="mt-4 flex flex-col items-center justify-between gap-2 border-t border-slate-800/80 pt-2 pb-[5px] sm:flex-row">
           <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <a
-              href="/"
+              href={ROUTES.home}
               onClick={(e) => {
                 e.preventDefault();
-                window.history.pushState({}, "", "/");
+                window.history.pushState({}, "", ROUTES.home);
                 window.dispatchEvent(new PopStateEvent("popstate"));
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}

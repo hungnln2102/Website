@@ -15,6 +15,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 import { PROFILE_TABS, type ProfileTabId } from "./config/tabs";
 import { fetchUserProfile } from "./api/fetchProfile";
 
@@ -74,7 +75,7 @@ export default function ProfilePage({
   }, [profileData, user?.balance, user?.createdAt, updateUser]);
 
   const handleCategoryClick = (catSlug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+    window.history.pushState({}, "", ROUTES.category(catSlug));
     window.dispatchEvent(new Event("popstate"));
   };
 

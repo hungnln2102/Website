@@ -21,7 +21,7 @@ function formatVnd(v: number): string {
   return `${v.toLocaleString("vi-VN")}đ`;
 }
 
-/** Giao dịch dùng Mcoin (Ví Mcoin) → hiển thị Mcoin; còn lại (VD chuyển khoản) → VND */
+/** Giao dịch dùng Mcoin (Ví Mcoin) → số tiền hiển thị Mcoin; còn lại (QR/chuyển khoản) → VND */
 function isMcoinTransaction(t: WalletTransactionDto): boolean {
   const m = (t.method ?? "").toLowerCase();
   return (
@@ -31,6 +31,11 @@ function isMcoinTransaction(t: WalletTransactionDto): boolean {
     m === "refund" ||
     m === "adjust"
   );
+}
+
+/** Số dư trong lịch sử giao dịch luôn hiển thị theo Mcoin (đơn vị ví) */
+function formatBalance(_t: WalletTransactionDto, balanceAfter: number | undefined): string {
+  return formatMcoin(balanceAfter ?? 0);
 }
 
 function formatAmount(t: WalletTransactionDto): string {
@@ -138,7 +143,7 @@ export function TransactionHistory() {
                       {t.id}
                     </td>
                     <td className="px-3 py-3.5 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {isMcoinTransaction(t) ? formatMcoin(t.balanceAfter) : formatVnd(t.balanceAfter)}
+                      {formatBalance(t, t.balanceAfter)}
                     </td>
                     <td
                       className={`px-3 py-3.5 font-semibold whitespace-nowrap ${
@@ -185,7 +190,7 @@ export function TransactionHistory() {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                   <span className="text-gray-500 dark:text-slate-400">Số dư sau</span>
                   <span className="font-medium text-gray-900 dark:text-white text-right">
-                    {isMcoinTransaction(t) ? formatMcoin(t.balanceAfter) : formatVnd(t.balanceAfter)}
+                    {formatBalance(t, t.balanceAfter)}
                   </span>
                   <span className="text-gray-500 dark:text-slate-400">{isMcoinTransaction(t) ? "Mcoin" : "Số tiền"}</span>
                   <span

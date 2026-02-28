@@ -14,6 +14,7 @@ import { formatTopupCurrency, getSelectedAmount, getSelectedBonus, formatCustomA
 import { PackageSelector } from "./components/PackageSelector";
 import { PaymentStatusPanel } from "./components/PaymentStatusPanel";
 import { PaymentQRDisplay } from "./components/PaymentQRDisplay";
+import { ROUTES } from "@/lib/constants";
 
 export default function TopupPage() {
   const isScrolled = useScroll();
@@ -49,7 +50,7 @@ export default function TopupPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.history.pushState({}, "", "/");
+          window.history.pushState({}, "", ROUTES.home);
           window.dispatchEvent(new PopStateEvent("popstate"));
           return 0;
         }
@@ -60,7 +61,7 @@ export default function TopupPage() {
   }, [topupResult]);
 
   const handleLogoClick = () => {
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", ROUTES.home);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
@@ -176,7 +177,7 @@ export default function TopupPage() {
             <p className="mt-2 text-slate-400">Bạn cần đăng nhập để nạp tiền vào tài khoản</p>
             <button
               onClick={() => {
-                window.history.pushState({}, "", "/login");
+                window.history.pushState({}, "", ROUTES.login);
                 window.dispatchEvent(new PopStateEvent("popstate"));
               }}
               className="mt-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-8 py-3 font-semibold text-white transition-all hover:shadow-lg hover:shadow-blue-500/25"

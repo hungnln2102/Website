@@ -8,6 +8,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { slugify } from "@/lib/utils";
 import type { CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
+import { ROUTES } from "@/lib/constants";
 
 interface CatalogLayoutProps {
   children: React.ReactNode;
@@ -36,7 +37,7 @@ export function CatalogLayout({
   const { user, logout } = useAuth();
 
   const handleCategoryClick = (slug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+    window.history.pushState({}, "", ROUTES.category(slug));
     window.dispatchEvent(new Event("popstate"));
   };
 

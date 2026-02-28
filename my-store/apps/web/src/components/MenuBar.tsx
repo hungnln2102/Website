@@ -7,6 +7,7 @@ import CategoryButton from "@/features/catalog/components/CategoryButton";
 import { useAuth } from "@/features/auth/hooks";
 import { getCartCount, getAuthToken } from "@/lib/api";
 import { MENU_ITEMS } from "./menu/menuConstants";
+import { ROUTES } from "@/lib/constants";
 
 interface MenuBarProps {
   isScrolled: boolean;
@@ -94,7 +95,7 @@ export default function MenuBar({
 
   const goToLogin = () => {
     setShowLoginPopup(false);
-    window.history.pushState({}, "", "/login");
+    window.history.pushState({}, "", ROUTES.login);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
@@ -162,7 +163,7 @@ export default function MenuBar({
 
               {/* Shopping Cart Icon */}
               <a
-                href={user ? "/gio-hang" : "#"}
+                href={user ? ROUTES.cart : "#"}
                 onClick={handleCartClick}
                 className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
                 aria-label="Giỏ hàng"
@@ -182,10 +183,10 @@ export default function MenuBar({
               </a>
 
               <a
-                href="/tai-khoan"
+                href={ROUTES.profile}
                 onClick={(e) => {
                   e.preventDefault();
-                  window.history.pushState({}, "", "/tai-khoan");
+                  window.history.pushState({}, "", ROUTES.profile);
                   window.dispatchEvent(new PopStateEvent("popstate"));
                 }}
                 className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
@@ -281,7 +282,7 @@ export default function MenuBar({
               {/* Footer Actions */}
               <div className="border-t border-gray-200/80 dark:border-slate-700/80 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-slate-900/50 px-4 py-5 space-y-2">
                 <a
-                  href={user ? "/gio-hang" : "#"}
+                  href={user ? ROUTES.cart : "#"}
                   onClick={(e) => {
                     handleCartClick(e);
                     handleMobileMenuClose();
@@ -313,10 +314,10 @@ export default function MenuBar({
                   </span>
                 </a>
                 <a
-                  href="/tai-khoan"
+                  href={ROUTES.profile}
                   onClick={(e) => {
                     e.preventDefault();
-                    window.history.pushState({}, "", "/tai-khoan");
+                    window.history.pushState({}, "", ROUTES.profile);
                     window.dispatchEvent(new PopStateEvent("popstate"));
                     handleMobileMenuClose();
                   }}

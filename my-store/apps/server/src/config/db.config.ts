@@ -407,7 +407,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       AMOUNT: "amount",
       BALANCE_BEFORE: "balance_before",
       BALANCE_AFTER: "balance_after",
-      PROMO_CODE: "promo_code",
+      PROMOTION_ID: "promotion_id",
       CREATED_AT: "created_at",
       METHOD: "method",
     },

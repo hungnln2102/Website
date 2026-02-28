@@ -2,6 +2,7 @@
 
 import { Sparkles, ArrowRight } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import { ROUTES } from "@/lib/constants";
 
 interface Product {
   id: string;
@@ -26,7 +27,7 @@ interface NewProductsSectionProps {
 
 export function NewProductsSection({ products, onProductClick }: NewProductsSectionProps) {
   const handleViewAll = () => {
-    window.history.pushState({}, "", "/san-pham-moi");
+    window.history.pushState({}, "", ROUTES.newProducts);
     window.dispatchEvent(new Event("popstate"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

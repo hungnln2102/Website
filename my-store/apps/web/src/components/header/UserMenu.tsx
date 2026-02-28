@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { LogIn, LogOut, User, ChevronDown, Wallet } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ROUTES } from "@/lib/constants";
 
 interface AuthUser {
   id: string;
@@ -72,14 +73,14 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
               </div>
               <div className="py-1">
                 <button
-                  onClick={() => navigate("/tai-khoan")}
+                  onClick={() => navigate(ROUTES.profile)}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   <User className="h-4 w-4" />
                   Tài khoản của tôi
                 </button>
                 <button
-                  onClick={() => navigate("/nap-tien")}
+                  onClick={() => navigate(ROUTES.topup)}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   <Wallet className="h-4 w-4 text-emerald-500" />
@@ -98,7 +99,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
         </div>
       ) : (
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate(ROUTES.login)}
           className="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 transition-all duration-300 hover:bg-blue-50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:bg-blue-900/20 dark:hover:shadow-blue-900/20 active:scale-95 min-h-[36px] sm:min-h-[40px] sm:gap-2 sm:px-4"
           aria-label="Đăng nhập"
         >

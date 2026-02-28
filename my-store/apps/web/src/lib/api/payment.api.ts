@@ -101,15 +101,18 @@ export function generateOrderId(): string {
 }
 
 export async function confirmBalancePayment(
-  orderId: string,
   amount: number,
   items: ConfirmBalancePaymentItem[]
-): Promise<{ success: boolean; data?: { newBalance: number }; error?: string }> {
+): Promise<{
+  success: boolean;
+  data?: { newBalance: number; transactionId?: string; orderIds?: string[] };
+  error?: string;
+}> {
   try {
     const res = await authFetch(`${API_BASE}/api/payment/balance/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, amount, items }),
+      body: JSON.stringify({ amount, items }),
     });
     const body = await res.json();
     if (!res.ok) {

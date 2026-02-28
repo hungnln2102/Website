@@ -4,6 +4,7 @@ import { Package, ArrowRight } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import Pagination from "@/components/Pagination";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
+import { ROUTES } from "@/lib/constants";
 
 interface Product {
   id: string;
@@ -54,7 +55,7 @@ export function AllProductsSection({
 }: AllProductsSectionProps) {
   const handleViewAll = () => {
     if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/tat-ca-san-pham");
+      window.history.pushState({}, "", ROUTES.allProducts);
       window.dispatchEvent(new Event("popstate"));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

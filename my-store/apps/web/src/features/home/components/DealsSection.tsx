@@ -3,6 +3,7 @@
 import { Flame, ArrowRight } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import type { PromotionDto } from "@/lib/api";
+import { ROUTES } from "@/lib/constants";
 
 interface DealsSectionProps {
   promotions: PromotionDto[];
@@ -23,7 +24,7 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
 
   const handleViewAll = () => {
     if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/khuyen-mai");
+      window.history.pushState({}, "", ROUTES.promotions);
       window.dispatchEvent(new Event("popstate"));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

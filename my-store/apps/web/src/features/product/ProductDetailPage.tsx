@@ -12,7 +12,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { slugify } from "@/lib/utils";
 import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
-import { APP_CONFIG } from "@/lib/constants";
+import { APP_CONFIG, ROUTES } from "@/lib/constants";
 
 import { useProductData, useProductDetailState } from "./hooks";
 import {
@@ -85,9 +85,8 @@ export default function ProductDetailPage({
     [durationOptions, selectedDuration]
   );
 
-  // form_id: ưu tiên duration đang chọn, không thì lấy duration đầu tiên của gói → hiện form ngay khi chọn gói
-  const formId =
-    selectedDurationData?.form_id ?? durationOptions[0]?.form_id ?? null;
+  // form_id: chỉ lấy khi đã chọn thời gian → form thông tin bổ sung đúng với variant (gói + thời gian)
+  const formId = selectedDuration ? (selectedDurationData?.form_id ?? null) : null;
   const { data: formFieldsData } = useQuery({
     queryKey: ["form-fields", formId],
     queryFn: () => fetchFormFields(formId!),
@@ -166,7 +165,7 @@ export default function ProductDetailPage({
           }))}
           onProductClick={onProductClick}
           onCategoryClick={(catSlug) => {
-            window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+            window.history.pushState({}, "", ROUTES.category(catSlug));
             window.dispatchEvent(new Event("popstate"));
           }}
           user={user}
@@ -183,7 +182,7 @@ export default function ProductDetailPage({
           selectedCategory={null}
           onSelectCategory={(catSlug) => {
             if (catSlug) {
-              window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+              window.history.pushState({}, "", ROUTES.category(catSlug));
               window.dispatchEvent(new Event("popstate"));
             }
           }}
@@ -250,7 +249,7 @@ export default function ProductDetailPage({
               <AdditionalInfoSection
                 values={additionalInfo}
                 onChange={setAdditionalInfo}
-                visible={!!selectedPackage && durationOptions.length > 0}
+                visible={!!selectedPackage && !!selectedDuration}
                 fields={formData?.fields}
               />
               <BuyButton

@@ -12,7 +12,12 @@ router.post(
   optionalAuth,
   [
     validationRules.amount(),
-    validationRules.orderId(),
+    body("orderId")
+      .optional()
+      .trim()
+      .matches(/^[a-zA-Z0-9-_]+$/)
+      .withMessage("Invalid order ID format"),
+    body("items").optional().isArray(),
     validationRules.optionalString("description", 255),
     handleValidationErrors,
   ],
@@ -23,7 +28,6 @@ router.post(
   "/balance/confirm",
   authenticate,
   [
-    validationRules.orderId(),
     validationRules.amount(),
     body("items")
       .isArray({ min: 1 })

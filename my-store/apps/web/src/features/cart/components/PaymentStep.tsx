@@ -23,6 +23,7 @@ import {
 import { MCoinPaymentConfirm } from "./MCoinPaymentConfirm";
 import { PaymentOutcome } from "./PaymentOutcome";
 import { BankTransferInfo } from "./BankTransferInfo";
+import { ROUTES } from "@/lib/constants";
 
 interface PaymentStepProps {
   cartItems: CartItemData[];
@@ -31,6 +32,10 @@ interface PaymentStepProps {
   onBack: () => void;
   onPaymentSuccess: (orderId: string, newBalance?: number) => void;
   onPaymentFailed: (error: string) => void;
+  /** Khi Mcoin thành công từ step 2 → chuyển step 3 và hiển thị màn success này */
+  initialSuccess?: { orderId: string; newBalance?: number } | null;
+  /** Gọi khi bấm "Về trang chủ" trên màn success (đi về trang chủ, không quay lại giỏ) */
+  onGoHome?: () => void;
 }
 
 type PaymentState = "loading" | "ready" | "processing" | "success" | "failed" | "expired";
@@ -42,6 +47,8 @@ export function PaymentStep({
   onBack,
   onPaymentSuccess,
   onPaymentFailed,
+  initialSuccess = null,
+  onGoHome,
 }: PaymentStepProps) {
   const [paymentState, setPaymentState] = useState<PaymentState>("loading");
   const [orderId, setOrderId] = useState<string>("");
@@ -59,34 +66,39 @@ export function PaymentStep({
     setPaymentState("loading");
     setError("");
 
-    const newOrderId = generateOrderId();
-    setOrderId(newOrderId);
-
     try {
-      // Call API to create payment record
+      const items = cartItems.map((it) => ({
+        id_product: it.id,
+        duration: it.duration,
+        extraInfo: it.additionalInfo,
+      }));
       const response = await createPayment(
         {
-          orderId: newOrderId,
           amount: total,
-          description: `Thanh toán đơn hàng ${newOrderId}`,
+          description: `Thanh toán đơn hàng`,
+          items,
         },
         getAuthToken() ?? undefined
       );
 
-      if (response.success) {
+      if (response.success && response.data) {
+        const orderIdFromApi = response.data.transactionId ?? response.data.orderId ?? "";
+        setOrderId(orderIdFromApi);
         setPaymentState("ready");
         setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
       } else {
         setPaymentState("ready");
         setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
+        setOrderId(generateOrderId());
         console.warn("Payment API warning:", response.error);
       }
     } catch (err) {
       setPaymentState("ready");
       setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
+      setOrderId(generateOrderId());
       console.warn("Payment init warning:", err);
     }
-  }, [total]);
+  }, [total, cartItems]);
 
   // Check payment status
   const checkStatus = useCallback(async () => {
@@ -103,7 +115,6 @@ export function PaymentStep({
 
         if (status === "PAID") {
           setPaymentState("success");
-          toast.success("Thanh toán thành công!");
           onPaymentSuccess(orderId);
         } else if (status === "FAILED" || status === "CANCELLED") {
           setPaymentState("failed");
@@ -150,27 +161,37 @@ export function PaymentStep({
     return () => clearInterval(pollInterval);
   }, [paymentMethod, paymentState, checkStatus]);
 
+  // Đếm ngược khi success (balance từ step 3 hoặc initialSuccess từ step 2 Mcoin)
   useEffect(() => {
+    if (initialSuccess) {
+      setRedirectSeconds(SUCCESS_REDIRECT_SECONDS);
+      const timer = setInterval(() => {
+        setRedirectSeconds((prev) => {
+          if (prev <= 1) {
+            onGoHome?.();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
     if (paymentMethod !== "balance" || paymentState !== "success") return;
     setRedirectSeconds(SUCCESS_REDIRECT_SECONDS);
     const timer = setInterval(() => {
       setRedirectSeconds((prev) => {
         if (prev <= 1) {
-          window.history.pushState({}, "", "/");
-          window.dispatchEvent(new PopStateEvent("popstate"));
+          onGoHome?.() ?? (window.history.pushState({}, "", ROUTES.home), window.dispatchEvent(new PopStateEvent("popstate")));
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [paymentMethod, paymentState]);
+  }, [paymentMethod, paymentState, initialSuccess, onGoHome]);
 
   // Confirm balance (MCoin) payment: Trừ Coin => Lưu đơn => Lịch sử giao dịch
   const handleConfirmBalance = useCallback(async () => {
-    const currentOrderId = orderId || generateOrderId();
-    if (!currentOrderId) return;
-    setOrderId(currentOrderId);
     setPaymentState("processing");
     setError("");
     const items = cartItems.map((it) => ({
@@ -181,18 +202,20 @@ export function PaymentStep({
       note: it.note,
       quantity: it.quantity,
       price: it.price,
+      extraInfo: it.additionalInfo,
     }));
-    const result = await confirmBalancePayment(currentOrderId, total, items);
+    const result = await confirmBalancePayment(total, items);
     if (result.success && result.data?.newBalance != null) {
       setPaymentState("success");
-      toast.success("Thanh toán thành công!");
-      onPaymentSuccess(currentOrderId, result.data.newBalance);
+      const orderIdForCallback = result.data.orderIds?.[0] ?? result.data.transactionId ?? "";
+      setOrderId(orderIdForCallback);
+      onPaymentSuccess(orderIdForCallback, result.data.newBalance);
     } else {
       setPaymentState("ready");
       setError(result.error || "Xác nhận thanh toán thất bại.");
       onPaymentFailed(result.error || "Xác nhận thanh toán thất bại.");
     }
-  }, [orderId, total, cartItems, onPaymentSuccess, onPaymentFailed]);
+  }, [total, cartItems, onPaymentSuccess, onPaymentFailed]);
 
   // Copy to clipboard
   const handleCopy = async (text: string, field: string) => {
@@ -205,6 +228,25 @@ export function PaymentStep({
       toast.error("Không thể sao chép");
     }
   };
+
+  // Test: gọi API confirmTransfer để ghi nhận thanh toán + gửi Telegram, rồi hiển thị màn thành công
+  const handleTestPaymentSuccess = useCallback(async () => {
+    const currentOrderId = orderId || generateOrderId();
+    if (!currentOrderId || total <= 0) return;
+    setOrderId(currentOrderId);
+    setError("");
+    try {
+      const result = await confirmTransfer(currentOrderId, total);
+      if (result.success) {
+        setPaymentState("success");
+        onPaymentSuccess(currentOrderId);
+      } else {
+        toast.error(result.error || "Xác nhận thanh toán thất bại.");
+      }
+    } catch {
+      toast.error("Lỗi kết nối. Vui lòng thử lại.");
+    }
+  }, [orderId, total, onPaymentSuccess]);
 
   // Xác nhận đã chuyển khoản/QR → ghi lịch sử giao dịch, sau đó kiểm tra trạng thái
   const handleConfirmTransfer = useCallback(async () => {
@@ -228,6 +270,21 @@ export function PaymentStep({
 
   // Render based on state
   const renderContent = () => {
+    // Mcoin thành công từ step 2 → hiển thị màn thông báo thành công (cùng giao diện với QR/balance step 3)
+    if (initialSuccess) {
+      return (
+        <PaymentOutcome
+          paymentState="success"
+          orderId={initialSuccess.orderId}
+          error={undefined}
+          redirectSeconds={redirectSeconds}
+          paymentMethod="balance"
+          onInitializePayment={initializePayment}
+          onBack={onBack}
+          onGoHome={onGoHome}
+        />
+      );
+    }
     // Balance (MCoin): confirm step
     if (paymentMethod === "balance" && (paymentState === "ready" || paymentState === "processing")) {
       return (
@@ -257,6 +314,7 @@ export function PaymentStep({
           paymentMethod={paymentMethod}
           onInitializePayment={initializePayment}
           onBack={onBack}
+          onGoHome={onGoHome}
         />
       );
     }
@@ -276,6 +334,7 @@ export function PaymentStep({
           onBack={onBack}
           onConfirmTransfer={handleConfirmTransfer}
           isConfirmingTransfer={isConfirmingTransfer}
+          onTestPaymentSuccess={handleTestPaymentSuccess}
         />
       );
     }

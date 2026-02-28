@@ -151,9 +151,9 @@ export function OrderDetailModal({ order, onClose, now, copiedId, onCopyId }: Or
                         <div className="flex flex-col gap-1.5 rounded-xl bg-blue-50/80 px-4 py-3 dark:bg-blue-900/25 dark:border dark:border-blue-800/40">
                           <span className="text-xs font-medium uppercase tracking-wider text-blue-600/90 dark:text-blue-400/90">Ngày hết hạn</span>
                           <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                            {expDate ? formatDateTime(expDate.toISOString()) : "—"}
+                            {order.status === "Đang Tạo Đơn" ? "—" : (expDate ? formatDateTime(expDate.toISOString()) : "—")}
                           </span>
-                          {expDate && (
+                          {!order.status?.includes("Đang Tạo Đơn") && expDate && (
                             <span
                               className={`inline-flex w-fit rounded-lg px-2.5 py-1 text-xs font-semibold ${
                                 expDate.getTime() <= now.getTime()
@@ -175,7 +175,7 @@ export function OrderDetailModal({ order, onClose, now, copiedId, onCopyId }: Or
                             </span>
                           </div>
                         )}
-                        {infoNote && (
+                        {infoNote && order.status !== "Đang Tạo Đơn" && (
                           <div className="flex flex-col gap-1.5 rounded-xl bg-white/80 px-4 py-3 dark:bg-slate-700/40 dark:border dark:border-slate-600/40 min-h-0">
                             <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-slate-500">Thông tin tài khoản</span>
                             <div className="flex items-center gap-2 rounded-lg bg-gray-100/80 p-3 dark:bg-slate-800/60">

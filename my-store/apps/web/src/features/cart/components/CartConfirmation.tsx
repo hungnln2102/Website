@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowLeft, ShoppingBag, CreditCard, QrCode, Wallet, CheckCircle, Shield } from "lucide-react";
 import type { CartItemData } from "./CartItem";
 
@@ -12,6 +13,8 @@ interface CartConfirmationProps {
   paymentMethod: PaymentMethod;
   onBack: () => void;
   onConfirm: () => void;
+  /** Khi chọn Mcoin: bấm Xác nhận gọi API ngay tại step 2, không chuyển step 3. Gọi xong success thì parent xử lý (toast, clearCart, về step 1). */
+  onConfirmBalance?: (items: CartItemData[], total: number) => Promise<void>;
 }
 
 const formatCurrency = (value: number) =>
@@ -72,9 +75,26 @@ export function CartConfirmation({
   paymentMethod,
   onBack,
   onConfirm,
+  onConfirmBalance,
 }: CartConfirmationProps) {
   const paymentInfo = getPaymentMethodInfo(paymentMethod);
   const PaymentIcon = paymentInfo.icon;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isBalanceConfirm = paymentMethod === "balance" && onConfirmBalance;
+
+  const handleConfirmClick = async () => {
+    if (isBalanceConfirm && onConfirmBalance) {
+      setIsSubmitting(true);
+      try {
+        await onConfirmBalance(cartItems, total);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+    onConfirm();
+  };
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -176,11 +196,21 @@ export function CartConfirmation({
           {/* Action Buttons */}
           <div className="space-y-3 pt-2">
             <button
-              onClick={onConfirm}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:shadow-green-500/40 active:scale-95 cursor-pointer"
+              onClick={handleConfirmClick}
+              disabled={isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:shadow-green-500/40 active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-wait"
             >
-              <CheckCircle className="h-5 w-5" />
-              Xác nhận thanh toán
+              {isSubmitting ? (
+                <>
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-5 w-5" />
+                  Xác nhận thanh toán
+                </>
+              )}
             </button>
             <button
               onClick={onBack}

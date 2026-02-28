@@ -177,42 +177,71 @@ export class SepayService {
       const txIdCol = COLS_WT.TRANSACTION_ID;
       const paymentIdCol = COLS_OC.PAYMENT_ID;
 
-      const ocResult = await pool.query(
-        `SELECT account_id, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
+      const wtRow = await pool.query(
+        `SELECT id, account_id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
         [order_invoice_number]
       );
 
-      if (ocResult.rows.length > 0) {
-        const accountId = parseInt(String(ocResult.rows[0].account_id), 10);
-        const paymentId = ocResult.rows[0][paymentIdCol] as string | null;
+      if (wtRow.rows.length > 0) {
+        const paymentId = wtRow.rows[0].id;
+        const accountId = parseInt(String(wtRow.rows[0].account_id), 10);
         await pool.query(
-          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE id_order = $1`,
+          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE ${paymentIdCol} = $1`,
+          [paymentId]
+        );
+        await pool.query(
+          `UPDATE ${WALLET_TX_TABLE} SET method = 'QR', amount = $1 WHERE id = $2`,
+          [order_amount, paymentId]
+        );
+
+        const ocList = await pool.query(
+          `SELECT id_order FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1`,
+          [paymentId]
+        );
+        const orderIds = ocList.rows.map((r) => r.id_order as string);
+        const { sendOrderNotification } = await import('./telegram.service');
+        sendOrderNotification({
+          orderIds,
+          lines: orderIds.map((idOrder) => ({ idOrder, variantIdOrProductId: idOrder })),
+        }).catch((err) => console.error('Telegram (QR) failed:', err));
+      } else {
+        const ocResult = await pool.query(
+          `SELECT account_id, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
           [order_invoice_number]
         );
 
-        const useTxId = paymentId ?? `TX${accountId}${Date.now().toString(36).toUpperCase()}SEPAY`;
-        const existingTx = await pool.query(
-          `SELECT id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 AND account_id = $2 LIMIT 1`,
-          [useTxId, accountId]
-        );
-        if (existingTx.rows.length > 0) {
+        if (ocResult.rows.length > 0) {
+          const accountId = parseInt(String(ocResult.rows[0].account_id), 10);
+          const paymentId = ocResult.rows[0][paymentIdCol] as string | null;
           await pool.query(
-            `UPDATE ${WALLET_TX_TABLE} SET amount = $1 WHERE ${txIdCol} = $2 AND account_id = $3`,
-            [order_amount, useTxId, accountId]
+            `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE id_order = $1`,
+            [order_invoice_number]
           );
-        } else {
-          if (!paymentId) {
+
+          const useTxId = paymentId ?? `TX${accountId}${Date.now().toString(36).toUpperCase()}SEPAY`;
+          const existingTx = await pool.query(
+            `SELECT id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 AND account_id = $2 LIMIT 1`,
+            [useTxId, accountId]
+          );
+          if (existingTx.rows.length > 0) {
             await pool.query(
-              `UPDATE ${ORDER_CUSTOMER_TABLE} SET ${paymentIdCol} = $1, updated_at = NOW() WHERE id_order = $2`,
-              [useTxId, order_invoice_number]
+              `UPDATE ${WALLET_TX_TABLE} SET amount = $1 WHERE ${txIdCol} = $2 AND account_id = $3`,
+              [order_amount, useTxId, accountId]
+            );
+          } else {
+            if (!paymentId) {
+              await pool.query(
+                `UPDATE ${ORDER_CUSTOMER_TABLE} SET ${paymentIdCol} = $1, updated_at = NOW() WHERE id_order = $2`,
+                [useTxId, order_invoice_number]
+              );
+            }
+            await pool.query(
+              `INSERT INTO ${WALLET_TX_TABLE}
+               (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, method, created_at)
+               VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, 0, 0, 'BANK_TRANSFER', NOW())`,
+              [useTxId, accountId, order_amount]
             );
           }
-          await pool.query(
-            `INSERT INTO ${WALLET_TX_TABLE}
-             (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, method, created_at)
-             VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, 0, 0, 'BANK_TRANSFER', NOW())`,
-            [useTxId, accountId, order_amount]
-          );
         }
       }
 
@@ -254,7 +283,8 @@ export class SepayService {
   }
 
   /**
-   * Get payment status from order ID (đọc từ DB: order_customer / wallet_transactions)
+   * Get payment status from order ID or transaction_id (MAVP...).
+   * Tìm order_customer theo id_order hoặc theo payment_id (khi orderId là transaction_id).
    */
   async getPaymentStatus(orderId: string): Promise<{
     status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
@@ -272,6 +302,29 @@ export class SepayService {
       `SELECT status, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
       [orderId]
     );
+
+    if (ocRow.rows.length === 0 && orderId.startsWith('MAVP')) {
+      const wtRow = await pool.query(
+        `SELECT id, ${txIdCol}, created_at FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
+        [orderId]
+      );
+      if (wtRow.rows.length > 0) {
+        const paymentId = wtRow.rows[0].id;
+        const ocByPayment = await pool.query(
+          `SELECT status FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1 LIMIT 1`,
+          [paymentId]
+        );
+        if (ocByPayment.rows.length > 0 && ocByPayment.rows[0].status === 'paid') {
+          return {
+            status: 'PAID',
+            transactionId: orderId,
+            paidAt: wtRow.rows[0].created_at ?? undefined,
+          };
+        }
+        return { status: 'PENDING', transactionId: orderId };
+      }
+    }
+
     if (ocRow.rows.length > 0 && ocRow.rows[0].status === 'paid') {
       const paymentId = ocRow.rows[0][paymentIdCol];
       if (paymentId) {

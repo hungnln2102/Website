@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import type { NormalizedProduct } from "./useHomeData";
+import { ROUTES } from "@/lib/constants";
 
 interface UseHomeFiltersOptions {
   products: NormalizedProduct[];
@@ -130,7 +131,7 @@ export function useHomeFilters({
     setSearchQuery("");
 
     if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/");
+      window.history.pushState({}, "", ROUTES.home);
       window.dispatchEvent(new Event("popstate"));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

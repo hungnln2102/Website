@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Percent, CreditCard, QrCode, Wallet } from "lucide-react";
+import { Percent, QrCode, Wallet } from "lucide-react";
 
 type PaymentMethod = "vnpay" | "qr" | "momo_later" | "momo" | "topup" | "balance";
 
@@ -24,8 +24,6 @@ export function CartSummary({
   onPaymentSelect,
 }: CartSummaryProps) {
   const [discountCode, setDiscountCode] = useState("");
-
-  const amountToAdd = Math.max(0, total - balance);
 
   return (
     <div className="space-y-4">
@@ -86,58 +84,18 @@ export function CartSummary({
               {formatCurrency(total)}
             </span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-slate-400">
-              Số dư hiện tại
-            </span>
-            <span className="font-medium text-gray-900 dark:text-white">
-              {formatCurrency(balance)}
-            </span>
-          </div>
-          {amountToAdd > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-slate-400">
-                Số tiền cần nạp thêm
-              </span>
-              <span className="font-medium text-red-500">
-                {formatCurrency(amountToAdd)}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Payment Buttons */}
+      {/* Payment Buttons - Chỉ 2 lựa chọn: Thanh Toán Mcoin + Mua Siêu Tốc Qua... (QR) */}
       <div className="space-y-3">
-        {balance >= total ? (
-          <button
-            onClick={() => onPaymentSelect("balance")}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 cursor-pointer active:scale-95"
-          >
-            <Wallet className="h-5 w-5" />
-            Thanh toán Mcoin
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => onPaymentSelect("topup")}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 cursor-pointer active:scale-95"
-            >
-              <Wallet className="h-5 w-5" />
-              Thanh Toán
-            </button>
-            <p className="text-center text-xs text-gray-500 dark:text-slate-400">
-              Quét mã. Thanh toán. Không cần nạp tiền.
-            </p>
-          </>
-        )}
-
         <button
-          onClick={() => onPaymentSelect("vnpay")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-blue-500 bg-white py-3 font-semibold text-blue-600 transition-all hover:bg-blue-50 cursor-pointer active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700"
+          onClick={() => onPaymentSelect("balance")}
+          disabled={balance < total}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/40 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-emerald-500/25"
         >
-          <CreditCard className="h-5 w-5" />
-          Mua siêu tốc qua VNPay & Banking
+          <Wallet className="h-5 w-5" />
+          Thanh Toán Mcoin
         </button>
 
         <button
@@ -145,23 +103,7 @@ export function CartSummary({
           className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-indigo-500 bg-white py-3 font-semibold text-indigo-600 transition-all hover:bg-indigo-50 cursor-pointer active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700"
         >
           <QrCode className="h-5 w-5" />
-          Mua siêu tốc qua QR Banking
-        </button>
-
-        <button
-          onClick={() => onPaymentSelect("momo_later")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 py-3 font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:shadow-pink-500/40 cursor-pointer active:scale-95"
-        >
-          <Wallet className="h-5 w-5" />
-          Thanh toán với Ví Trả Sau trên MoMo
-        </button>
-
-        <button
-          onClick={() => onPaymentSelect("momo")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 py-3 font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:shadow-pink-500/40 cursor-pointer active:scale-95"
-        >
-          <Wallet className="h-5 w-5" />
-          Mua siêu tốc với MoMo
+          Thanh Toán Qua QR
         </button>
       </div>
     </div>

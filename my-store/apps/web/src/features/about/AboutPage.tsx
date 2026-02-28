@@ -5,6 +5,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
+import { ROUTES } from "@/lib/constants";
 
 export default function AboutPage() {
   const isScrolled = useScroll();
@@ -22,7 +23,7 @@ export default function AboutPage() {
   });
 
   const handleLogoClick = () => {
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", ROUTES.home);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
@@ -32,7 +33,7 @@ export default function AboutPage() {
   };
 
   const handleCategoryClick = (slug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(slug)}`);
+    window.history.pushState({}, "", ROUTES.category(slug));
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 

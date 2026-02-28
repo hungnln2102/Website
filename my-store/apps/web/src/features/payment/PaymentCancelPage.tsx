@@ -7,6 +7,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 
 interface PaymentCancelPageProps {
   onBack: () => void;
@@ -42,12 +43,12 @@ export default function PaymentCancelPage({
   }, []);
 
   const handleReturnToCart = () => {
-    window.history.pushState({}, "", "/gio-hang");
+    window.history.pushState({}, "", ROUTES.cart);
     window.location.reload();
   };
 
   const handleCategoryClick = (catSlug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+    window.history.pushState({}, "", ROUTES.category(catSlug));
     window.dispatchEvent(new Event("popstate"));
   };
 

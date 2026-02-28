@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react";
+import { XCircle, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react";
+import { SuccessAnimation } from "@/components/SuccessAnimation";
 
 interface PaymentOutcomeProps {
   paymentState: "success" | "failed" | "expired" | "loading";
@@ -8,6 +9,8 @@ interface PaymentOutcomeProps {
   paymentMethod?: string;
   onInitializePayment: () => void;
   onBack: () => void;
+  /** Gọi khi bấm "Về trang chủ" trên màn success (nếu có thì dùng thay vì onBack) */
+  onGoHome?: () => void;
 }
 
 export function PaymentOutcome({
@@ -18,6 +21,7 @@ export function PaymentOutcome({
   paymentMethod,
   onInitializePayment,
   onBack,
+  onGoHome,
 }: PaymentOutcomeProps) {
   if (paymentState === "loading") {
     return (
@@ -33,8 +37,8 @@ export function PaymentOutcome({
   if (paymentState === "success") {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <div className="mb-6 rounded-full bg-green-100 p-6 dark:bg-green-900/30">
-          <CheckCircle className="h-16 w-16 text-green-500" />
+        <div className="mb-6 flex justify-center rounded-full bg-green-100 p-5 dark:bg-green-900/30">
+          <SuccessAnimation className="h-16 w-16" iconClassName="text-green-500" />
         </div>
         <h3 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
           Thanh toán thành công!
@@ -47,24 +51,20 @@ export function PaymentOutcome({
         <p className="text-gray-500 dark:text-slate-500">
           Cảm ơn bạn đã mua hàng. Đơn hàng đang được xử lý.
         </p>
-        
         {paymentMethod === "balance" && redirectSeconds !== undefined && (
-          <>
-            <p className="mt-4 text-sm text-gray-500 dark:text-slate-400">
-              Tự động quay về trang chủ sau {redirectSeconds}s.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                window.history.pushState({}, "", "/");
-                window.dispatchEvent(new PopStateEvent("popstate"));
-              }}
-              className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              Về trang chủ ngay
-            </button>
-          </>
+          <p className="mt-4 text-sm text-gray-500 dark:text-slate-400">
+            Tự động quay về trang chủ sau {redirectSeconds}s.
+          </p>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            (onGoHome ?? onBack)();
+          }}
+          className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          Về trang chủ ngay
+        </button>
       </div>
     );
   }

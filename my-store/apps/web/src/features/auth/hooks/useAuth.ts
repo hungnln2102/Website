@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { AUTH_EXPIRED_EVENT, getApiBase } from "@/lib/api";
+import { ROUTES } from "@/lib/constants";
 
 export interface User {
   id: string;
@@ -193,7 +194,7 @@ export function useAuth() {
     });
     
     // Redirect to home page after logout
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", ROUTES.home);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }, []);
 
@@ -215,7 +216,7 @@ export function useAuth() {
       
       // Show notification and redirect
       toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-      window.history.pushState({}, "", "/");
+      window.history.pushState({}, "", ROUTES.home);
       window.dispatchEvent(new PopStateEvent("popstate"));
     };
 

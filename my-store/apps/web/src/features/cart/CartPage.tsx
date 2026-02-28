@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
+import { confirmBalancePayment } from "@/lib/api";
+import { ROUTES } from "@/lib/constants";
 
 interface CartPageProps {
   onBack: () => void;
@@ -54,9 +56,13 @@ export default function CartPage({
   } = useCartPageData();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const successRedirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (successRedirectRef.current) clearTimeout(successRedirectRef.current);
+  }, []);
 
   const handleCategoryClick = (catSlug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+    window.history.pushState({}, "", ROUTES.category(catSlug));
     window.dispatchEvent(new Event("popstate"));
   };
 
@@ -88,19 +94,62 @@ export default function CartPage({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Confirm payment - go to step 3
+  // Confirm payment - go to step 3 (hoặc với Mcoin: xác nhận ngay tại step 2, không sang step 3)
   const handleConfirmPayment = () => {
     setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle payment success (newBalance from MCoin payment)
+  // Mcoin: xác nhận thanh toán tại step 2 → API success thì chuyển step 3 và hiển thị màn thông báo thành công (PaymentOutcome)
+  const [paymentSuccessResult, setPaymentSuccessResult] = useState<{ orderId: string; newBalance?: number } | null>(null);
+  const handleConfirmBalanceAtStep2 = async (items: CartItemData[], totalAmount: number) => {
+    const payload = items.map((it) => ({
+      id_product: it.id,
+      name: it.name,
+      variant_name: it.variant_name,
+      duration: it.duration,
+      note: it.note,
+      quantity: it.quantity,
+      price: it.price,
+      extraInfo: it.additionalInfo,
+    }));
+    const result = await confirmBalancePayment(totalAmount, payload);
+    if (result.success && result.data?.newBalance != null) {
+      const orderId = result.data.orderIds?.[0] ?? result.data.transactionId ?? "";
+      if (typeof result.data.newBalance === "number" && updateUser) {
+        updateUser({ balance: result.data.newBalance });
+      }
+      clearCart();
+      setPaymentSuccessResult({ orderId, newBalance: result.data.newBalance });
+      setCurrentStep(3);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      toast.error(result.error || "Xác nhận thanh toán thất bại.");
+    }
+  };
+
+  // Handle payment success — chỉ dùng toast (form bên dưới), không mở modal
   const handlePaymentSuccess = (orderId: string, newBalance?: number) => {
-    toast.success("Thanh toán thành công!");
     if (typeof newBalance === "number" && updateUser) {
       updateUser({ balance: newBalance });
     }
     clearCart();
+    if (successRedirectRef.current) clearTimeout(successRedirectRef.current);
+    toast.success("Thanh toán thành công!", {
+      description: "Tự động chuyển về trang chủ sau 5 giây.",
+      duration: 5000,
+      action: {
+        label: "Về trang chủ",
+        onClick: () => {
+          if (successRedirectRef.current) clearTimeout(successRedirectRef.current);
+          onBack();
+        },
+      },
+    });
+    successRedirectRef.current = setTimeout(() => {
+      successRedirectRef.current = null;
+      onBack();
+    }, 5000);
   };
 
   // Handle payment failure
@@ -164,6 +213,8 @@ export default function CartPage({
             onBack={handleBackToCart}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentFailed={handlePaymentFailed}
+            initialSuccess={selectedPaymentMethod === "balance" ? paymentSuccessResult : null}
+            onGoHome={onBack}
           />
         ) : currentStep === 2 && selectedPaymentMethod ? (
           /* Step 2: Confirmation */
@@ -174,6 +225,7 @@ export default function CartPage({
             paymentMethod={selectedPaymentMethod}
             onBack={handleBackToCart}
             onConfirm={handleConfirmPayment}
+            onConfirmBalance={selectedPaymentMethod === "balance" ? handleConfirmBalanceAtStep2 : undefined}
           />
         ) : !isLoggedIn ? (
           /* Chưa đăng nhập */
@@ -187,7 +239,7 @@ export default function CartPage({
             </p>
             <button
               onClick={() => {
-                window.history.pushState({}, "", "/dang-nhap");
+                window.history.pushState({}, "", ROUTES.login);
                 window.dispatchEvent(new Event("popstate"));
               }}
               className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 cursor-pointer"

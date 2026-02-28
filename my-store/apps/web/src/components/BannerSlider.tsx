@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 
 const slides = [
   {
-    // Intro slide: giới thiệu Mavryk (SEO + brand)
     title: "Mavryk Premium Store - Cửa hàng phần mềm bản quyền chính hãng",
     description:
       "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
     cta: "Tìm hiểu thêm",
-    href: "/gioi-thieu",
+    href: ROUTES.about,
     image:
       "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=65&auto=format&fit=crop",
   },

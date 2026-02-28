@@ -19,6 +19,8 @@ interface BankTransferInfoProps {
   /** Gọi khi user bấm "Tôi đã chuyển khoản" → ghi lịch sử và kiểm tra trạng thái */
   onConfirmTransfer?: () => Promise<void>;
   isConfirmingTransfer?: boolean;
+  /** Test: giả lập thanh toán thành công (development / demo) */
+  onTestPaymentSuccess?: () => void;
 }
 
 export function BankTransferInfo({
@@ -34,6 +36,7 @@ export function BankTransferInfo({
   onBack,
   onConfirmTransfer,
   isConfirmingTransfer = false,
+  onTestPaymentSuccess,
 }: BankTransferInfoProps) {
   // Render copy button
   const CopyButton = ({ text, field }: { text: string; field: string }) => (
@@ -51,7 +54,7 @@ export function BankTransferInfo({
   );
 
   return (
-    <div className="flex flex-col lg:flex-row lg:justify-center">
+    <div className="flex flex-col overflow-x-hidden lg:flex-row lg:justify-center">
       {/* Left - Bank Info */}
       <div className="w-full lg:w-[420px] border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700 p-6">
         <h3 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">
@@ -129,16 +132,27 @@ export function BankTransferInfo({
             và số tiền để đơn hàng được xử lý tự động.
           </p>
         </div>
+
+        {/* Test: nút giả lập thanh toán thành công (development / demo) */}
+        {onTestPaymentSuccess && (
+          <button
+            type="button"
+            onClick={onTestPaymentSuccess}
+            className="mt-4 w-full rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 py-3 font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400 dark:hover:bg-amber-900/30"
+          >
+            🧪 Test thanh toán thành công
+          </button>
+        )}
       </div>
 
       {/* Right - QR Code */}
-      <div className="w-full lg:w-[340px] p-6">
+      <div className="w-full min-w-0 overflow-x-hidden lg:w-[340px] p-6">
         <div className="rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 p-6 text-center text-white">
           <h3 className="mb-4 text-lg font-bold">Quét mã QR để thanh toán</h3>
 
           {/* QR Code with scan animation */}
           <div className="mx-auto mb-4 w-fit rounded-xl bg-white p-3">
-            <div className="relative overflow-hidden">
+           <div className="relative overflow-hidden">
               <img
                 src={qrUrl}
                 alt="QR Code thanh toán"
@@ -163,7 +177,7 @@ export function BankTransferInfo({
                     top: 0;
                   }
                   50% {
-                    top: calc(100% - 4px);
+                    top: calc(100% - 8px);
                   }
                 }
               `}</style>

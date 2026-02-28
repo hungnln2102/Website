@@ -7,6 +7,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 
 interface PaymentSuccessPageProps {
   onBack: () => void;
@@ -43,7 +44,7 @@ export default function PaymentSuccessPage({
   }, []);
 
   const handleCategoryClick = (catSlug: string) => {
-    window.history.pushState({}, "", `/danh-muc/${encodeURIComponent(catSlug)}`);
+    window.history.pushState({}, "", ROUTES.category(catSlug));
     window.dispatchEvent(new Event("popstate"));
   };
 
