@@ -31,7 +31,8 @@ function checkOrderApiKey(req: Request, res: Response): boolean {
 
 /**
  * POST /api/orders/notify-done
- * Body: { id_order: string, information_order?: string, slot?: string, note?: string, supply?: string | number }
+ * Body: { id_order: string, information_order?: string, slot?: string, note?: string, supply_id?: number | string }
+ * Bot gửi supply (id NCC) — map thành supply_id.
  */
 export async function notifyDone(req: Request, res: Response): Promise<void> {
   if (!checkOrderApiKey(req, res)) return;
@@ -45,13 +46,15 @@ export async function notifyDone(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const supplyId = req.body?.supply_id ?? req.body?.supply;
+
   try {
     const count = await updateOrderDone(id_order, {
       id_order,
       information_order: req.body?.information_order,
       slot: req.body?.slot,
       note: req.body?.note,
-      supply: req.body?.supply,
+      supply_id: supplyId,
     });
     if (count === 0) {
       res.status(404).json({ success: false, error: "Order not found in order_list" });

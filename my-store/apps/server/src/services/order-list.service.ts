@@ -1,7 +1,7 @@
 /**
  * Ghi tạm order_list khi thanh toán thành công (Mcoin).
  * Mỗi item = 1 dòng order_list (id_order, id_product = variant_id, customer, price, ...).
- * Bot /done sau đó cập nhật slot, note, supply, cost.
+ * Bot /done sau đó cập nhật slot, note, supply_id (id supplier), cost.
  */
 
 import pool from "../config/database";
@@ -167,19 +167,26 @@ export interface NotifyDonePayload {
   information_order?: string | null;
   slot?: string | null;
   note?: string | null;
-  supply?: string | number | null;
+  /** Id nhà cung cấp (partner.supplier.id), ghi vào order_list.supply_id */
+  supply_id?: number | string | null;
 }
 
 /**
  * Cập nhật order_list khi Bot bấm "Hoàn thành": đổi trạng thái Đang Tạo Đơn → Đang Xử Lý,
- * ghi information_order, slot, note, supply.
+ * ghi information_order, slot, note, supply_id (id supplier).
  * Gọi từ POST /api/orders/notify-done (Bot / nút Telegram).
  */
 export async function updateOrderDone(id_order: string, payload: NotifyDonePayload): Promise<number> {
   const information_order = payload.information_order != null ? String(payload.information_order).trim() || null : null;
   const slot = payload.slot != null ? String(payload.slot).trim() || null : null;
   const note = payload.note != null ? String(payload.note).trim() || null : null;
-  const supply = payload.supply != null ? (typeof payload.supply === "number" ? payload.supply : String(payload.supply).trim() || null) : null;
+  const supplyId =
+    payload.supply_id != null && payload.supply_id !== ""
+      ? typeof payload.supply_id === "number"
+        ? payload.supply_id
+        : parseInt(String(payload.supply_id).trim(), 10)
+      : null;
+  const supplyIdVal = supplyId != null && !Number.isNaN(supplyId) ? supplyId : null;
 
   const res = await pool.query(
     `UPDATE ${ORDER_LIST_TABLE}
@@ -187,9 +194,9 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
          ${COLS_OL.INFORMATION_ORDER} = COALESCE($2, ${COLS_OL.INFORMATION_ORDER}),
          ${COLS_OL.SLOT} = COALESCE($3, ${COLS_OL.SLOT}),
          ${COLS_OL.NOTE} = COALESCE($4, ${COLS_OL.NOTE}),
-         ${COLS_OL.SUPPLY} = COALESCE($5::text, ${COLS_OL.SUPPLY})
+         ${COLS_OL.SUPPLY_ID} = COALESCE($5::int, ${COLS_OL.SUPPLY_ID})
      WHERE ${COLS_OL.ID_ORDER} = $6`,
-    [STATUS_DONE, information_order, slot, note, supply != null ? String(supply) : null, id_order]
+    [STATUS_DONE, information_order, slot, note, supplyIdVal, id_order]
   );
   return res.rowCount ?? 0;
 }
@@ -211,7 +218,7 @@ export async function cancelOrder(id_order: string): Promise<number> {
     colsOc.ORDER_DATE,
     colsOc.DAYS,
     colsOc.ORDER_EXPIRED,
-    colsOc.SUPPLY,
+    colsOc.SUPPLY_ID,
     colsOc.COST,
     colsOc.PRICE,
     colsOc.NOTE,
@@ -229,7 +236,7 @@ export async function cancelOrder(id_order: string): Promise<number> {
     colsOl.ORDER_DATE,
     colsOl.DAYS,
     colsOl.ORDER_EXPIRED,
-    colsOl.SUPPLY,
+    colsOl.SUPPLY_ID,
     colsOl.COST,
     colsOl.PRICE,
     colsOl.NOTE,
