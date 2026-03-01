@@ -10,13 +10,13 @@ SELECT
   CURRENT_TIMESTAMP AS updated_at
 FROM product.product p
 LEFT JOIN (
-  -- Đếm theo id_product (display_name) và tổng hợp theo product_id
+  -- order_list.id_product đã là int (variant_id)
   SELECT
     v.product_id,
     COUNT(*)::int AS sold_count_30d,
     SUM(COALESCE(ol.price, 0))::numeric(15, 2) AS revenue_30d
   FROM orders.order_list ol
-  INNER JOIN product.variant v ON TRIM(ol.id_product::text) = TRIM(v.display_name::text)
+  INNER JOIN product.variant v ON ol.id_product = v.id
   WHERE ol.id_product IS NOT NULL
     AND ol.order_date >= CURRENT_DATE - INTERVAL '30 days'
     AND ol.status != 'cancelled'

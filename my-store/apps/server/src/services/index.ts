@@ -16,5 +16,7 @@ export { getProductPackages } from "./product-packages.service";
 export { sepayService } from "./sepay.service";
 export { csrfService } from "./csrf.service";
 export { confirmBalancePayment } from "./balance-payment.service";
+export { insertOrderListFromPayment } from "./order-list.service";
+export { handlePaymentSuccess } from "./payment-success.service";
 export { tokenBlacklistService } from "./token-blacklist.service";
 export { encryptionService } from "./encryption.service";

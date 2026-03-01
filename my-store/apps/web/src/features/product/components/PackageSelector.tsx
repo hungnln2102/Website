@@ -3,6 +3,9 @@
 import { Package } from "lucide-react";
 import { isNewPackage } from "../utils";
 
+/** Chuẩn size thẻ gói: min-height theo layout hiện tại (ô "Chọn gói sản phẩm") */
+const PACKAGE_CARD_MIN_H = "min-h-[72px]";
+
 interface PackageOption {
   id: string;
   name: string;
@@ -27,15 +30,17 @@ export function PackageSelector({ packages, selectedPackage, onSelect }: Package
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 dark:bg-blue-500 shadow-lg shadow-blue-500/20">
           <Package className="h-4 w-4 text-white" />
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Chọn gói sản phẩm</h3>
-          <p className="text-[10px] text-gray-500 dark:text-slate-400">
+        <div className="mt-2 min-w-0">
+          <h3 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+            Chọn gói sản phẩm
+          </h3>
+          <p className="mt-1 text-sm leading-snug text-slate-500 dark:text-slate-400">
             Lựa chọn phiên bản phù hợp với nhu cầu
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
         {packages.map((pkg) => {
           const isNew = isNewPackage(pkg.created_at);
           const isHot = (pkg.sold_count_30d || 0) > 10;
@@ -45,51 +50,51 @@ export function PackageSelector({ packages, selectedPackage, onSelect }: Package
           return (
             <button
               key={pkg.id}
+              type="button"
               onClick={() => onSelect(pkg.id)}
-              className={`group cursor-pointer relative overflow-hidden rounded-lg border-2 px-3 py-2 text-left transition-all duration-300 ${
+              className={`group relative flex flex-col overflow-hidden rounded-xl border px-3 pt-2 pb-2.5 text-center transition-all duration-200 ease-out ${PACKAGE_CARD_MIN_H} ${
                 isSelected
-                  ? "border-blue-600 bg-blue-50/50 ring-2 ring-blue-50 dark:border-blue-500 dark:bg-blue-500/10 dark:ring-blue-900/20"
-                  : "border-gray-100 bg-white hover:border-gray-300 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600"
+                  ? "border-blue-500 bg-blue-500/10 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/20 dark:border-blue-400 dark:bg-blue-500/15 dark:ring-blue-400/20"
+                  : "border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:shadow dark:border-slate-600 dark:bg-slate-800/60 dark:hover:border-slate-500 dark:hover:bg-slate-800/80"
               }`}
             >
-              <div className="relative z-10">
-                {/* Tags */}
-                {(isHot || isNew || hasSale) && (
-                  <div className="mb-1 flex flex-wrap gap-1">
-                    {isHot && (
-                      <span className="inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
-                        HOT
-                      </span>
-                    )}
-                    {isNew && !isHot && (
-                      <span className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
-                        NEW
-                      </span>
-                    )}
-                    {hasSale && (
-                      <span className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-green-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
-                        SALE
-                      </span>
-                    )}
-                  </div>
-                )}
+              {/* Tag góc phải trên */}
+              {(isHot || isNew || hasSale) && (
+                <div className="absolute top-2 right-2 z-10 flex flex-wrap justify-end gap-1">
+                  {isHot && (
+                    <span className="inline-flex items-center rounded-md bg-gradient-to-r from-orange-500 to-red-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+                      HOT
+                    </span>
+                  )}
+                  {isNew && !isHot && (
+                    <span className="inline-flex items-center rounded-md bg-gradient-to-r from-blue-500 to-indigo-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+                      NEW
+                    </span>
+                  )}
+                  {hasSale && (
+                    <span className="inline-flex items-center rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+                      SALE
+                    </span>
+                  )}
+                </div>
+              )}
 
-                {/* Package Name */}
-                <div
-                  className={`text-xs font-semibold transition-colors ${
-                    isSelected ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-white"
+              {/* Tên sản phẩm căn giữa */}
+              <div className="relative z-0 flex flex-1 flex-col items-center justify-center">
+                <span
+                  className={`w-full text-center text-base font-semibold leading-snug transition-colors ${
+                    isSelected ? "text-blue-700 dark:text-blue-300" : "text-slate-800 dark:text-slate-200"
                   }`}
                 >
                   {pkg.name}
-                </div>
+                </span>
               </div>
 
-              {/* Selection Indicator */}
               <div
                 className={`absolute right-0 top-0 h-full w-0.5 transition-all ${
                   isSelected
-                    ? "bg-blue-600 opacity-100"
-                    : "bg-transparent opacity-0 group-hover:bg-gray-200 dark:group-hover:bg-slate-700"
+                    ? "bg-blue-500 opacity-100 dark:bg-blue-400"
+                    : "bg-transparent opacity-0 group-hover:bg-slate-200 dark:group-hover:bg-slate-600"
                 }`}
               />
             </button>

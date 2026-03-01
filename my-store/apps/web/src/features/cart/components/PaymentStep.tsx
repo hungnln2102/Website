@@ -9,6 +9,7 @@ import {
   createPayment,
   checkPaymentStatus,
   generateOrderId,
+  createPaymentCodes,
   confirmBalancePayment,
   confirmTransfer,
   getAuthToken,
@@ -57,18 +58,25 @@ export function PaymentStep({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [redirectSeconds, setRedirectSeconds] = useState<number>(SUCCESS_REDIRECT_SECONDS);
   const [isConfirmingTransfer, setIsConfirmingTransfer] = useState(false);
+  /** Mã đơn + transaction từ API create-codes (dùng cho Mcoin confirm và QR create). */
+  const [paymentCodes, setPaymentCodes] = useState<{ orderIds: string[]; transactionId: string } | null>(null);
 
   const transferContent = orderId.replace(/-/g, "").slice(-8).toUpperCase();
   const qrUrl = `https://img.vietqr.io/image/${CART_BANK_CONFIG.bankId}-${CART_BANK_CONFIG.accountNo}-compact.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(CART_BANK_CONFIG.accountName)}`;
 
-  // Initialize payment
+  // Initialize payment (QR): tạo mã trước, rồi gọi create với mã đó
   const initializePayment = useCallback(async () => {
     setPaymentState("loading");
     setError("");
 
     try {
+      const itemCount = cartItems.length;
+      const codesRes = await createPaymentCodes(itemCount, "MAVL");
+      const orderIds = codesRes.success && codesRes.data ? codesRes.data.orderIds : null;
+      const transactionId = codesRes.success && codesRes.data ? codesRes.data.transactionId : null;
+
       const items = cartItems.map((it) => ({
-        id_product: it.id,
+        id_product: it.variantId ?? it.id,
         duration: it.duration,
         extraInfo: it.additionalInfo,
       }));
@@ -77,19 +85,20 @@ export function PaymentStep({
           amount: total,
           description: `Thanh toán đơn hàng`,
           items,
+          ...(orderIds && transactionId ? { orderIds, transactionId } : {}),
         },
         getAuthToken() ?? undefined
       );
 
       if (response.success && response.data) {
-        const orderIdFromApi = response.data.transactionId ?? response.data.orderId ?? "";
+        const orderIdFromApi = response.data.transactionId ?? response.data.orderId ?? transactionId ?? "";
         setOrderId(orderIdFromApi);
         setPaymentState("ready");
         setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
       } else {
         setPaymentState("ready");
         setTimeLeft(PAYMENT_TIMEOUT_SECONDS);
-        setOrderId(generateOrderId());
+        setOrderId(transactionId ?? generateOrderId());
         console.warn("Payment API warning:", response.error);
       }
     } catch (err) {
@@ -127,12 +136,26 @@ export function PaymentStep({
     }
   }, [orderId, paymentState, paymentMethod, onPaymentSuccess, onPaymentFailed]);
 
-  // Initialize payment on mount: bank/QR flow or balance "ready" with orderId
+  // Initialize payment on mount: balance gọi create-codes; bank/QR gọi initializePayment (đã gồm create-codes + create)
   useEffect(() => {
     if (paymentMethod === "balance") {
-      setOrderId((prev) => prev || generateOrderId());
-      setPaymentState("ready");
-      return;
+      let cancelled = false;
+      createPaymentCodes(cartItems.length, "MAVL").then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data) {
+          setPaymentCodes(res.data);
+          setOrderId(res.data.transactionId || res.data.orderIds[0] || "");
+        } else {
+          setOrderId(generateOrderId());
+        }
+        setPaymentState("ready");
+      }).catch(() => {
+        if (!cancelled) {
+          setOrderId(generateOrderId());
+          setPaymentState("ready");
+        }
+      });
+      return () => { cancelled = true; };
     }
     initializePayment();
   }, [paymentMethod]);
@@ -190,12 +213,12 @@ export function PaymentStep({
     return () => clearInterval(timer);
   }, [paymentMethod, paymentState, initialSuccess, onGoHome]);
 
-  // Confirm balance (MCoin) payment: Trừ Coin => Lưu đơn => Lịch sử giao dịch
+  // Confirm balance (MCoin) payment: dùng mã từ create-codes (paymentCodes), trừ Coin => Lưu đơn => note
   const handleConfirmBalance = useCallback(async () => {
     setPaymentState("processing");
     setError("");
     const items = cartItems.map((it) => ({
-      id_product: it.id,
+      id_product: it.variantId ?? it.id,
       name: it.name,
       variant_name: it.variant_name,
       duration: it.duration,
@@ -204,7 +227,10 @@ export function PaymentStep({
       price: it.price,
       extraInfo: it.additionalInfo,
     }));
-    const result = await confirmBalancePayment(total, items);
+    const result = await confirmBalancePayment(total, items, {
+      orderIds: paymentCodes?.orderIds,
+      transactionId: paymentCodes?.transactionId,
+    });
     if (result.success && result.data?.newBalance != null) {
       setPaymentState("success");
       const orderIdForCallback = result.data.orderIds?.[0] ?? result.data.transactionId ?? "";
@@ -215,7 +241,7 @@ export function PaymentStep({
       setError(result.error || "Xác nhận thanh toán thất bại.");
       onPaymentFailed(result.error || "Xác nhận thanh toán thất bại.");
     }
-  }, [total, cartItems, onPaymentSuccess, onPaymentFailed]);
+  }, [total, cartItems, paymentCodes, onPaymentSuccess, onPaymentFailed]);
 
   // Copy to clipboard
   const handleCopy = async (text: string, field: string) => {

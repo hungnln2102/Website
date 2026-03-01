@@ -174,6 +174,20 @@ export async function sendOrderNotification(params: SendOrderNotificationParams)
   const text = buildMessage(params);
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
+  // Inline keyboard: Hoàn thành | Hủy Đơn (callback_data có giới hạn 64 byte, dùng order id đầu)
+  const firstOrderId = params.orderIds[0] ?? "";
+  const reply_markup =
+    firstOrderId.length > 0
+      ? {
+          inline_keyboard: [
+            [
+              { text: "✅ Hoàn thành", callback_data: `order_done:${firstOrderId}` },
+              { text: "❌ Hủy Đơn", callback_data: `order_cancel:${firstOrderId}` },
+            ],
+          ],
+        }
+      : undefined;
+
   try {
     console.log("[Telegram] Sending request to", url.replace(TELEGRAM_BOT_TOKEN, "***"));
     const res = await fetch(url, {
@@ -185,6 +199,7 @@ export async function sendOrderNotification(params: SendOrderNotificationParams)
         text,
         parse_mode: "HTML",
         disable_web_page_preview: true,
+        ...(reply_markup && { reply_markup }),
       }),
     });
 

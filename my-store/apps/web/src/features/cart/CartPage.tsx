@@ -104,7 +104,7 @@ export default function CartPage({
   const [paymentSuccessResult, setPaymentSuccessResult] = useState<{ orderId: string; newBalance?: number } | null>(null);
   const handleConfirmBalanceAtStep2 = async (items: CartItemData[], totalAmount: number) => {
     const payload = items.map((it) => ({
-      id_product: it.id,
+      id_product: it.variantId ?? it.id,
       name: it.name,
       variant_name: it.variant_name,
       duration: it.duration,

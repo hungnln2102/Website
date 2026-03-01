@@ -18,6 +18,7 @@ export {
   createPayment,
   checkPaymentStatus,
   generateOrderId,
+  createPaymentCodes,
   confirmBalancePayment,
   confirmTransfer,
   fetchUserOrders,

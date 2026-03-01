@@ -100,9 +100,38 @@ export function generateOrderId(): string {
   return `ORD-${dateStr}-${randomStr}`;
 }
 
+/** Gọi khi khách bấm Thanh toán Mcoin/QR để lấy mã đơn + transaction (backend sinh, tránh trùng DB). */
+export async function createPaymentCodes(
+  itemCount: number,
+  idOrderPrefix: "MAVL" | "MAVC" | "MAVK" = "MAVL"
+): Promise<{
+  success: boolean;
+  data?: { orderIds: string[]; transactionId: string };
+  error?: string;
+}> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/payment/create-codes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemCount, idOrderPrefix }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      return { success: false, error: body.error || "Không thể tạo mã đơn." };
+    }
+    return body;
+  } catch {
+    return {
+      success: false,
+      error: "Lỗi kết nối máy chủ. Vui lòng thử lại sau.",
+    };
+  }
+}
+
 export async function confirmBalancePayment(
   amount: number,
-  items: ConfirmBalancePaymentItem[]
+  items: ConfirmBalancePaymentItem[],
+  options?: { orderIds?: string[]; transactionId?: string }
 ): Promise<{
   success: boolean;
   data?: { newBalance: number; transactionId?: string; orderIds?: string[] };
@@ -112,7 +141,13 @@ export async function confirmBalancePayment(
     const res = await authFetch(`${API_BASE}/api/payment/balance/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, items }),
+      body: JSON.stringify({
+        amount,
+        items,
+        ...(options?.orderIds && options?.transactionId
+          ? { orderIds: options.orderIds, transactionId: options.transactionId }
+          : {}),
+      }),
     });
     const body = await res.json();
     if (!res.ok) {

@@ -80,6 +80,9 @@ export type CreatePaymentRequest = {
   customerPhone?: string;
   /** Khi có items: luồng QR, backend tạo 1 wallet_tx + N order_customer, nội dung CK = transaction_id (MAVP...) */
   items?: { id_product: string; duration?: string; extraInfo?: Record<string, string> }[];
+  /** Mã đơn + transaction do API create-codes trả về (tránh trùng DB) */
+  orderIds?: string[];
+  transactionId?: string;
 };
 
 export type CreatePaymentResponse = {

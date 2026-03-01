@@ -1,6 +1,7 @@
 import prisma from "@my-store/db";
 import pool from "../config/database";
-import { DB_SCHEMA, TABLES } from "../config/db.config";
+import { DB_SCHEMA } from "../config/db.config";
+import type { OrderListItemInput } from "./order-list.service";
 
 const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
 const CART_TABLE = DB_SCHEMA.CART_ITEMS!.TABLE;
@@ -242,27 +243,25 @@ function toNum(v: unknown): number {
 export async function getCartItemsEnriched(accountId: string | number): Promise<CartItemEnriched[]> {
   const accId = toAccountId(accountId);
   const schema = `"${PRODUCT_SCHEMA}"`;
-  const { rows } = await pool.query<
-    {
-      id: string;
-      variant_id: string;
-      quantity: number;
-      price_type: string;
-      extra_info: CartExtraInfo | null;
-      created_at: Date;
-      updated_at: Date;
-      display_name: string | null;
-      variant_name: string | null;
-      duration: string | null;
-      image_url: string | null;
-      description: string | null;
-      purchase_rules: string | null;
-      pct_ctv: unknown;
-      pct_khach: unknown;
-      pct_promo: unknown;
-      price_max: unknown;
-    }[]
-  >(
+  const { rows } = await pool.query<{
+    id: string;
+    variant_id: string;
+    quantity: number;
+    price_type: string;
+    extra_info: CartExtraInfo | null;
+    created_at: Date;
+    updated_at: Date;
+    display_name: string | null;
+    variant_name: string | null;
+    duration: string | null;
+    image_url: string | null;
+    description: string | null;
+    purchase_rules: string | null;
+    pct_ctv: unknown;
+    pct_khach: unknown;
+    pct_promo: unknown;
+    price_max: unknown;
+  }>(
     `WITH supply_max AS (
        SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
        FROM ${SUPPLIER_COST_FULL} sc
@@ -474,4 +473,34 @@ export async function syncCartItems(
   }
 
   return getCartItems(accId);
+}
+
+/**
+ * Phương án B (Webhook + cart_items): Build danh sách items cho order_list từ cart của account.
+ * orderIds phải cùng thứ tự với cart (order_customer ORDER BY created_at ASC, cart ORDER BY created_at DESC).
+ * Trả về null nếu số lượng khác nhau (cart đã đổi).
+ */
+export async function buildOrderListItemsFromCart(
+  accountId: number,
+  orderIds: string[]
+): Promise<OrderListItemInput[] | null> {
+  const cartItems = await getCartItemsEnriched(accountId);
+  if (cartItems.length !== orderIds.length) {
+    console.warn("[cart] buildOrderListItemsFromCart: cart length !== orderIds length", {
+      cart: cartItems.length,
+      orderIds: orderIds.length,
+    });
+    return null;
+  }
+  return orderIds.map((id_order, i) => {
+    const c = cartItems[i]!;
+    return {
+      id_order,
+      id_product: parseInt(String(c.variantId), 10) || 0,
+      price: c.price * Math.max(1, c.quantity),
+      information_order:
+        c.extraInfo && Object.keys(c.extraInfo).length > 0 ? JSON.stringify(c.extraInfo) : null,
+      duration: c.duration && String(c.duration).trim() !== "" ? String(c.duration).trim() : null,
+    };
+  });
 }

@@ -5,9 +5,9 @@ import type { Request, Response } from "express";
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
 import { sepayService } from "../services/sepay.service";
-import { confirmBalancePayment } from "../services/balance-payment.service";
-import { generateMavpTransactionId, generateUniqueIdOrder } from "../services/balance-payment.service";
-import { notifyNewOrder } from "../services/telegram.service";
+import { confirmBalancePayment, createPaymentCodes, generateMavpTransactionId, generateUniqueIdOrder } from "../services/balance-payment.service";
+import { handlePaymentSuccess } from "../services/payment-success.service";
+import type { OrderListItemInput } from "../services/order-list.service";
 import { logPaymentEvent, logSecurityEvent } from "../utils/logger";
 
 interface ReqUser {
@@ -15,12 +15,24 @@ interface ReqUser {
   email?: string;
 }
 
-/** Tạo đơn QR: 1 wallet_transaction (MAVP, method QR) + N order_customer (mỗi dòng 1 id_order). */
+/** Item từ frontend khi tạo đơn QR (cùng format Mcoin: mã đơn, tên SP, ngày đăng ký, số ngày, ngày hết hạn). */
+interface QrOrderItem {
+  id_product?: unknown;
+  name?: unknown;
+  variant_name?: unknown;
+  duration?: unknown;
+  price?: unknown;
+  quantity?: unknown;
+  extraInfo?: Record<string, string>;
+}
+
+/** Tạo đơn QR: wallet_transaction + N order_customer. Không ghi order_list — ghi khi thanh toán thành công (confirmTransfer có gửi kèm items). */
 async function createQrOrder(
   accountId: number,
   amountVnd: number,
-  itemCount: number,
-  idOrderPrefix: "MAVL" | "MAVC" | "MAVK" = "MAVL"
+  items: QrOrderItem[],
+  idOrderPrefix: "MAVL" | "MAVC" | "MAVK" = "MAVL",
+  options?: { orderIds?: string[]; transactionId?: string }
 ): Promise<{ transactionId: string; paymentId: number; orderIds: string[] }> {
   const WALLET_TABLE = `${DB_SCHEMA.WALLET!.SCHEMA}.${DB_SCHEMA.WALLET!.TABLE}`;
   const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
@@ -28,7 +40,14 @@ async function createQrOrder(
   const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
   const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
 
-  const transactionId = generateMavpTransactionId();
+  const useCodes =
+    options?.orderIds &&
+    options.orderIds.length === items.length &&
+    options.transactionId != null &&
+    String(options.transactionId).trim() !== "";
+  const transactionId = useCodes ? String(options!.transactionId!).trim() : generateMavpTransactionId();
+  const orderIds: string[] = useCodes ? [...options!.orderIds!] : [];
+
   const txIdCol = COLS_WT.TRANSACTION_ID;
   const methodCol = COLS_WT.METHOD;
   const idOrderCol = COLS_OC.ID_ORDER;
@@ -48,11 +67,10 @@ async function createQrOrder(
     [transactionId, accountId, amountVnd, currentBalance]
   );
   const paymentId = insertTx.rows[0]?.id as number;
-  const orderIds: string[] = [];
 
-  for (let i = 0; i < itemCount; i++) {
-    const idOrder = generateUniqueIdOrder(idOrderPrefix);
-    orderIds.push(idOrder);
+  for (let i = 0; i < items.length; i++) {
+    const idOrder = orderIds[i] ?? generateUniqueIdOrder(idOrderPrefix);
+    if (i >= orderIds.length) orderIds.push(idOrder);
     await pool.query(
       `INSERT INTO ${ORDER_CUSTOMER_TABLE} (${idOrderCol}, account_id, status, ${paymentIdCol}, created_at, updated_at)
        VALUES ($1, $2, 'Đang Tạo Đơn', $3, NOW(), NOW())`,
@@ -76,9 +94,27 @@ export async function createPayment(req: Request, res: Response) {
 
     const accountId = parseInt(user.userId, 10);
     const idOrderPrefix = (req.body.idOrderPrefix as "MAVL" | "MAVC" | "MAVK" | undefined) || "MAVL";
+    const orderIdsBody = req.body.orderIds;
+    const transactionIdBody = req.body.transactionId;
 
     if (Array.isArray(bodyItems) && bodyItems.length > 0) {
-      const { transactionId } = await createQrOrder(accountId, amountVnd, bodyItems.length, idOrderPrefix);
+      const normalizedItems: QrOrderItem[] = bodyItems.map((it: Record<string, unknown>) => ({
+        id_product: it.id_product,
+        name: it.name,
+        variant_name: it.variant_name,
+        duration: it.duration,
+        price: it.price,
+        quantity: it.quantity,
+        extraInfo: it.extraInfo && typeof it.extraInfo === "object" ? (it.extraInfo as Record<string, string>) : undefined,
+      }));
+      const options =
+        Array.isArray(orderIdsBody) &&
+        orderIdsBody.length === normalizedItems.length &&
+        transactionIdBody != null &&
+        String(transactionIdBody).trim() !== ""
+          ? { orderIds: orderIdsBody as string[], transactionId: String(transactionIdBody).trim() }
+          : undefined;
+      const { transactionId } = await createQrOrder(accountId, amountVnd, normalizedItems, idOrderPrefix, options);
 
       if (!sepayService.isConfigured()) {
         return res.status(503).json({
@@ -110,8 +146,8 @@ export async function createPayment(req: Request, res: Response) {
     const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
     const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID;
-    const paymentIdCol = COLS_OC.PAYMENT_ID;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const paymentIdCol = COLS_OC.PAYMENT_ID as string;
     const idOrder = String(orderId).trim();
 
     const updated = await pool.query(
@@ -178,7 +214,7 @@ export async function createPayment(req: Request, res: Response) {
 export async function confirmBalance(req: Request, res: Response) {
   try {
     const { userId } = (req as Request & { user: { userId: string } }).user;
-    const { amount, items } = req.body;
+    const { amount, items, orderIds: bodyOrderIds, transactionId: bodyTransactionId } = req.body;
     const idOrderPrefix = (req.body.idOrderPrefix as "MAVL" | "MAVC" | "MAVK" | undefined) || "MAVL";
 
     const totalFromItems = (items as { price?: unknown; quantity?: unknown }[]).reduce(
@@ -210,6 +246,8 @@ export async function confirmBalance(req: Request, res: Response) {
         })
       ),
       idOrderPrefix,
+      orderIds: Array.isArray(bodyOrderIds) && bodyOrderIds.length === (items as unknown[]).length ? (bodyOrderIds as string[]) : undefined,
+      transactionId: bodyTransactionId != null && String(bodyTransactionId).trim() !== "" ? String(bodyTransactionId).trim() : undefined,
     });
 
     res.json({
@@ -247,12 +285,16 @@ export async function getPaymentStatus(req: Request, res: Response) {
   }
 }
 
-/** Xác nhận đơn chuyển khoản / QR (VietQR) đã thanh toán → ghi wallet_transactions, hiển thị trong lịch sử */
+/** Xác nhận đơn chuyển khoản / QR (VietQR) đã thanh toán → ghi wallet_transactions, (nếu có items) ghi order_list, gửi Telegram. */
 export async function confirmTransfer(req: Request, res: Response) {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
     const accountId = parseInt(userId, 10);
-    const { orderId, amount } = req.body as { orderId?: string; amount?: number };
+    const { orderId, amount, items: bodyItems } = req.body as {
+      orderId?: string;
+      amount?: number;
+      items?: Array<{ id_product?: unknown; price?: unknown; duration?: unknown; quantity?: unknown; extraInfo?: Record<string, string> }>;
+    };
 
     if (!orderId || amount == null || Number(amount) < 0) {
       return res.status(400).json({
@@ -265,14 +307,15 @@ export async function confirmTransfer(req: Request, res: Response) {
     const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
     const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID;
-    const paymentIdCol = COLS_OC.PAYMENT_ID;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const paymentIdCol = COLS_OC.PAYMENT_ID as string;
+    const idOrderCol = COLS_OC.ID_ORDER as string;
     const idOrderParam = String(orderId).trim();
     const amountVnd = Math.round(Number(amount));
 
     // 1) Tìm đơn: theo id_order (MAVL...) hoặc theo transaction_id (MAVP...) khi frontend gửi mã giao dịch
     let oc = await pool.query(
-      `SELECT ${COLS_OC.ID_ORDER}, status, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 AND account_id = $2`,
+      `SELECT ${idOrderCol}, status, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 AND account_id = $2`,
       [idOrderParam, accountId]
     );
     let paymentId: string | number | null = null;
@@ -307,7 +350,7 @@ export async function confirmTransfer(req: Request, res: Response) {
       const paymentIdNum = wt.rows[0].id as number;
       paymentId = paymentIdNum;
       const ocAll = await pool.query(
-        `SELECT ${COLS_OC.ID_ORDER}, status FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1 AND account_id = $2`,
+        `SELECT ${idOrderCol}, status FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1 AND account_id = $2`,
         [paymentIdNum, accountId]
       );
       if (ocAll.rows.length === 0) {
@@ -318,7 +361,7 @@ export async function confirmTransfer(req: Request, res: Response) {
       }
       const alreadyPaid = ocAll.rows.every((r) => r.status === "paid");
       if (alreadyPaid) {
-        orderIds = ocAll.rows.map((r) => String(r[COLS_OC.ID_ORDER] ?? "")).filter(Boolean);
+        orderIds = ocAll.rows.map((r) => String(r[idOrderCol] ?? "")).filter(Boolean);
         return res.json({
           success: true,
           message: "Đơn hàng đã được xác nhận thanh toán trước đó",
@@ -328,7 +371,7 @@ export async function confirmTransfer(req: Request, res: Response) {
         `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE ${paymentIdCol} = $1 AND account_id = $2`,
         [paymentIdNum, accountId]
       );
-      orderIds = ocAll.rows.map((r) => String(r[COLS_OC.ID_ORDER] ?? "")).filter(Boolean);
+      orderIds = ocAll.rows.map((r) => String(r[idOrderCol] ?? "")).filter(Boolean);
     }
 
     const useTxId = paymentId != null ? String(paymentId) : `TX${accountId}${Date.now().toString(36).toUpperCase()}QR`;
@@ -354,15 +397,31 @@ export async function confirmTransfer(req: Request, res: Response) {
       );
     }
 
-    // Gửi thông báo Telegram (component dùng chung Mcoin + QR)
-    if (orderIds.length === 0) orderIds = [idOrderParam];
-    console.log("[confirmTransfer] Sending Telegram notification for orderIds:", orderIds);
-    notifyNewOrder({
-      paymentMethod: "QR",
+    // Khi thanh toán thành công: ghi order_list + Telegram (nếu frontend gửi kèm items, thứ tự trùng orderIds)
+    if (orderIds.length === 0) orderIds.push(idOrderParam);
+    const itemsForOrderList: OrderListItemInput[] | undefined =
+      Array.isArray(bodyItems) &&
+      bodyItems.length === orderIds.length
+        ? orderIds.map((id_order, i) => {
+            const it = bodyItems[i]!;
+            return {
+              id_order,
+              id_product: parseInt(String(it.id_product ?? ""), 10) || 0,
+              price: (Number(it.price) || 0) * Math.max(1, parseInt(String(it.quantity), 10) || 1),
+              information_order:
+                it.extraInfo && Object.keys(it.extraInfo).length > 0 ? JSON.stringify(it.extraInfo) : null,
+              duration: it.duration != null ? String(it.duration).trim() : null,
+            };
+          })
+        : undefined;
+
+    handlePaymentSuccess({
       orderIds,
+      accountId,
+      paymentMethod: "QR",
       totalAmount: amountVnd,
-    }).catch((err) => {
-      console.error("[confirmTransfer] Telegram notification failed:", err);
+      itemsForOrderList,
+      contact: process.env.FRONTEND_URL || undefined,
     });
 
     logPaymentEvent("TRANSFER_CONFIRMED", { orderId: idOrderParam, amount: amountVnd, accountId });
@@ -484,6 +543,23 @@ export async function webhook(req: Request, res: Response) {
       success: false,
       error: "Webhook processing failed",
     });
+  }
+}
+
+/** API tạo mã đơn và transaction (gọi khi khách bấm Thanh toán Mcoin/QR, trước bước xác nhận). */
+export async function createCodes(req: Request, res: Response) {
+  try {
+    const user = (req as Request & { user?: ReqUser }).user;
+    if (!user?.userId) {
+      return res.status(401).json({ success: false, error: "Unauthorized" });
+    }
+    const itemCount = Math.max(1, Math.min(100, parseInt(String(req.body.itemCount), 10) || 1));
+    const idOrderPrefix = (req.body.idOrderPrefix as "MAVL" | "MAVC" | "MAVK") || "MAVL";
+    const { orderIds, transactionId } = await createPaymentCodes(itemCount, idOrderPrefix);
+    return res.json({ success: true, data: { orderIds, transactionId } });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return res.status(400).json({ success: false, error: message });
   }
 }
 

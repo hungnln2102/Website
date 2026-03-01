@@ -15,6 +15,7 @@ export {
   createPayment,
   checkPaymentStatus,
   generateOrderId,
+  createPaymentCodes,
   confirmBalancePayment,
   confirmTransfer,
 } from "./payment.api";

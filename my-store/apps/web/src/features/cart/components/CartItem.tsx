@@ -4,6 +4,8 @@ import { Minus, Plus, Trash2, Package, FileText } from "lucide-react";
 
 export interface CartItemData {
   id: string;
+  /** variant_id từ DB — dùng cho order_list.id_product khi thanh toán */
+  variantId?: string;
   name: string;
   description?: string;
   image_url: string | null;

@@ -40,6 +40,9 @@ export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_REVIEW,    
 export const SCHEMA_AUDIT         = pickSchema(process.env.DB_SCHEMA_AUDIT,         process.env.SCHEMA_AUDIT,         "audit");
 export const SCHEMA_FORM_DESC     = pickSchema(process.env.DB_SCHEMA_FORM_DESC,     process.env.SCHEMA_FORM_DESC,     "form_desc");
 export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CYCLES,        process.env.SCHEMA_CYCLES,        "cycles");
+export const SCHEMA_ADMIN       = pickSchema(process.env.DB_SCHEMA_ADMIN,        process.env.SCHEMA_ADMIN,        "admin");
+export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      "finance");
+export const SCHEMA_PROMOTION   = pickSchema(process.env.DB_SCHEMA_PROMOTION,    process.env.SCHEMA_PROMOTION,    "promotion");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Table & Column Definitions
@@ -167,6 +170,172 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
+  /** Kho tài khoản (admin_orderlist) */
+  ACCOUNT_STORAGE: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "account_storage",
+    COLS: {
+      ID: "id",
+      USERNAME: "username",
+      PASSWORD: "password",
+      MAIL_2ND: "mail_2nd",
+      MAIL_FAMILY: "mail_family",
+      STORAGE: "storage",
+      NOTE: "note",
+    },
+  },
+
+  /** Tồn kho sản phẩm (admin_orderlist) */
+  PRODUCT_STOCK: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "product_stock",
+    COLS: {
+      ID: "id",
+      PRODUCT_TYPE: "product_type",
+      ACCOUNT_USERNAME: "account_username",
+      ACCOUNT_PASSWORD: "account_password",
+      BACKUP_EMAIL: "backup_email",
+      TWO_FA_CODE: "two_fa_code",
+      NOTE: "note",
+      STOCK_STATUS: "stock_status",
+      CREATED_AT: "created_at",
+    },
+  },
+
+  /** Gói sản phẩm (admin_orderlist) */
+  PACKAGE_PRODUCT: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "package_product",
+    COLS: {
+      ID: "id",
+      PACKAGE_ID: "package_id",
+      USERNAME: "account_user",
+      PASSWORD: "account_pass",
+      MAIL_2ND: "recovery_mail",
+      NOTE: "note",
+      EXPIRED: "expiry_date",
+      SUPPLIER: "supplier",
+      COST: "cost",
+      SLOT: "slot",
+      MATCH: "match",
+    },
+  },
+
+  // ── Partner / Supplier (admin_orderlist) ───────────────────────────────────
+
+  SUPPLIER: {
+    SCHEMA: SCHEMA_PARTNER,
+    TABLE: "supplier",
+    COLS: {
+      ID: "id",
+      SUPPLIER_NAME: "supplier_name",
+      NUMBER_BANK: "number_bank",
+      BIN_BANK: "bin_bank",
+      ACTIVE_SUPPLY: "active_supply",
+    },
+  },
+
+  SUPPLIER_PAYMENTS: {
+    SCHEMA: SCHEMA_PARTNER,
+    TABLE: "supplier_payments",
+    COLS: {
+      ID: "id",
+      SOURCE_ID: "supplier_id",
+      IMPORT_VALUE: "total_amount",
+      ROUND: "payment_period",
+      STATUS: "payment_status",
+      PAID: "amount_paid",
+    },
+  },
+
+  // ── Admin (admin_orderlist) ────────────────────────────────────────────────
+
+  ADMIN_USERS: {
+    SCHEMA: SCHEMA_ADMIN,
+    TABLE: "users",
+    COLS: {
+      ID: "userid",
+      USERNAME: "username",
+      PASSWORD: "passwordhash",
+      ROLE: "role",
+      CREATED_AT: "createdat",
+    },
+  },
+
+  // ── Finance (admin_orderlist) ───────────────────────────────────────────────
+
+  MASTER_WALLET_TYPES: {
+    SCHEMA: SCHEMA_FINANCE,
+    TABLE: "master_wallettypes",
+    COLS: {
+      ID: "id",
+      WALLET_NAME: "wallet_name",
+      NOTE: "note",
+      ASSET_CODE: "asset_code",
+      IS_INVESTMENT: "is_investment",
+      LINKED_WALLET_ID: "linked_wallet_id",
+    },
+  },
+
+  TRANS_DAILY_BALANCES: {
+    SCHEMA: SCHEMA_FINANCE,
+    TABLE: "trans_dailybalances",
+    COLS: {
+      ID: "id",
+      RECORD_DATE: "record_date",
+      WALLET_ID: "wallet_id",
+      AMOUNT: "amount",
+    },
+  },
+
+  SAVING_GOALS: {
+    SCHEMA: SCHEMA_FINANCE,
+    TABLE: "saving_goals",
+    COLS: {
+      ID: "id",
+      GOAL_NAME: "goal_name",
+      TARGET_AMOUNT: "target_amount",
+      PRIORITY: "priority",
+      CREATED_AT: "created_at",
+    },
+  },
+
+  // ── Promotion (admin_orderlist) ─────────────────────────────────────────────
+
+  ACCOUNT_PROMOTIONS: {
+    SCHEMA: SCHEMA_PROMOTION,
+    TABLE: "account_promotions",
+    COLS: {
+      ID: "id",
+      ACCOUNT_ID: "account_id",
+      PROMOTION_ID: "promotion_id",
+      STATUS: "status",
+      ASSIGNED_AT: "assigned_at",
+      USED_AT: "used_at",
+      USAGE_LIMIT_PER_USER: "usage_limit_per_user",
+    },
+  },
+
+  PROMOTION_CODES: {
+    SCHEMA: SCHEMA_PROMOTION,
+    TABLE: "promotion_codes",
+    COLS: {
+      ID: "id",
+      CODE: "code",
+      DISCOUNT_PERCENT: "discount_percent",
+      MAX_DISCOUNT_AMOUNT: "max_discount_amount",
+      MIN_ORDER_AMOUNT: "min_order_amount",
+      DESCRIPTION: "description",
+      STATUS: "status",
+      IS_PUBLIC: "is_public",
+      USAGE_LIMIT: "usage_limit",
+      USED_COUNT: "used_count",
+      START_AT: "start_at",
+      END_AT: "end_at",
+      CREATED_AT: "created_at",
+    },
+  },
+
   // ── Form Desc ─────────────────────────────────────────────────────────────
 
   FORM_NAME: {
@@ -204,6 +373,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   },
 
   // ── Orders ────────────────────────────────────────────────────────────────
+  // order_list, order_expired, order_canceled: cột id_product kiểu int (variant_id, FK product.variant.id)
 
   ORDER_LIST: {
     SCHEMA: SCHEMA_ORDERS,
@@ -211,7 +381,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product",
+      ID_PRODUCT: "id_product", // int, variant_id
       INFORMATION_ORDER: "information_order",
       CUSTOMER: "customer",
       CONTACT: "contact",
@@ -232,7 +402,70 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "order_expired",
     COLS: {
       ID: "id",
+      ID_ORDER: "id_order",
       ID_PRODUCT: "id_product",
+      INFORMATION_ORDER: "information_order",
+      CUSTOMER: "customer",
+      CONTACT: "contact",
+      SLOT: "slot",
+      ORDER_DATE: "order_date",
+      DAYS: "days",
+      ORDER_EXPIRED: "order_expired",
+      SUPPLY: "supply",
+      COST: "cost",
+      PRICE: "price",
+      NOTE: "note",
+      STATUS: "status",
+      ARCHIVED_AT: "archived_at",
+    },
+  },
+
+  ORDER_CANCELED: {
+    SCHEMA: SCHEMA_ORDERS,
+    TABLE: "order_canceled",
+    COLS: {
+      ID: "id",
+      ID_ORDER: "id_order",
+      ID_PRODUCT: "id_product",
+      INFORMATION_ORDER: "information_order",
+      CUSTOMER: "customer",
+      CONTACT: "contact",
+      SLOT: "slot",
+      ORDER_DATE: "order_date",
+      DAYS: "days",
+      ORDER_EXPIRED: "order_expired",
+      SUPPLY: "supply",
+      COST: "cost",
+      PRICE: "price",
+      NOTE: "note",
+      STATUS: "status",
+      REFUND: "refund",
+      CREATED_AT: "createdate",
+    },
+  },
+
+  PAYMENT_RECEIPT: {
+    SCHEMA: SCHEMA_ORDERS,
+    TABLE: "payment_receipt",
+    COLS: {
+      ID: "id",
+      ORDER_CODE: "id_order",
+      PAID_DATE: "payment_date",
+      AMOUNT: "amount",
+      RECEIVER: "receiver",
+      NOTE: "note",
+      SENDER: "sender",
+    },
+  },
+
+  REFUND: {
+    SCHEMA: SCHEMA_ORDERS,
+    TABLE: "refund",
+    COLS: {
+      ID: "id",
+      ORDER_CODE: "ma_don_hang",
+      PAID_DATE: "ngay_thanh_toan",
+      AMOUNT: "so_tien",
     },
   },
 
@@ -466,6 +699,21 @@ export const TABLES = {
   PRODUCT_SOLD_30D: t("PRODUCT_SOLD_30D"),
   PRODUCT_SOLD_COUNT: t("PRODUCT_SOLD_COUNT"),
   VARIANT_SOLD_COUNT: t("VARIANT_SOLD_COUNT"),
+  ACCOUNT_STORAGE:  t("ACCOUNT_STORAGE"),
+  PRODUCT_STOCK:    t("PRODUCT_STOCK"),
+  PACKAGE_PRODUCT:  t("PACKAGE_PRODUCT"),
+  SUPPLIER:         t("SUPPLIER"),
+  SUPPLIER_PAYMENTS: t("SUPPLIER_PAYMENTS"),
   ORDER_LIST:       t("ORDER_LIST"),
   ORDER_EXPIRED:    t("ORDER_EXPIRED"),
+  ORDER_CANCELED:   t("ORDER_CANCELED"),
+  ORDER_CUSTOMER:   t("ORDER_CUSTOMER"),
+  PAYMENT_RECEIPT:  t("PAYMENT_RECEIPT"),
+  REFUND:           t("REFUND"),
+  ADMIN_USERS:      t("ADMIN_USERS"),
+  MASTER_WALLET_TYPES: t("MASTER_WALLET_TYPES"),
+  TRANS_DAILY_BALANCES: t("TRANS_DAILY_BALANCES"),
+  SAVING_GOALS:     t("SAVING_GOALS"),
+  ACCOUNT_PROMOTIONS: t("ACCOUNT_PROMOTIONS"),
+  PROMOTION_CODES:  t("PROMOTION_CODES"),
 } as const;

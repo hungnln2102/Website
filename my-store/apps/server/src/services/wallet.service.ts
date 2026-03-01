@@ -102,9 +102,9 @@ export async function addFunds(
     // Create transaction record (id bigserial; business key = transaction_id)
     const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID;
-    const methodCol = COLS_WT.METHOD;
-    const promotionIdCol = COLS_WT.PROMOTION_ID;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const methodCol = COLS_WT.METHOD as string;
+    const promotionIdCol = COLS_WT.PROMOTION_ID as string;
     await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
        (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
@@ -197,9 +197,9 @@ export async function deductFunds(
     // Create transaction record (id bigserial; business key = transaction_id)
     const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID;
-    const methodCol = COLS_WT.METHOD;
-    const promotionIdCol = COLS_WT.PROMOTION_ID;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const methodCol = COLS_WT.METHOD as string;
+    const promotionIdCol = COLS_WT.PROMOTION_ID as string;
     await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
        (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
@@ -256,10 +256,10 @@ export async function getTransactions(
   limit: number = 20
 ): Promise<WalletTransaction[]> {
   const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
-  const txIdCol = COLS_WT.TRANSACTION_ID;
-  const methodCol = COLS_WT.METHOD;
-  const idCol = COLS_WT.ID;
-  const promotionIdCol = COLS_WT.PROMOTION_ID;
+  const txIdCol = COLS_WT.TRANSACTION_ID as string;
+  const methodCol = COLS_WT.METHOD as string;
+  const idCol = COLS_WT.ID as string;
+  const promotionIdCol = COLS_WT.PROMOTION_ID as string;
   const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
   const OC_PAYMENT_ID = DB_SCHEMA.ORDER_CUSTOMER!.COLS.PAYMENT_ID;
 
@@ -277,19 +277,19 @@ export async function getTransactions(
 
   return result.rows.map((row: Record<string, unknown>) => ({
     id: String(row[txIdCol] ?? row.id),
-    accountId: row.account_id,
-    type: row.type,
-    direction: row.direction,
+    accountId: Number(row.account_id) || 0,
+    type: row.type as WalletTransaction["type"],
+    direction: row.direction as WalletTransaction["direction"],
     amount: parseInt(String(row.amount)) || 0,
     balanceBefore: parseInt(String(row.balance_before)) || 0,
     balanceAfter: parseInt(String(row.balance_after)) || 0,
     refType: row.id_order ? "ORDER" : undefined,
     refId: (row.id_order as string) ?? undefined,
     description: undefined,
-    method: row[methodCol] ?? null,
-    promotionId: row[promotionIdCol] ?? null,
+    method: (row[methodCol] as string | null) ?? null,
+    promotionId: (row[promotionIdCol] as number | null) ?? null,
     status: (row.type as string) ?? undefined,
-    createdAt: row.created_at,
+    createdAt: row.created_at as Date,
   }));
 }
 

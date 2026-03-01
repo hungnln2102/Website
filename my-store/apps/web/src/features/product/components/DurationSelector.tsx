@@ -4,6 +4,9 @@ import { Check, ShoppingCart } from "lucide-react";
 import { formatCurrency } from "../utils";
 import { roundToNearestThousand } from "@/lib/pricing";
 
+/** Chuẩn size thẻ thời gian: cùng min-height với ô gói (đồng bộ với "Chọn gói sản phẩm") */
+const DURATION_CARD_MIN_H = "min-h-[72px]";
+
 export interface DurationOption {
   /** Id variant từ DB (product.variant.id) — dùng lưu vào cart_items.variant_id */
   id?: string | number;
@@ -27,7 +30,7 @@ export function DurationSelector({ options, selectedDuration, onSelect }: Durati
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 dark:bg-cyan-500 shadow-lg shadow-cyan-500/20">
           <ShoppingCart className="h-4 w-4 text-white" />
         </div>
@@ -56,7 +59,7 @@ export function DurationSelector({ options, selectedDuration, onSelect }: Durati
               key={option.key}
               onClick={() => !isOutOfStock && onSelect(option.key)}
               disabled={isOutOfStock}
-              className={`group relative flex flex-col rounded-lg border-2 px-3 py-2 text-left transition-all duration-300 ${
+              className={`group relative flex flex-col rounded-lg border-2 px-3 py-2 text-left transition-all duration-300 ${DURATION_CARD_MIN_H} ${
                 isOutOfStock
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 opacity-60 dark:border-slate-700 dark:bg-slate-800/30"
                   : isSelected

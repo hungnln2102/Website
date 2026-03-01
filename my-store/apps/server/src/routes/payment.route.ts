@@ -8,6 +8,22 @@ import * as paymentController from "../controllers/payment.controller";
 const router = express.Router();
 
 router.post(
+  "/create-codes",
+  authenticate,
+  [
+    body("itemCount")
+      .isInt({ min: 1, max: 100 })
+      .withMessage("itemCount must be between 1 and 100"),
+    body("idOrderPrefix")
+      .optional()
+      .isIn(["MAVL", "MAVC", "MAVK"])
+      .withMessage("idOrderPrefix must be MAVL, MAVC, or MAVK"),
+    handleValidationErrors,
+  ],
+  (req: Request, res: Response) => paymentController.createCodes(req, res)
+);
+
+router.post(
   "/create",
   optionalAuth,
   [

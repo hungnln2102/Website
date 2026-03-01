@@ -23,13 +23,18 @@ export class ProductStatsService {
   }
 
   private async queryProductSoldCount(productId: string): Promise<number> {
+    // id_product trong order_list/order_expired là variant_id (int); đếm theo product_id qua JOIN variant
     const [orderListResult, orderExpiredResult] = await Promise.all([
       pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} WHERE id_product::text = $1`,
+        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} ol
+         INNER JOIN product.variant v ON ol.id_product = v.id
+         WHERE v.product_id = $1`,
         [productId]
       ),
       pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_EXPIRED} WHERE id_product::text = $1`,
+        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_EXPIRED} oe
+         INNER JOIN product.variant v ON oe.id_product = v.id
+         WHERE v.product_id = $1`,
         [productId]
       ),
     ]);

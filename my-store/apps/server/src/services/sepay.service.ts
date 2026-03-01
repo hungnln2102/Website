@@ -3,6 +3,8 @@ import { logPaymentEvent, logSecurityEvent } from '../utils/logger';
 import crypto from 'crypto';
 import pool from '../config/database';
 import { DB_SCHEMA } from '../config/db.config';
+import { handlePaymentSuccess } from './payment-success.service';
+import { buildOrderListItemsFromCart } from './cart.service';
 
 const SEPAY_ENV = (process.env.SEPAY_ENV || 'sandbox') as 'sandbox' | 'production';
 const SEPAY_MERCHANT_ID = process.env.SEPAY_MERCHANT_ID || '';
@@ -174,8 +176,8 @@ export class SepayService {
       const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
       const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
       const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
-      const txIdCol = COLS_WT.TRANSACTION_ID;
-      const paymentIdCol = COLS_OC.PAYMENT_ID;
+      const txIdCol = COLS_WT.TRANSACTION_ID as string;
+      const paymentIdCol = COLS_OC.PAYMENT_ID as string;
 
       const wtRow = await pool.query(
         `SELECT id, account_id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
@@ -195,15 +197,19 @@ export class SepayService {
         );
 
         const ocList = await pool.query(
-          `SELECT id_order FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1`,
+          `SELECT id_order FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1 ORDER BY created_at ASC`,
           [paymentId]
         );
         const orderIds = ocList.rows.map((r) => r.id_order as string);
-        const { sendOrderNotification } = await import('./telegram.service');
-        sendOrderNotification({
+        const itemsForOrderList = await buildOrderListItemsFromCart(accountId, orderIds);
+        handlePaymentSuccess({
           orderIds,
-          lines: orderIds.map((idOrder) => ({ idOrder, variantIdOrProductId: idOrder })),
-        }).catch((err) => console.error('Telegram (QR) failed:', err));
+          accountId,
+          paymentMethod: 'QR',
+          totalAmount: order_amount,
+          itemsForOrderList: itemsForOrderList ?? undefined,
+          contact: process.env.FRONTEND_URL ?? undefined,
+        });
       } else {
         const ocResult = await pool.query(
           `SELECT account_id, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
@@ -242,6 +248,14 @@ export class SepayService {
               [useTxId, accountId, order_amount]
             );
           }
+          handlePaymentSuccess({
+            orderIds: [order_invoice_number],
+            accountId,
+            paymentMethod: 'QR',
+            totalAmount: order_amount,
+            itemsForOrderList: (await buildOrderListItemsFromCart(accountId, [order_invoice_number])) ?? undefined,
+            contact: process.env.FRONTEND_URL ?? undefined,
+          });
         }
       }
 
@@ -295,8 +309,8 @@ export class SepayService {
     const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
     const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
     const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID;
-    const paymentIdCol = COLS_OC.PAYMENT_ID;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const paymentIdCol = COLS_OC.PAYMENT_ID as string;
 
     const ocRow = await pool.query(
       `SELECT status, ${paymentIdCol} FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,

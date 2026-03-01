@@ -18,6 +18,7 @@ import {
 } from "./middleware/api-security";
 import { csrfProtection } from "./middleware/csrf";
 import paymentRouter from "./routes/payment.route";
+import orderRouter from "./routes/order.route";
 import mailRouter from "./routes/mail.route";
 import * as mailWebhookController from "./controllers/mail.webhook.controller";
 import variantDetailRouter from "./routes/variant-detail.route";
@@ -160,6 +161,9 @@ app.use(
 
 // Payment routes
 app.use("/api/payment", paymentRouter);
+
+// Order routes (notify-done, cancel – Bot Telegram)
+app.use("/api/orders", orderRouter);
 
 // Variant detail routes
 app.use("/api/variants", variantDetailRouter);

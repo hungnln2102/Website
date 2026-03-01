@@ -44,6 +44,9 @@ const EXEMPT_PATHS = [
   "/payment/create",    // Has its own validation
   // Mail webhook – xác thực bằng SIGNING_SECRET (Svix)
   "/mail/webhook",
+  // Order API – Bot Telegram xác thực bằng X-Api-Key (NOTIFY_ORDER_API_KEY)
+  "/orders/notify-done",
+  "/orders/cancel",
   // Topup test endpoint (development only)
   "/topup/test",
 ];

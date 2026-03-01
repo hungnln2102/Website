@@ -123,7 +123,7 @@ export async function getProductsList() {
     return {
       id: toNumber(row.id),
       slug: slugify(String(name || (row.id_product ?? row.id))),
-      name,
+      name: String(name),
       package: row.package ?? "",
       package_product: row.package_product ?? null,
       description: stripHtml(row.description) || "Chưa có mô tả",

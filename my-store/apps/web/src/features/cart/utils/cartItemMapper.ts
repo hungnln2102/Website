@@ -7,6 +7,7 @@ const DEFAULT_IMAGE = "https://placehold.co/200x200?text=Product";
 export function mapStorageItemsToCartItemData(storageItems: CartItem[]): CartItemData[] {
   const result = storageItems.map((item) => ({
     id: item.id,
+    variantId: item.variantId ?? item.id,
     name: item.packageName || item.name,
     description: formatDuration(item.duration) || undefined,
     image_url: item.imageUrl || DEFAULT_IMAGE,

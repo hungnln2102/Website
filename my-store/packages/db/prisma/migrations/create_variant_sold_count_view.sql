@@ -8,6 +8,8 @@ DROP MATERIALIZED VIEW IF EXISTS product.product_sold_count CASCADE;
 
 -- ============================================
 -- VIEW 1: Variant Sold Count (Chi tiết từng gói)
+-- order_list.id_product đã chuyển sang kiểu int (variant_id)
+-- order_expired: giữ join qua display_name nếu id_product vẫn là text
 -- ============================================
 CREATE MATERIALIZED VIEW product.variant_sold_count AS
 SELECT
@@ -19,29 +21,29 @@ SELECT
 FROM product.variant v
 LEFT JOIN (
   SELECT
-    id_product,
+    variant_id,
     SUM(sales_count)::int AS sales_count
   FROM (
-    -- Count from order_list
+    -- Count from order_list (id_product = variant id, kiểu int)
     SELECT
-      TRIM(ol.id_product::text) AS id_product,
+      ol.id_product::int AS variant_id,
       COUNT(*) AS sales_count
     FROM orders.order_list ol
     WHERE ol.id_product IS NOT NULL
-    GROUP BY TRIM(ol.id_product::text)
-    
+    GROUP BY ol.id_product
+
     UNION ALL
-    
-    -- Count from order_expired
+
+    -- Count from order_expired (id_product đã là int = variant_id)
     SELECT
-      TRIM(oe.id_product::text) AS id_product,
+      oe.id_product::int AS variant_id,
       COUNT(*) AS sales_count
     FROM orders.order_expired oe
     WHERE oe.id_product IS NOT NULL
-    GROUP BY TRIM(oe.id_product::text)
+    GROUP BY oe.id_product
   ) combined_orders
-  GROUP BY id_product
-) order_totals ON order_totals.id_product = TRIM(v.display_name::text);
+  GROUP BY variant_id
+) order_totals ON order_totals.variant_id = v.id;
 
 -- Create indexes for variant_sold_count
 CREATE UNIQUE INDEX idx_variant_sold_count_variant_id 

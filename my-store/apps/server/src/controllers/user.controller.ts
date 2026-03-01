@@ -211,7 +211,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
               v.${COLS_V.VARIANT_NAME} as product_display_name
        FROM ${ORDER_CUSTOMER_TABLE} oc
        LEFT JOIN ${ORDER_LIST_TABLE} ol ON ol.id_order = oc.id_order
-       LEFT JOIN ${VARIANT_TABLE} v ON ol.id_product = v.${COLS_V.DISPLAY_NAME}
+       LEFT JOIN ${VARIANT_TABLE} v ON ol.id_product = v.${COLS_V.ID}
        WHERE oc.${COLS_OC.ACCOUNT_ID} = $1
        ORDER BY COALESCE(ol.order_date, oc.created_at) DESC
        LIMIT 200`,
@@ -493,7 +493,7 @@ export async function getTransactions(req: Request, res: Response): Promise<void
         type: t.type,
         createdAt: t.createdAt,
         method: t.method,
-        promoCode: t.promoCode,
+        promoCode: t.promotionId ?? null,
         status: t.type,
       })),
     });
