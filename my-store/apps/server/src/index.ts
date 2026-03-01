@@ -40,6 +40,10 @@ if (process.env.NODE_ENV !== "production") {
 
 const app = express();
 
+// Khi chạy sau proxy (Nginx, load balancer): cần trust proxy để express-rate-limit
+// và req.secure/req.ip dùng đúng X-Forwarded-For / X-Forwarded-Proto
+app.set("trust proxy", 1);
+
 // HTTPS redirect for production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
