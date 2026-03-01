@@ -9,8 +9,10 @@ import { DB_SCHEMA } from "../config/db.config";
 
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
+const SUPPLIER_COST_TABLE = `${DB_SCHEMA.SUPPLIER_COST!.SCHEMA}.${DB_SCHEMA.SUPPLIER_COST!.TABLE}`;
 const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as Record<string, string>;
 const COLS_ACCOUNT = DB_SCHEMA.ACCOUNT!.COLS as Record<string, string>;
+const COLS_SC = DB_SCHEMA.SUPPLIER_COST!.COLS as Record<string, string>;
 
 const DEFAULT_CONTACT = "Website";
 const DEFAULT_STATUS = "Đang Tạo Đơn";
@@ -189,13 +191,23 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
   const supplyIdVal = supplyId != null && !Number.isNaN(supplyId) ? supplyId : null;
 
   const res = await pool.query(
-    `UPDATE ${ORDER_LIST_TABLE}
+    `UPDATE ${ORDER_LIST_TABLE} ol
      SET ${COLS_OL.STATUS} = $1,
-         ${COLS_OL.INFORMATION_ORDER} = COALESCE($2, ${COLS_OL.INFORMATION_ORDER}),
-         ${COLS_OL.SLOT} = COALESCE($3, ${COLS_OL.SLOT}),
-         ${COLS_OL.NOTE} = COALESCE($4, ${COLS_OL.NOTE}),
-         ${COLS_OL.SUPPLY_ID} = COALESCE($5::int, ${COLS_OL.SUPPLY_ID})
-     WHERE ${COLS_OL.ID_ORDER} = $6`,
+         ${COLS_OL.INFORMATION_ORDER} = COALESCE($2, ol.${COLS_OL.INFORMATION_ORDER}),
+         ${COLS_OL.SLOT} = COALESCE($3, ol.${COLS_OL.SLOT}),
+         ${COLS_OL.NOTE} = COALESCE($4, ol.${COLS_OL.NOTE}),
+         ${COLS_OL.SUPPLY_ID} = COALESCE($5::int, ol.${COLS_OL.SUPPLY_ID}),
+         ${COLS_OL.COST} = CASE
+           WHEN $5::int IS NOT NULL THEN (
+             SELECT sc.${COLS_SC.PRICE}
+             FROM ${SUPPLIER_COST_TABLE} sc
+             WHERE sc.${COLS_SC.VARIANT_ID} = ol.${COLS_OL.ID_PRODUCT}
+               AND sc.${COLS_SC.SUPPLIER_ID} = $5
+             LIMIT 1
+           )
+           ELSE ol.${COLS_OL.COST}
+         END
+     WHERE ol.${COLS_OL.ID_ORDER} = $6`,
     [STATUS_DONE, information_order, slot, note, supplyIdVal, id_order]
   );
   return res.rowCount ?? 0;
