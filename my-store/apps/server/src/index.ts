@@ -135,6 +135,10 @@ const baseCorsOrigins = process.env.NODE_ENV === 'production'
   ? withWwwVariants(corsOriginList)
   : ['http://localhost:3001', 'http://localhost:4001', ...corsOriginList];
 
+if (process.env.NODE_ENV !== "production") {
+  console.log("[Server] CORS allowed origins:", baseCorsOrigins);
+}
+
 app.use(
   cors({
     origin: baseCorsOrigins,
