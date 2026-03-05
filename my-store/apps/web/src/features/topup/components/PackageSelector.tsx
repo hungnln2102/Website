@@ -1,5 +1,3 @@
-import { CheckCircle2 } from "lucide-react";
-
 interface PackageSelectorProps {
   packages: Array<{
     id: string;
@@ -20,6 +18,7 @@ interface PackageSelectorProps {
   getSelectedBonus: () => number;
   onProceed: () => void;
   formatCurrency: (amount: number) => string;
+  proceedLoading?: boolean;
 }
 
 export function PackageSelector({
@@ -32,6 +31,7 @@ export function PackageSelector({
   getSelectedBonus,
   onProceed,
   formatCurrency,
+  proceedLoading = false,
 }: PackageSelectorProps) {
   return (
     <div className="space-y-6">
@@ -51,9 +51,11 @@ export function PackageSelector({
                   : "border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800"
               }`}
             >
-              {pkg.popular && (
+              {(pkg.popular || (pkg.promotionPercent != null && pkg.promotionPercent > 0)) && (
                 <div className="absolute -right-8 top-3 rotate-45 bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-0.5 text-xs font-bold text-white">
-                  HOT
+                  {pkg.promotionPercent != null && pkg.promotionPercent > 0
+                    ? `${pkg.promotionPercent}%`
+                    : "HOT"}
                 </div>
               )}
 
@@ -70,42 +72,10 @@ export function PackageSelector({
                   {pkg.bonusLabel} bonus
                 </div>
               )}
-
-              {isSelected && (
-                <div className="absolute right-3 top-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-500" />
-                </div>
-              )}
             </button>
           );
         })}
       </div>
-
-      {/* Custom Amount Input */}
-      {selectedPackage === "custom" && (
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4">
-          <label className="mb-2 block text-sm font-medium text-slate-300">
-            Nhập số tiền muốn nạp
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={customAmount}
-              onChange={(e) => onCustomAmountChange(e.target.value)}
-              placeholder="100.000"
-              className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 pr-12 text-lg font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-              đ
-            </span>
-          </div>
-          {getSelectedBonus() > 0 && (
-            <p className="mt-2 text-sm text-emerald-400">
-              + {formatCurrency(getSelectedBonus())} bonus
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Summary */}
       {selectedPackage && getSelectedAmount() > 0 && (
@@ -138,14 +108,14 @@ export function PackageSelector({
       {/* Continue Button */}
       <button
         onClick={onProceed}
-        disabled={!selectedPackage || getSelectedAmount() < 10000}
+        disabled={!selectedPackage || getSelectedAmount() < 10000 || proceedLoading}
         className={`w-full rounded-xl py-4 text-lg font-bold transition-all ${
-          selectedPackage && getSelectedAmount() >= 10000
+          selectedPackage && getSelectedAmount() >= 10000 && !proceedLoading
             ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
             : "cursor-not-allowed bg-slate-700 text-slate-400"
         }`}
       >
-        Tiếp tục thanh toán
+        {proceedLoading ? "Đang tạo mã chuyển khoản..." : "Tiếp tục thanh toán"}
       </button>
     </div>
   );

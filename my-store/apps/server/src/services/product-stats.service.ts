@@ -1,5 +1,6 @@
 import pool from "../config/database";
 import { TABLES } from "../config/db.config";
+import { ORDER_LIST_STATUS_EXCLUDE_FROM_STATS } from "../config/status.constants";
 import { cacheService } from "./cache.service";
 
 export interface ProductWithSoldCount {
@@ -23,24 +24,17 @@ export class ProductStatsService {
   }
 
   private async queryProductSoldCount(productId: string): Promise<number> {
-    // id_product trong order_list/order_expired là variant_id (int); đếm theo product_id qua JOIN variant
-    const [orderListResult, orderExpiredResult] = await Promise.all([
-      pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} ol
-         INNER JOIN product.variant v ON ol.id_product = v.id
-         WHERE v.product_id = $1`,
-        [productId]
-      ),
-      pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_EXPIRED} oe
-         INNER JOIN product.variant v ON oe.id_product = v.id
-         WHERE v.product_id = $1`,
-        [productId]
-      ),
-    ]);
-    const a = parseInt(orderListResult.rows[0]?.count ?? "0", 10);
-    const b = parseInt(orderExpiredResult.rows[0]?.count ?? "0", 10);
-    return a + b;
+    // id_product trong order_list là variant_id (int); đếm theo product_id qua JOIN variant
+    // Loại trừ đơn Chưa Hoàn, Đã Hoàn, Đã Hủy khỏi thống kê doanh thu
+    const excludedStatuses = ORDER_LIST_STATUS_EXCLUDE_FROM_STATS;
+    const result = await pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} ol
+       INNER JOIN product.variant v ON ol.id_product = v.id
+       WHERE v.product_id = $1
+         AND ol.status != ALL($2::text[])`,
+      [productId, excludedStatuses]
+    );
+    return parseInt(result.rows[0]?.count ?? "0", 10);
   }
 
   async getProductsWithSoldCount(productIds?: string[]): Promise<Map<string, number>> {

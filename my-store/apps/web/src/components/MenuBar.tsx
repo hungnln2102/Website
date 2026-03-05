@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Phone, ClipboardList, Menu, X, ShoppingCart, LogIn } from "lucide-react";
+import { Phone, ClipboardList, Menu, X, ShoppingCart } from "lucide-react";
 import { createPortal } from "react-dom";
 import CategoryButton from "@/features/catalog/components/CategoryButton";
 import { useAuth } from "@/features/auth/hooks";
@@ -31,7 +31,6 @@ export default function MenuBar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -70,31 +69,60 @@ export default function MenuBar({
   }, [isMobileMenuOpen]);
 
   // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isMobileMenuOpen]);
-
-  const handleMobileMenuClose = () => {
-    setIsMobileMenuOpen(false);
+useEffect(() => {
+  if (isMobileMenuOpen) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+  return () => {
+    document.body.style.overflow = "";
   };
+}, [isMobileMenuOpen]);
+
+const navigateAppRoute = (href: string) => {
+  // Nội bộ app: dùng history API để không reload trang
+  if (href.startsWith("/")) {
+    window.history.pushState({}, "", href);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    return;
+  }
+
+  // Anchor trong cùng trang
+  if (href.startsWith("#")) {
+    const targetId = href.slice(1);
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    return;
+  }
+
+  // Link ngoài: fallback điều hướng mặc định
+  window.location.href = href;
+};
+
+const handleMobileMenuClose = () => {
+  setIsMobileMenuOpen(false);
+};
 
   const handleCartClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
-      setShowLoginPopup(true);
+      goToLogin();
+      handleMobileMenuClose();
+    }
+  };
+
+  const handleOrderHistoryClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      goToLogin();
       handleMobileMenuClose();
     }
   };
 
   const goToLogin = () => {
-    setShowLoginPopup(false);
     window.history.pushState({}, "", ROUTES.login);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
@@ -133,6 +161,10 @@ export default function MenuBar({
                   <a
                     key={item.label}
                     href={item.href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateAppRoute(item.href);
+                    }}
                     className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
                   >
                     <item.icon className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
@@ -183,11 +215,14 @@ export default function MenuBar({
               </a>
 
               <a
-                href={ROUTES.profile}
+                href={user ? ROUTES.profile : "#"}
                 onClick={(e) => {
-                  e.preventDefault();
-                  window.history.pushState({}, "", ROUTES.profile);
-                  window.dispatchEvent(new PopStateEvent("popstate"));
+                  if (!user) handleOrderHistoryClick(e);
+                  else {
+                    e.preventDefault();
+                    window.history.pushState({}, "", ROUTES.profile);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }
                 }}
                 className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
               >
@@ -265,7 +300,11 @@ export default function MenuBar({
                   <a
                     key={item.label}
                     href={item.href}
-                    onClick={handleMobileMenuClose}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateAppRoute(item.href);
+                      handleMobileMenuClose();
+                    }}
                     className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
@@ -314,12 +353,15 @@ export default function MenuBar({
                   </span>
                 </a>
                 <a
-                  href={ROUTES.profile}
+                  href={user ? ROUTES.profile : "#"}
                   onClick={(e) => {
-                    e.preventDefault();
-                    window.history.pushState({}, "", ROUTES.profile);
-                    window.dispatchEvent(new PopStateEvent("popstate"));
-                    handleMobileMenuClose();
+                    if (!user) handleOrderHistoryClick(e);
+                    else {
+                      e.preventDefault();
+                      window.history.pushState({}, "", ROUTES.profile);
+                      window.dispatchEvent(new PopStateEvent("popstate"));
+                      handleMobileMenuClose();
+                    }
                   }}
                   className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
                 >
@@ -333,36 +375,6 @@ export default function MenuBar({
               </div>
             </div>
           </aside>
-        </>,
-        document.body
-      )}
-
-      {/* Popup yêu cầu đăng nhập khi bấm Giỏ hàng lúc chưa đăng nhập */}
-      {showLoginPopup && isMounted && createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowLoginPopup(false)}
-            aria-hidden="true"
-          />
-          <div
-            className="fixed left-1/2 top-1/2 z-[10001] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="login-popup-title"
-          >
-            <p id="login-popup-title" className="mb-4 text-center text-slate-700 dark:text-slate-200">
-              Quý khách cần đăng nhập để thực hiện thao tác này
-            </p>
-            <button
-              type="button"
-              onClick={goToLogin}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
-            >
-              <LogIn className="h-5 w-5" />
-              Đăng nhập
-            </button>
-          </div>
         </>,
         document.body
       )}

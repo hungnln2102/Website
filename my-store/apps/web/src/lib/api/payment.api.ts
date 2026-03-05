@@ -131,29 +131,31 @@ export async function createPaymentCodes(
 export async function confirmBalancePayment(
   amount: number,
   items: ConfirmBalancePaymentItem[],
-  options?: { orderIds?: string[]; transactionId?: string }
+  options?: { orderIds?: string[]; transactionId?: string; bonusApplied?: number }
 ): Promise<{
   success: boolean;
   data?: { newBalance: number; transactionId?: string; orderIds?: string[] };
   error?: string;
 }> {
   try {
+    const body: Record<string, unknown> = { amount, items };
+    if (options?.orderIds && options?.transactionId) {
+      body.orderIds = options.orderIds;
+      body.transactionId = options.transactionId;
+    }
+    if (options?.bonusApplied != null && options.bonusApplied > 0) {
+      body.bonusApplied = Math.round(options.bonusApplied);
+    }
     const res = await authFetch(`${API_BASE}/api/payment/balance/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount,
-        items,
-        ...(options?.orderIds && options?.transactionId
-          ? { orderIds: options.orderIds, transactionId: options.transactionId }
-          : {}),
-      }),
+      body: JSON.stringify(body),
     });
-    const body = await res.json();
+    const data = await res.json();
     if (!res.ok) {
-      return { success: false, error: body.error || "Xác nhận thanh toán thất bại." };
+      return { success: false, error: data.error || "Xác nhận thanh toán thất bại." };
     }
-    return body;
+    return data;
   } catch {
     return {
       success: false,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ShoppingCart } from "lucide-react";
-import { formatCurrency } from "../utils";
+import { formatPriceOrContact } from "../utils";
 import { roundToNearestThousand } from "@/lib/pricing";
 
 /** Chuẩn size thẻ thời gian: cùng min-height với ô gói (đồng bộ với "Chọn gói sản phẩm") */
@@ -107,7 +107,7 @@ export function DurationSelector({ options, selectedDuration, onSelect }: Durati
               <div>
                 {hasPromo && !isOutOfStock && (
                   <div className="text-[9px] font-medium text-gray-400 line-through">
-                    {formatCurrency(option.price)}
+                    {formatPriceOrContact(option.price)}
                   </div>
                 )}
                 <div
@@ -119,7 +119,7 @@ export function DurationSelector({ options, selectedDuration, onSelect }: Durati
                         : "text-blue-700 dark:text-blue-400"
                   }`}
                 >
-                  {formatCurrency(isOutOfStock ? option.price : promoPrice)}
+                  {formatPriceOrContact(isOutOfStock ? option.price : promoPrice)}
                 </div>
               </div>
             </button>

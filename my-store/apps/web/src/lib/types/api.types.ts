@@ -163,6 +163,46 @@ export type UserOrder = {
   items: UserOrderItem[];
 };
 
+// ----- User Profile / Sessions / Activity -----
+export type UserProfileDto = {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  dateOfBirth: string | null;
+  createdAt: string;
+  balance: number;
+  customerType: string;
+  totalSpend: number;
+  tiers: { name: string; minTotalSpend: number }[];
+  tierCycleEnd: string;
+  serverNow: string;
+  currentCycle: {
+    id: number;
+    cycleStartAt: string;
+    cycleEndAt: string;
+    status: string;
+  } | null;
+};
+
+export type UserSessionDto = {
+  id: number;
+  device: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type UserActivityLogDto = {
+  id: number;
+  action: string;
+  resourceType: string | null;
+  ipAddress: string | null;
+  status: string;
+  createdAt: string;
+};
+
 // ----- Form -----
 export type FormFieldDto = {
   input_id: number;

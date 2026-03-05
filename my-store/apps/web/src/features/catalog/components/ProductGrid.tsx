@@ -11,6 +11,7 @@ interface Product {
   slug: string;
   description?: string | null;
   base_price: number;
+  from_price?: number;
   image_url?: string | null;
   discount_percentage: number;
   sales_count: number;
@@ -28,6 +29,8 @@ interface ProductGridProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   perPage?: number;
+  /** Ẩn giá và mô tả (dùng trong trang danh mục). */
+  hidePriceAndDescription?: boolean;
   emptyIcon?: LucideIcon;
   emptyTitle?: string;
   emptyMessage?: string;
@@ -45,6 +48,7 @@ export function ProductGrid({
   onPageChange,
   perPage = 12,
   emptyIcon: EmptyIcon = Package,
+  hidePriceAndDescription = false,
   emptyTitle = "Chưa có sản phẩm",
   emptyMessage = "Hiện chưa có sản phẩm nào.",
   isNew = false,
@@ -93,6 +97,7 @@ export function ProductGrid({
             {...product}
             onClick={() => onProductClick(product.slug)}
             isNew={isNew}
+            hidePriceAndDescription={hidePriceAndDescription}
           />
         ))}
       </div>

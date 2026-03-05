@@ -113,7 +113,9 @@ export default function CartPage({
       price: it.price,
       extraInfo: it.additionalInfo,
     }));
-    const result = await confirmBalancePayment(totalAmount, payload);
+    const result = await confirmBalancePayment(totalAmount, payload, {
+      bonusApplied: discount > 0 ? discount : undefined,
+    });
     if (result.success && result.data?.newBalance != null) {
       const orderId = result.data.orderIds?.[0] ?? result.data.transactionId ?? "";
       if (typeof result.data.newBalance === "number" && updateUser) {
@@ -209,6 +211,7 @@ export default function CartPage({
           <PaymentStep
             cartItems={cartItems}
             total={total}
+            discount={discount}
             paymentMethod={selectedPaymentMethod}
             onBack={handleBackToCart}
             onPaymentSuccess={handlePaymentSuccess}

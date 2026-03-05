@@ -50,7 +50,7 @@ export default function ProfilePage({
   });
 
   // Fetch full profile from API (currentCycle, balance, ...); luôn lấy mới để chu kỳ đúng từ tier_cycles
-  const { data: profileData, isLoading: isLoadingProfile } = useQuery({
+  const { data: profileData, isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery({
     queryKey: ["user-profile"],
     queryFn: fetchUserProfile,
     enabled: !!user,
@@ -107,6 +107,7 @@ export default function ProfilePage({
             formatDate={formatDate}
             currentCycleFromApi={profileData?.currentCycle}
             profileLoading={isLoadingProfile}
+            refetchProfile={refetchProfile}
           />
         );
       case "orders":

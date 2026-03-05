@@ -98,6 +98,15 @@ export default function ProductDetailPage({
     resetAdditionalInfoForForm(formId);
   }, [selectedPackage, selectedDuration, formId, resetAdditionalInfoForForm]);
 
+  // Bỏ chọn gói nếu gói đó không còn thời hạn nào khả dụng (đều hết hàng)
+  useEffect(() => {
+    if (!selectedPackage || packages.length === 0) return;
+    const pkg = packages.find((p: { id: string; has_available_duration?: boolean }) => p.id === selectedPackage);
+    if (pkg && pkg.has_available_duration === false) {
+      handlePackageSelect(null);
+    }
+  }, [selectedPackage, packages, handlePackageSelect]);
+
   const seoMetadata = useMemo(() => {
     if (!product) {
       return {
@@ -217,11 +226,15 @@ export default function ProductDetailPage({
           {/* Left Column - Image & Info */}
           <div className="space-y-6 lg:space-y-8 w-full">
             <ProductImageGallery
-              imageUrl={selectedPackageImageUrl || product.image_url}
+              imageUrl={
+                selectedPackageImageUrl ||
+                (packages[0] as { image_url?: string | null } | undefined)?.image_url ||
+                product.image_url
+              }
               productName={product.name}
               selectedPackage={selectedPackage}
               description={product.description}
-              hasCustomImage={!!selectedPackageImageUrl}
+              hasCustomImage={!!(selectedPackageImageUrl || (packages[0] as { image_url?: string | null } | undefined)?.image_url)}
             />
             <ProductInfo
               name={product.name}
@@ -257,7 +270,11 @@ export default function ProductDetailPage({
                 selectedDuration={selectedDuration}
                 selectedDurationData={selectedDurationData}
                 productName={product.name}
-                imageUrl={selectedPackageImageUrl || product.image_url}
+                imageUrl={
+                  selectedPackageImageUrl ||
+                  (packages[0] as { image_url?: string | null } | undefined)?.image_url ||
+                  product.image_url
+                }
                 additionalInfoValid={isAdditionalInfoValid(additionalInfo, formData?.fields)}
                 additionalInfo={additionalInfo}
                 additionalInfoLabels={

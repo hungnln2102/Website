@@ -43,7 +43,6 @@ export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CYCLES,     
 export const SCHEMA_ADMIN       = pickSchema(process.env.DB_SCHEMA_ADMIN,        process.env.SCHEMA_ADMIN,        "admin");
 export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      "finance");
 export const SCHEMA_PROMOTION   = pickSchema(process.env.DB_SCHEMA_PROMOTION,    process.env.SCHEMA_PROMOTION,    "promotion");
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Table & Column Definitions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,6 +165,20 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       VARIANT_ID: "variant_id",
       PRODUCT_ID: "product_id",
       SALES_COUNT: "sales_count",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  /** Bảng thanh toán theo product_id (amount, promotion_percent). product_id = PK, is_active = true mới hiển thị. */
+  PRODUCTID_PAYMENT: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "productid_payment",
+    COLS: {
+      PRODUCT_ID: "product_id",
+      AMOUNT: "amount",
+      PROMOTION_PERCENT: "promotion_percent",
+      IS_ACTIVE: "is_active",
+      CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
     },
   },
@@ -381,19 +394,21 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product", // int, variant_id
+      ID_PRODUCT: "id_product",       // int4, variant_id
       INFORMATION_ORDER: "information_order",
       CUSTOMER: "customer",
       CONTACT: "contact",
       SLOT: "slot",
-      ORDER_DATE: "order_date",
-      DAYS: "days",
-      ORDER_EXPIRED: "order_expired",
-      SUPPLY_ID: "supply_id", // int, id của partner.supplier
-      COST: "cost",
-      PRICE: "price",
+      ORDER_DATE: "order_date",       // date
+      DAYS: "days",                   // text
+      ORDER_EXPIRED: "order_expired", // date
+      SUPPLY_ID: "supply_id",         // int4, id của partner.supplier
+      COST: "cost",                   // int4
+      PRICE: "price",                 // int4
       NOTE: "note",
       STATUS: "status",
+      REFUND: "refund",               // numeric
+      CANCELED_AT: "canceled_at",     // timestamptz
     },
   },
 
@@ -641,6 +656,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       BALANCE_BEFORE: "balance_before",
       BALANCE_AFTER: "balance_after",
       PROMOTION_ID: "promotion_id",
+      /** Tiền được giảm (số tiền gốc - giá khuyến mãi) khi mua có giảm giá. */
+      BONUS_APPLIED: "bonus_applied",
       CREATED_AT: "created_at",
       METHOD: "method",
     },
@@ -699,6 +716,7 @@ export const TABLES = {
   PRODUCT_SOLD_30D: t("PRODUCT_SOLD_30D"),
   PRODUCT_SOLD_COUNT: t("PRODUCT_SOLD_COUNT"),
   VARIANT_SOLD_COUNT: t("VARIANT_SOLD_COUNT"),
+  PRODUCTID_PAYMENT: t("PRODUCTID_PAYMENT"),
   ACCOUNT_STORAGE:  t("ACCOUNT_STORAGE"),
   PRODUCT_STOCK:    t("PRODUCT_STOCK"),
   PACKAGE_PRODUCT:  t("PACKAGE_PRODUCT"),

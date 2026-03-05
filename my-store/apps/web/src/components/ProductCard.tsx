@@ -11,8 +11,12 @@ type Product = Database["public"]["Tables"]["products"]["Row"];
 
 type ProductCardProps = Product & {
   package_count?: number;
+  /** Giá hiển thị "Từ X đ": bỏ qua 0đ, lấy giá tiếp theo. Nếu 0 thì hiển thị "Liên Hệ". */
+  from_price?: number;
   onClick: () => void;
   variant?: "default" | "minimal" | "deal";
+  /** Trong danh mục: ẩn giá và mô tả, chỉ hiển thị ảnh + tên. */
+  hidePriceAndDescription?: boolean;
   isNew?: boolean;
   sold_count_30d?: number;
   is_active?: boolean;
@@ -24,6 +28,7 @@ export default function ProductCard({
   name,
   description,
   base_price,
+  from_price,
   image_url,
   discount_percentage,
   sales_count,
@@ -31,13 +36,16 @@ export default function ProductCard({
   package_count,
   onClick,
   variant = "default",
+  hidePriceAndDescription = false,
   isNew = false,
   sold_count_30d = 0,
   is_active = true,
 }: ProductCardProps) {
+  const displayPrice = (from_price != null ? from_price : base_price) || 0;
   const hasDiscount = discount_percentage > 0;
-  const discountedPrice = roundToNearestThousand(base_price * (1 - discount_percentage / 100));
+  const discountedPrice = roundToNearestThousand(displayPrice * (1 - discount_percentage / 100));
   const hasMultipleCodes = (package_count ?? 1) > 1;
+  const showContact = displayPrice === 0;
   const isMinimal = variant === "minimal";
   const isDeal = variant === "deal";
   const isOutOfStock = !is_active;
@@ -79,20 +87,23 @@ export default function ProductCard({
           <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
             {name}
           </h3>
-          {shortDescription && (
+          {!hidePriceAndDescription && shortDescription && (
             <p className="mb-2 line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-slate-400">
               {shortDescription}
             </p>
           )}
 
+          {!hidePriceAndDescription && (
           <div className="flex flex-col">
-            {!hasMultipleCodes && hasDiscount && (
+            {!showContact && !hasMultipleCodes && hasDiscount && (
               <span className="text-[10px] font-medium text-gray-400 line-through">
-                {formatCurrency(base_price)}
+                {formatCurrency(displayPrice)}
               </span>
             )}
             <div className="text-base font-bold text-blue-600 dark:text-blue-400">
-              {hasMultipleCodes ? (
+              {showContact ? (
+                "Liên Hệ"
+              ) : hasMultipleCodes ? (
                 <div className="flex items-baseline gap-1">
                   <span className="text-[10px] font-medium text-gray-400">Từ</span>
                   <span>{formatCurrency(discountedPrice)}</span>
@@ -102,6 +113,7 @@ export default function ProductCard({
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
     );
@@ -172,17 +184,20 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-1 flex min-h-[36px] items-start justify-between gap-2 md:mb-1.5">
-            <h3 className={`flex-1 line-clamp-2 text-[15px] font-semibold tracking-tight text-gray-800 transition-colors drop-shadow-sm ${titleHover} dark:text-slate-200 md:line-clamp-2 md:text-base [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
+          <div className="mb-1 flex min-h-[36px] items-start justify-between gap-1 md:mb-1.5">
+            <h3 className={`flex-1 line-clamp-2 text-[15px] font-semibold tracking-tight text-gray-800 transition-colors drop-shadow-sm ${titleHover} dark:text-slate-200 md:text-base [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
               {name}
             </h3>
           </div>
+          {!hidePriceAndDescription && (
           <div className="mb-2 min-h-[34px] flex items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
             {shortDescription && shortDescription !== "Chưa có mô tả" ? (
               <p className="line-clamp-2">{shortDescription}</p>
             ) : null}
           </div>
+          )}
 
+          {!hidePriceAndDescription && (
           <div className="mb-2 flex items-center justify-between gap-1 text-[10px] sm:mb-3 md:text-xs font-semibold">
             <div className="flex items-center gap-1" aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}>
               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
@@ -192,16 +207,20 @@ export default function ProductCard({
               <span className="dark:text-slate-500">{sales_count >= 1000 ? `${(sales_count / 1000).toFixed(1)}k` : sales_count} đã bán</span>
             </div>
           </div>
+          )}
 
+          {!hidePriceAndDescription && (
           <div className="mt-auto flex min-h-[64px] items-end border-t border-gray-50 pt-2 dark:border-slate-800/50">
             <div className="flex flex-col justify-end">
-              {!hasMultipleCodes && hasDiscount && (
+              {!showContact && !hasMultipleCodes && hasDiscount && (
                 <span className="mb-0.5 text-[11px] font-medium text-gray-400 line-through decoration-red-400/50">
-                  {formatCurrency(base_price)}
+                  {formatCurrency(displayPrice)}
                 </span>
               )}
               <div className={`text-lg font-black tracking-tight sm:text-xl md:text-2xl ${priceColor}`}>
-                {hasMultipleCodes ? (
+                {showContact ? (
+                  "Liên Hệ"
+                ) : hasMultipleCodes ? (
                   <div className="flex items-baseline gap-0.5 sm:gap-1">
                     <span className="text-[10px] font-medium text-gray-400 sm:text-xs">Từ</span>
                     <span>{formatCurrency(discountedPrice)}</span>
@@ -212,6 +231,7 @@ export default function ProductCard({
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

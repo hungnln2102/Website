@@ -27,6 +27,7 @@ import userRouter from "./routes/user.route";
 import cartRouter from "./routes/cart.route";
 import topupRouter from "./routes/topup.route";
 import formRouter from "./routes/form.route";
+import fixAdobeRouter from "./routes/fix-adobe.route";
 import productsRouter from "./routes/products.route";
 import debugRouter from "./routes/debug.route";
 import * as sitemapController from "./controllers/sitemap.controller";
@@ -148,8 +149,17 @@ app.use(generalLimiter);
 // Apply API security middleware (banned IP check, validation, security headers)
 app.use(...apiSecurityMiddleware);
 
+// Fix Adobe / profile-check proxy (chỉ gọi dịch vụ ngoài)
+app.use("/api/fix-adobe", fixAdobeRouter);
+
 // CSRF protection for state-changing requests
-app.use("/api", csrfProtection);
+// BỎ QUA cho các route /api/fix-adobe/*
+app.use("/api", (req, res, next) => {
+  if (req.path.startsWith("/fix-adobe/")) {
+    return next();
+  }
+  return csrfProtection(req, res, next);
+});
 
 // Limit payload size for API endpoints (100KB default)
 app.use("/api", limitPayloadSize(100));

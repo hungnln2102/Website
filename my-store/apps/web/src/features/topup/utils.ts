@@ -1,13 +1,14 @@
-import { TOPUP_PACKAGES, type TopupPackageItem } from "./constants";
+import { TOPUP_PACKAGES_FALLBACK, type TopupPackageItem } from "./constants";
 
 export function formatTopupCurrency(amount: number): string {
-  return amount.toLocaleString("vi-VN") + "đ";
+  const n = amount == null || Number.isNaN(Number(amount)) ? 0 : Number(amount);
+  return n.toLocaleString("vi-VN") + "đ";
 }
 
 export function getSelectedAmount(
   selectedPackage: string | null,
   customAmount: string,
-  packages: TopupPackageItem[] = TOPUP_PACKAGES
+  packages: TopupPackageItem[] = TOPUP_PACKAGES_FALLBACK
 ): number {
   if (selectedPackage === "custom") {
     return parseInt(customAmount.replace(/\D/g, ""), 10) || 0;
@@ -19,7 +20,7 @@ export function getSelectedAmount(
 export function getSelectedBonus(
   selectedPackage: string | null,
   customAmount: string,
-  packages: TopupPackageItem[] = TOPUP_PACKAGES
+  packages: TopupPackageItem[] = TOPUP_PACKAGES_FALLBACK
 ): number {
   if (selectedPackage === "custom") {
     const amount = parseInt(customAmount.replace(/\D/g, ""), 10) || 0;

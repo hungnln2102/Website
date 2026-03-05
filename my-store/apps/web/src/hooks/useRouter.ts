@@ -11,6 +11,8 @@ export type View =
   | "new-products"
   | "promotions"
   | "all-products"
+  | "otp"
+  | "adobe-guide"
   | "login"
   | "cart"
   | "profile"
@@ -49,6 +51,14 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   const profilePath = ROUTES.profile.replace(/^\/+|\/+$/g, "");
   if (path === profilePath || path === "profile")
     return { view: "profile", slug: null, parentPath: ROUTES.home };
+
+  const otpPath = ROUTES.otp.replace(/^\/+|\/+$/g, "");
+  if (path === otpPath || path === "otp")
+    return { view: "otp", slug: null, parentPath: ROUTES.home };
+
+  const adobeGuidePath = ROUTES.adobeGuide.replace(/^\/+|\/+$/g, "");
+  if (path === adobeGuidePath || path === "huong-dan-adobe")
+    return { view: "adobe-guide", slug: null, parentPath: ROUTES.otp };
 
   const topupPath = ROUTES.topup.replace(/^\/+|\/+$/g, "");
   if (path === topupPath || path === "topup")

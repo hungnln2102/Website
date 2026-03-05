@@ -7,9 +7,9 @@ import { Wallet, AlertCircle } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { fetchProducts, fetchCategories, getAuthToken, authFetch, getApiBase } from "@/lib/api";
+import { fetchProducts, fetchCategories, fetchTopupPackages, fetchTopupTransferCode, getAuthToken, authFetch, getApiBase } from "@/lib/api";
 import { useScroll } from "@/hooks/useScroll";
-import { BANK_CONFIG, TOPUP_PACKAGES } from "./constants";
+import { BANK_CONFIG, TOPUP_PACKAGES_FALLBACK, TOPUP_ICONS, TOPUP_COLORS, type TopupPackageItem } from "./constants";
 import { formatTopupCurrency, getSelectedAmount, getSelectedBonus, formatCustomAmountInput } from "./utils";
 import { PackageSelector } from "./components/PackageSelector";
 import { PaymentStatusPanel } from "./components/PaymentStatusPanel";
@@ -26,6 +26,7 @@ export default function TopupPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [transactionCode, setTransactionCode] = useState("");
+  const [transferCodeLoading, setTransferCodeLoading] = useState(false);
   const [isTestLoading, setIsTestLoading] = useState(false);
   const [topupResult, setTopupResult] = useState<{
     success: boolean;
@@ -37,11 +38,30 @@ export default function TopupPage() {
   const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
-  useEffect(() => {
-    if (user) {
-      setTransactionCode(`NAP${user.id}${Date.now().toString(36).toUpperCase()}`);
-    }
-  }, [user]);
+  const { data: topupPackagesFromApi = [] } = useQuery({
+    queryKey: ["topup-packages"],
+    queryFn: () => fetchTopupPackages(),
+    staleTime: 60_000,
+  });
+
+  const packages: TopupPackageItem[] = (() => {
+    if (topupPackagesFromApi.length === 0) return TOPUP_PACKAGES_FALLBACK;
+    return topupPackagesFromApi.map((p, i) => {
+      const bonus = Math.round((p.amount * p.promotion_percent) / 100);
+      return {
+        id: p.product_id,
+        product_id: p.product_id,
+        amount: p.amount,
+        bonus,
+        label: formatTopupCurrency(p.amount),
+        bonusLabel: bonus > 0 ? `+${formatTopupCurrency(bonus)}` : undefined,
+        icon: TOPUP_ICONS[i % TOPUP_ICONS.length],
+        color: TOPUP_COLORS[i % TOPUP_COLORS.length],
+        popular: p.promotion_percent > 0,
+        promotionPercent: p.promotion_percent,
+      };
+    });
+  })();
 
   useEffect(() => {
     if (!topupResult?.success) return;
@@ -60,6 +80,8 @@ export default function TopupPage() {
     return () => clearInterval(timer);
   }, [topupResult]);
 
+  const getTotalAmount = () => getAmount() + getBonus();
+
   const handleLogoClick = () => {
     window.history.pushState({}, "", ROUTES.home);
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -76,37 +98,44 @@ export default function TopupPage() {
     }
   };
 
-  const getAmount = () => getSelectedAmount(selectedPackage, customAmount);
-  const getBonus = () => getSelectedBonus(selectedPackage, customAmount);
+  const getAmount = () => getSelectedAmount(selectedPackage, customAmount, packages);
+  const getBonus = () => getSelectedBonus(selectedPackage, customAmount, packages);
 
   const handleSelectPackage = (pkgId: string) => {
     setSelectedPackage(pkgId);
     if (pkgId !== "custom") setCustomAmount("");
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (getAmount() < 10000) {
       toast.error("Số tiền nạp tối thiểu là 10.000đ");
       return;
     }
     setTopupResult(null);
-    setStep("payment");
+    setTransferCodeLoading(true);
+    try {
+      const code = await fetchTopupTransferCode(authFetch);
+      setTransactionCode(code);
+      setStep("payment");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không thể tạo mã chuyển khoản");
+    } finally {
+      setTransferCodeLoading(false);
+    }
   };
 
   const handleCancelPayment = () => {
     setStep("select");
     setSelectedPackage(null);
     setCustomAmount("");
-    if (user) {
-      setTransactionCode(`NAP${user.id}${Date.now().toString(36).toUpperCase()}`);
-    }
+    setTransactionCode("");
     setShowCancelConfirm(false);
   };
 
   const generateQRUrl = () => {
-    const amount = getAmount();
+    const total = getTotalAmount();
     const description = encodeURIComponent(transactionCode);
-    return `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNo}-${BANK_CONFIG.template}.png?amount=${amount}&addInfo=${description}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
+    return `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNo}-${BANK_CONFIG.template}.png?amount=${total}&addInfo=${description}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
   };
 
   const handleCustomAmountChange = (value: string) => setCustomAmount(formatCustomAmountInput(value));
@@ -122,7 +151,11 @@ export default function TopupPage() {
       const response = await authFetch(`${getApiBase()}/api/topup/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: getAmount(), transactionCode }),
+        body: JSON.stringify({
+          amount: getAmount(),
+          product_id: selectedPackage !== "custom" ? packages.find((p) => p.id === selectedPackage)?.product_id : undefined,
+          transactionCode,
+        }),
       });
       const data = await response.json();
       if (response.ok && data.success) {
@@ -228,7 +261,7 @@ export default function TopupPage() {
 
         {step === "select" && (
           <PackageSelector
-            packages={TOPUP_PACKAGES}
+            packages={packages}
             selectedPackage={selectedPackage}
             onSelectPackage={handleSelectPackage}
             customAmount={customAmount}
@@ -237,6 +270,7 @@ export default function TopupPage() {
             getSelectedBonus={getBonus}
             onProceed={handleProceedToPayment}
             formatCurrency={formatTopupCurrency}
+            proceedLoading={transferCodeLoading}
           />
         )}
 
@@ -253,7 +287,7 @@ export default function TopupPage() {
                 bankConfig={BANK_CONFIG}
                 generateQRUrl={generateQRUrl}
                 transactionCode={transactionCode}
-                getSelectedAmount={getAmount}
+                totalAmount={getTotalAmount() ?? 0}
                 formatCurrency={formatTopupCurrency}
                 handleCopy={handleCopy}
                 copiedField={copiedField}

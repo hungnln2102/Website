@@ -5,6 +5,7 @@ import pool from '../config/database';
 import { DB_SCHEMA } from '../config/db.config';
 import { handlePaymentSuccess } from './payment-success.service';
 import { buildOrderListItemsFromCart } from './cart.service';
+import { ORDER_CUSTOMER_STATUS } from '../config/status.constants';
 
 const SEPAY_ENV = (process.env.SEPAY_ENV || 'sandbox') as 'sandbox' | 'production';
 const SEPAY_MERCHANT_ID = process.env.SEPAY_MERCHANT_ID || '';
@@ -188,8 +189,8 @@ export class SepayService {
         const paymentId = wtRow.rows[0].id;
         const accountId = parseInt(String(wtRow.rows[0].account_id), 10);
         await pool.query(
-          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE ${paymentIdCol} = $1`,
-          [paymentId]
+          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $2, updated_at = NOW() WHERE ${paymentIdCol} = $1`,
+          [paymentId, ORDER_CUSTOMER_STATUS.PAID]
         );
         await pool.query(
           `UPDATE ${WALLET_TX_TABLE} SET method = 'QR', amount = $1 WHERE id = $2`,
@@ -220,8 +221,8 @@ export class SepayService {
           const accountId = parseInt(String(ocResult.rows[0].account_id), 10);
           const paymentId = ocResult.rows[0][paymentIdCol] as string | null;
           await pool.query(
-            `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE id_order = $1`,
-            [order_invoice_number]
+            `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $2, updated_at = NOW() WHERE id_order = $1`,
+            [order_invoice_number, ORDER_CUSTOMER_STATUS.PAID]
           );
 
           const useTxId = paymentId ?? `TX${accountId}${Date.now().toString(36).toUpperCase()}SEPAY`;
@@ -328,7 +329,7 @@ export class SepayService {
           `SELECT status FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1 LIMIT 1`,
           [paymentId]
         );
-        if (ocByPayment.rows.length > 0 && ocByPayment.rows[0].status === 'paid') {
+        if (ocByPayment.rows.length > 0 && ocByPayment.rows[0].status === ORDER_CUSTOMER_STATUS.PAID) {
           return {
             status: 'PAID',
             transactionId: orderId,
@@ -339,7 +340,7 @@ export class SepayService {
       }
     }
 
-    if (ocRow.rows.length > 0 && ocRow.rows[0].status === 'paid') {
+    if (ocRow.rows.length > 0 && ocRow.rows[0].status === ORDER_CUSTOMER_STATUS.PAID) {
       const paymentId = ocRow.rows[0][paymentIdCol];
       if (paymentId) {
         const txRow = await pool.query(

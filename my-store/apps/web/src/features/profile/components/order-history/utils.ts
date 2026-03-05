@@ -1,4 +1,5 @@
 import type { UserOrder } from "@/lib/api";
+import { ORDER_CUSTOMER_STATUS, ORDER_LIST_STATUS, ORDER_STATUS_MAP } from "@/lib/constants/status";
 
 export function getOrderTotal(order: UserOrder): number {
   return order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity ?? 1), 0);
@@ -23,20 +24,27 @@ export function calculateExpirationDate(purchaseDate: string, duration?: string)
 
 export type OrderStatusInfo = { label: string; cls: string };
 
+const DIRECT_STATUS_CODES = new Set([
+  ORDER_LIST_STATUS.UNPAID,
+  ORDER_LIST_STATUS.PROCESSING,
+  ORDER_LIST_STATUS.NEEDS_RENEWAL,
+  ORDER_LIST_STATUS.EXPIRED,
+  ORDER_LIST_STATUS.PENDING_REFUND,
+  ORDER_LIST_STATUS.REFUNDED,
+  ORDER_LIST_STATUS.CANCELLED,
+  ORDER_CUSTOMER_STATUS.CREATING,
+  ORDER_CUSTOMER_STATUS.CREATING_LEGACY,
+]);
+
 export function getDynamicStatus(order: UserOrder): OrderStatusInfo {
-  if (order.status === "Đang Tạo Đơn" || order.status === "dang_tao_don") {
-    return { label: "Đang Tạo Đơn", cls: "bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-400 dark:border-sky-500/30" };
-  }
-  if (order.status === "cancelled") {
-    return { label: "Đã Hủy", cls: "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700" };
-  }
-  if (order.status === "refunded") {
-    return { label: "Hoàn Tiền", cls: "bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30" };
-  }
-  if (order.status === "pending") {
-    return { label: "Đang Xử Lý", cls: "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30" };
+  // Statuses that are rendered directly from the DB value without expiry computation
+  if (DIRECT_STATUS_CODES.has(order.status as string)) {
+    const def = ORDER_STATUS_MAP[order.status];
+    if (def) return { label: def.label_vi, cls: def.cls };
   }
 
+  // For PAID status, compute client-side expiration as a fallback in case
+  // the background job hasn't updated order_list.status yet
   const duration = order.items[0]?.duration;
   if (!duration) {
     return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
@@ -49,8 +57,7 @@ export function getDynamicStatus(order: UserOrder): OrderStatusInfo {
 
   const expDate = new Date(expDateStr);
   const now = new Date();
-  const diffTime = expDate.getTime() - now.getTime();
-  const remaining_days = diffTime / (1000 * 60 * 60 * 24);
+  const remaining_days = (expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
   if (remaining_days <= 0) {
     return { label: "Hết Hạn", cls: "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30" };
@@ -94,7 +101,7 @@ export function formatCompoundProductName(item: {
   variant_name?: string | null;
   duration?: string;
 }): string {
-  const rawId = item.id_product ?? "";
+  const rawId = String(item.id_product ?? "");
   const baseName = item.display_name || item.name || (rawId ? rawId.split("--")[0] : null) || rawId || "—";
   let duration = item.duration;
   if (!duration && rawId.includes("--")) {

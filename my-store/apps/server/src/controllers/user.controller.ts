@@ -201,19 +201,20 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     const VARIANT_TABLE = `${DB_SCHEMA.VARIANT!.SCHEMA}.${DB_SCHEMA.VARIANT!.TABLE}`;
     const COLS_V = DB_SCHEMA.VARIANT!.COLS;
 
-    // LEFT JOIN order_list để hiển thị cả đơn chỉ có trong order_customer (Đang Tạo Đơn, chưa có trong order_list)
+    // INNER JOIN order_list: chỉ hiển thị đơn đã được xác nhận thanh toán (có trong order_list)
+    // Dùng order_customer để lọc theo account_id vì order_list không có cột account_id
     const result = await pool.query(
-      `SELECT oc.${COLS_OC.ID_ORDER} as id_order_oc, oc.${COLS_OC.STATUS} as oc_status, oc.${COLS_OC.CREATED_AT} as oc_created_at, oc.${COLS_OC.PAYMENT_ID} as payment_id,
-              ol.id as ol_id, ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}",
+      `SELECT oc.${COLS_OC.ID_ORDER} as id_order_oc, oc.${COLS_OC.PAYMENT_ID} as payment_id,
+              ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}",
               ol.price as "${COLS_OL.PRICE}", ol.order_date as "${COLS_OL.ORDER_DATE}",
               ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}",
               ol.order_expired as "${COLS_OL.ORDER_EXPIRED}", ol.slot as "${COLS_OL.SLOT}",
               v.${COLS_V.VARIANT_NAME} as product_display_name
        FROM ${ORDER_CUSTOMER_TABLE} oc
-       LEFT JOIN ${ORDER_LIST_TABLE} ol ON ol.id_order = oc.id_order
+       INNER JOIN ${ORDER_LIST_TABLE} ol ON ol.id_order = oc.id_order
        LEFT JOIN ${VARIANT_TABLE} v ON ol.id_product = v.${COLS_V.ID}
        WHERE oc.${COLS_OC.ACCOUNT_ID} = $1
-       ORDER BY COALESCE(ol.order_date, oc.created_at) DESC
+       ORDER BY ol.order_date DESC
        LIMIT 200`,
       [accountId]
     );
@@ -226,8 +227,8 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
     for (const row of result.rows) {
       const idOrder = row.id_order_oc ?? row[COLS_OL.ID_ORDER];
       if (!idOrder) continue;
-      const orderDate = row[COLS_OL.ORDER_DATE] ?? row.oc_created_at;
-      const status = row[COLS_OL.STATUS] ?? row.oc_status ?? "pending";
+      const orderDate = row[COLS_OL.ORDER_DATE];
+      const status = row[COLS_OL.STATUS] ?? "Đang Xử Lý";
       if (!orderMap.has(idOrder)) {
         orderMap.set(idOrder, {
           id_order: idOrder,
@@ -237,6 +238,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
           items: [],
         });
       }
+
       const infoText = row[COLS_OL.INFORMATION_ORDER];
       let info: any = {};
       try {

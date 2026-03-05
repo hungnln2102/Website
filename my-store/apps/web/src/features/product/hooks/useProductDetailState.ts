@@ -25,7 +25,7 @@ export function useProductDetailState() {
     window.history.replaceState({}, "", url.toString());
   }, []);
 
-  const handlePackageSelect = useCallback((packageId: string) => {
+  const handlePackageSelect = useCallback((packageId: string | null) => {
     setSelectedPackage(packageId);
     setSelectedDuration(null);
     updateURL(packageId, null);

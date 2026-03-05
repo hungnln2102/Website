@@ -28,6 +28,8 @@ export const ROUTES = {
   register: "/register", // query ?register hoặc segment register tùy router
   profile: "/profile",
   topup: "/topup",
+  otp: "/check-profile",
+  adobeGuide: "/huong-dan-adobe",
   paymentSuccess: "/payment/success",
   paymentError: "/payment/error",
   paymentCancel: "/payment/cancel",

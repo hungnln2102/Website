@@ -134,6 +134,7 @@ export function BankTransferInfo({
         </div>
 
         {/* Test: nút giả lập thanh toán thành công (development / demo) */}
+        {/* TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
         {onTestPaymentSuccess && (
           <button
             type="button"
@@ -143,6 +144,7 @@ export function BankTransferInfo({
             🧪 Test thanh toán thành công
           </button>
         )}
+        */}
       </div>
 
       {/* Right - QR Code */}

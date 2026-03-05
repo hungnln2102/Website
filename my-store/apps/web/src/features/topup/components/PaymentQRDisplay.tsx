@@ -8,12 +8,12 @@ interface PaymentQRDisplayProps {
   };
   generateQRUrl: () => string;
   transactionCode: string;
-  getSelectedAmount: () => number;
+  /** Tổng số tiền nhận được (số tiền nạp + bonus) — hiển thị tại "Số tiền" và dùng cho QR. */
+  totalAmount: number;
   formatCurrency: (amount: number) => string;
   handleCopy: (text: string, field: string) => void;
   copiedField: string | null;
   setShowCancelConfirm: (show: boolean) => void;
-  // Test Button Props
   isTestLoading?: boolean;
   handleTestTopup?: () => void;
 }
@@ -22,7 +22,7 @@ export function PaymentQRDisplay({
   bankConfig,
   generateQRUrl,
   transactionCode,
-  getSelectedAmount,
+  totalAmount,
   formatCurrency,
   handleCopy,
   copiedField,
@@ -74,11 +74,11 @@ export function PaymentQRDisplay({
               <div>
                 <p className="text-xs text-slate-500">Số tiền</p>
                 <p className="font-medium text-emerald-400">
-                  {formatCurrency(getSelectedAmount())}
+                  {formatCurrency(Number(totalAmount) || 0)}
                 </p>
               </div>
               <button
-                onClick={() => handleCopy(getSelectedAmount().toString(), "amount")}
+                onClick={() => handleCopy(String(Number(totalAmount) || 0), "amount")}
                 className="rounded-lg bg-slate-700 p-2 text-slate-300 transition-colors hover:bg-slate-600"
               >
                 {copiedField === "amount" ? (
@@ -160,6 +160,7 @@ export function PaymentQRDisplay({
           </button>
 
           {/* Nút test nạp tiền (development / demo) */}
+          {/* TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
           {handleTestTopup && (
             <button
               onClick={handleTestTopup}
@@ -176,6 +177,7 @@ export function PaymentQRDisplay({
               )}
             </button>
           )}
+          */}
         </div>
       </div>
     </div>

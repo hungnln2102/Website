@@ -48,6 +48,7 @@ export default function CategoryPage({
         slug: p.slug || slugify(p.name),
         description: p.description || null,
         base_price: p.base_price ?? 0,
+        from_price: (p as { from_price?: number }).from_price,
         image_url: p.image_url || null,
         discount_percentage: p.discount_percentage ?? 0,
         sales_count: p.sales_count ?? 0,
@@ -126,6 +127,7 @@ export default function CategoryPage({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        hidePriceAndDescription
         emptyIcon={Package}
         emptyTitle="Chưa có sản phẩm"
         emptyMessage="Danh mục này hiện chưa có sản phẩm nào."

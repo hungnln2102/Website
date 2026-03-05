@@ -44,9 +44,12 @@ export function PromoCodeSection() {
         condition: p.discount_percentage
           ? `Giảm ${p.discount_percentage}% đơn hàng`
           : p.name ?? "Theo chương trình",
-        validUntil: p.created_at
-          ? new Date(new Date(p.created_at).getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-          : "—",
+        validUntil: (() => {
+          if (!p.created_at) return "—";
+          const ts = new Date(p.created_at).getTime();
+          if (isNaN(ts)) return "—";
+          return new Date(ts + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        })(),
         status: "active" as const,
       }))
     : [
@@ -110,7 +113,7 @@ export function PromoCodeSection() {
                     </td>
                     <td className="px-4 py-3.5 text-gray-700 dark:text-slate-300">{row.condition}</td>
                     <td className="px-4 py-3.5 text-gray-600 dark:text-slate-400">
-                      {row.validUntil.includes("/") ? row.validUntil : formatDate(row.validUntil)}
+                      {typeof row.validUntil === "string" && row.validUntil.includes("/") ? row.validUntil : formatDate(String(row.validUntil ?? "—"))}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusCls(row.status)}`}>

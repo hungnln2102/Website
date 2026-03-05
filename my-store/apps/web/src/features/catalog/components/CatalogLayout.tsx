@@ -61,6 +61,7 @@ export function CatalogLayout({
             slug: p.slug || slugify(p.name),
             image_url: p.image_url || null,
             base_price: p.base_price ?? 0,
+            from_price: (p as { from_price?: number }).from_price,
             discount_percentage: p.discount_percentage ?? 0,
           }))}
           categories={categories.map((c: CategoryDto) => ({

@@ -13,6 +13,8 @@ export interface NormalizedProduct {
   description: string | null;
   full_description: null;
   base_price: number;
+  /** Bỏ qua 0đ, lấy giá tiếp theo; dùng cho hiển thị "Từ X đ" / "Liên Hệ". */
+  from_price?: number;
   image_url: string | null;
   is_featured: boolean;
   discount_percentage: number;
@@ -148,6 +150,7 @@ export function useHomeData() {
         description: p.description,
         full_description: null,
         base_price: p.base_price ?? 0,
+        from_price: p.from_price != null ? p.from_price : undefined,
         image_url: p.image_url,
         is_featured: false,
         discount_percentage: p.discount_percentage ?? 0,

@@ -54,6 +54,8 @@ export async function getBalance(accountId: number): Promise<number> {
 
 /**
  * Add funds to wallet (CREDIT)
+ * @param options.transactionId - Nếu có thì dùng làm transaction_id (vd MAVNAPXXXXX); phải chưa tồn tại trong wallet_transactions.
+ * @param options.bonusApplied - Số tiền bonus (ghi vào cột bonus_applied).
  */
 export async function addFunds(
   accountId: number,
@@ -65,12 +67,37 @@ export async function addFunds(
     description?: string;
     method?: string;
     promotionId?: number | null;
+    /** Mã giao dịch (vd MAVNAPXXXXX); phải unique trong wallet_transactions. */
+    transactionId?: string;
+    /** Số tiền bonus để ghi vào bonus_applied. */
+    bonusApplied?: number;
   }
 ): Promise<{ newBalance: number; transaction: WalletTransaction }> {
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
+
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+    const methodCol = COLS_WT.METHOD as string;
+    const promotionIdCol = COLS_WT.PROMOTION_ID as string;
+    const bonusAppliedCol = COLS_WT.BONUS_APPLIED as string;
+
+    let txId: string;
+    if (options?.transactionId) {
+      const exists = await client.query(
+        `SELECT 1 FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
+        [options.transactionId]
+      );
+      if (exists.rows.length > 0) {
+        await client.query("ROLLBACK");
+        throw new Error("Mã giao dịch đã được sử dụng. Vui lòng tạo mã mới.");
+      }
+      txId = options.transactionId;
+    } else {
+      txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
+    }
 
     // Get current balance (with lock)
     const balanceResult = await client.query(
@@ -99,27 +126,41 @@ export async function addFunds(
       [newBalance, accountId]
     );
 
-    // Create transaction record (id bigserial; business key = transaction_id)
-    const txId = `TX${accountId}${Date.now().toString(36).toUpperCase()}`;
-    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
-    const txIdCol = COLS_WT.TRANSACTION_ID as string;
-    const methodCol = COLS_WT.METHOD as string;
-    const promotionIdCol = COLS_WT.PROMOTION_ID as string;
-    await client.query(
-      `INSERT INTO ${WALLET_TX_TABLE}
-       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
-       VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, NOW())`,
-      [
-        txId,
-        accountId,
-        type,
-        amount,
-        currentBalance,
-        newBalance,
-        options?.method || (type === "TOPUP" ? "topup" : type.toLowerCase()),
-        options?.promotionId ?? null,
-      ]
-    );
+    const hasBonus = options?.bonusApplied != null && options.bonusApplied > 0;
+    if (hasBonus) {
+      await client.query(
+        `INSERT INTO ${WALLET_TX_TABLE}
+         (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, ${bonusAppliedCol}, created_at)
+         VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, $9, NOW())`,
+        [
+          txId,
+          accountId,
+          type,
+          amount,
+          currentBalance,
+          newBalance,
+          options?.method || (type === "TOPUP" ? "topup" : type.toLowerCase()),
+          options?.promotionId ?? null,
+          Math.round(options!.bonusApplied!),
+        ]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO ${WALLET_TX_TABLE}
+         (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
+         VALUES ($1, $2, $3, 'CREDIT', $4, $5, $6, $7, $8, NOW())`,
+        [
+          txId,
+          accountId,
+          type,
+          amount,
+          currentBalance,
+          newBalance,
+          options?.method || (type === "TOPUP" ? "topup" : type.toLowerCase()),
+          options?.promotionId ?? null,
+        ]
+      );
+    }
 
     await client.query("COMMIT");
 

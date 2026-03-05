@@ -116,8 +116,10 @@ export function CategoryMegaMenu({
             className="p-4 sm:p-6 flex flex-col min-h-0 overflow-hidden"
             aria-labelledby="products-heading"
           >
-            <div className="mb-4 flex items-center justify-between shrink-0 gap-2">
-              <h3 id="products-heading" className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+            {/* Scale cả khối → các thẻ bên trong cũng thu nhỏ theo; dùng zoom để layout co theo, không còn khoảng trống */}
+            <div className="flex min-h-0 flex-1 flex-col origin-top-left [zoom:0.85]">
+              <div className="mb-4 flex shrink-0 items-center justify-between gap-2">
+              <h3 id="products-heading" className="truncate text-base font-bold text-gray-900 dark:text-white sm:text-lg">
                 {categories.find((c) => c.slug === activeHoveredSlug)?.name ?? "Sản phẩm"}
               </h3>
               <a
@@ -126,19 +128,20 @@ export function CategoryMegaMenu({
                   e.preventDefault();
                   onSeeAll(activeHoveredSlug);
                 }}
-                className="group flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 whitespace-nowrap shrink-0 min-h-[44px]"
+                className="group flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 sm:text-sm whitespace-nowrap"
               >
                 <span>Xem tất cả</span>
-                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-0.5 shrink-0" aria-hidden="true" />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 sm:h-4 sm:w-4" aria-hidden="true" />
               </a>
             </div>
             {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 overflow-y-auto flex-1 min-h-0 no-scrollbar">
+              <div className="grid min-h-0 flex-1 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 sm:gap-3 no-scrollbar">
                 {filteredProducts.map((product) => (
                   <article key={product.id} className="group">
                     <ProductCard
                       {...product}
                       variant="minimal"
+                      hidePriceAndDescription
                       onClick={() => onProductClick(product.slug)}
                     />
                   </article>
@@ -150,6 +153,7 @@ export function CategoryMegaMenu({
                 <p className="text-sm text-gray-500 dark:text-slate-400">Danh mục này chưa có sản phẩm</p>
               </div>
             )}
+            </div>
           </section>
         )}
       </div>

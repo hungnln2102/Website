@@ -69,8 +69,8 @@ export function OrderHistoryTable({
                   </div>
                 </td>
                 <td className="px-2 py-3.5 align-middle">
-                  <p className="text-gray-700 dark:text-slate-300 truncate min-w-0" title={productNames}>
-                    {productNames}
+                  <p className="text-gray-700 dark:text-slate-300 truncate min-w-0" title={productNames || undefined}>
+                    {productNames || <span className="text-gray-400 dark:text-slate-500">—</span>}
                   </p>
                   {order.items.length > 1 && (
                     <span className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 block" title={`${order.items.length} sản phẩm`}>

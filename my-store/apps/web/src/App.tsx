@@ -4,20 +4,41 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
 import { useRouter } from "@/hooks/useRouter";
 
-const HomePage = lazy(() => import("@/features/home/HomePage"));
-const ProductDetailPage = lazy(() => import("@/features/product/ProductDetailPage"));
-const CategoryPage = lazy(() => import("@/features/catalog/CategoryPage"));
-const NewProductsPage = lazy(() => import("@/features/catalog/NewProductsPage"));
-const PromotionsPage = lazy(() => import("@/features/catalog/PromotionsPage"));
-const AllProductsPage = lazy(() => import("@/features/catalog/AllProductsPage"));
-const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
-const CartPage = lazy(() => import("@/features/cart/CartPage"));
-const ProfilePage = lazy(() => import("@/features/profile/ProfilePage"));
-const TopupPage = lazy(() => import("@/features/topup/TopupPage"));
-const AboutPage = lazy(() => import("@/features/about/AboutPage"));
-const PaymentSuccessPage = lazy(() => import("@/features/payment/PaymentSuccessPage"));
-const PaymentErrorPage = lazy(() => import("@/features/payment/PaymentErrorPage"));
-const PaymentCancelPage = lazy(() => import("@/features/payment/PaymentCancelPage"));
+/** Retry lazy import khi chunk load lỗi (mạng, cache, base URL). */
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>,
+  retries = 2
+): React.LazyExoticComponent<T> {
+  return lazy(async () => {
+    let lastErr: unknown;
+    for (let i = 0; i <= retries; i++) {
+      try {
+        return await importFn();
+      } catch (e) {
+        lastErr = e;
+        if (i < retries) await new Promise((r) => setTimeout(r, 500 * (i + 1)));
+      }
+    }
+    throw lastErr;
+  }) as React.LazyExoticComponent<T>;
+}
+
+const HomePage = lazyWithRetry(() => import("@/features/home/HomePage"));
+const ProductDetailPage = lazyWithRetry(() => import("@/features/product/ProductDetailPage"));
+const CategoryPage = lazyWithRetry(() => import("@/features/catalog/CategoryPage"));
+const NewProductsPage = lazyWithRetry(() => import("@/features/catalog/NewProductsPage"));
+const PromotionsPage = lazyWithRetry(() => import("@/features/catalog/PromotionsPage"));
+const AllProductsPage = lazyWithRetry(() => import("@/features/catalog/AllProductsPage"));
+const LoginPage = lazyWithRetry(() => import("@/features/auth/LoginPage"));
+const CartPage = lazyWithRetry(() => import("@/features/cart/CartPage"));
+const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage"));
+const TopupPage = lazyWithRetry(() => import("@/features/topup/TopupPage"));
+const CheckProfilePage = lazyWithRetry(() => import("@/features/CheckProfile/checkprofile"));
+const AdobeGuidePage = lazyWithRetry(() => import("@/features/guide/AdobeGuidePage"));
+const AboutPage = lazyWithRetry(() => import("@/features/about/AboutPage"));
+const PaymentSuccessPage = lazyWithRetry(() => import("@/features/payment/PaymentSuccessPage"));
+const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentErrorPage"));
+const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
 
 export default function App() {
   const {
@@ -34,7 +55,7 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary key={view}>
       <SkipLinks />
       <Suspense fallback={
         <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950" aria-live="polite" aria-busy="true">
@@ -112,6 +133,8 @@ export default function App() {
           />
         )}
         {view === "topup" && <TopupPage />}
+        {view === "otp" && <CheckProfilePage />}
+        {view === "adobe-guide" && <AdobeGuidePage />}
         {view === "about" && <AboutPage />}
         {view === "payment-success" && (
           <PaymentSuccessPage

@@ -132,7 +132,17 @@ export function useProductData(slug: string, selectedPackage: string | null) {
           if (!existing.purchase_rules && pkg.purchase_rules) existing.purchase_rules = pkg.purchase_rules;
         }
       });
-      return Array.from(dedup.values());
+      // Nếu mọi thời hạn của gói đều hết hàng thì gói cũng không cho chọn
+      const list = Array.from(dedup.values());
+      list.forEach((pkg) => {
+        const packageKey = (pkg.name || "").trim().toLowerCase();
+        pkg.has_available_duration = packageData.some(
+          (p) =>
+            ((p.package_product ?? p.package ?? "").trim().toLowerCase() === packageKey) &&
+            p.is_active !== false
+        );
+      });
+      return list;
     }
 
     if (packagesFromMock.length > 0) return packagesFromMock;

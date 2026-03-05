@@ -6,6 +6,7 @@
 
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
+import { ORDER_LIST_STATUS } from "../config/status.constants";
 
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
@@ -15,7 +16,8 @@ const COLS_ACCOUNT = DB_SCHEMA.ACCOUNT!.COLS as Record<string, string>;
 const COLS_SC = DB_SCHEMA.SUPPLIER_COST!.COLS as Record<string, string>;
 
 const DEFAULT_CONTACT = "Website";
-const DEFAULT_STATUS = "Đang Tạo Đơn";
+/** Trạng thái khi mới ghi vào order_list (thanh toán đã xác nhận, bot chưa xử lý) */
+const DEFAULT_STATUS = ORDER_LIST_STATUS.PROCESSING;
 
 /** Đồng bộ sequence order_list.id với MAX(id) để tránh duplicate key khi sequence lệch (restore/import). */
 async function ensureOrderListSequence(): Promise<void> {
@@ -158,10 +160,8 @@ export async function insertOrderListFromPayment(params: InsertOrderListParams):
   console.log("[order-list] Inserted", orderIds.length, "rows into order_list for account", accountId);
 }
 
-const ORDER_CANCELED_TABLE = `${DB_SCHEMA.ORDER_CANCELED!.SCHEMA}.${DB_SCHEMA.ORDER_CANCELED!.TABLE}`;
-const COLS_OC = DB_SCHEMA.ORDER_CANCELED!.COLS as Record<string, string>;
-
-const STATUS_DONE = "Đang Xử Lý";
+/** Trạng thái khi bot bấm /done (đã bàn giao dịch vụ cho khách) */
+const STATUS_DONE = ORDER_LIST_STATUS.PAID;
 
 export interface NotifyDonePayload {
   id_order: string;
@@ -214,57 +214,17 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
 }
 
 /**
- * Hủy đơn: chuyển dòng từ order_list sang order_canceled, xóa khỏi order_list.
+ * Hủy đơn: cập nhật status thành "Đã Hủy" và ghi canceled_at trong order_list.
+ * Không còn chuyển sang bảng order_canceled.
  * Gọi từ POST /api/orders/cancel (Bot nút "Hủy Đơn").
  */
 export async function cancelOrder(id_order: string): Promise<number> {
-  const colsOl = COLS_OL;
-  const colsOc = COLS_OC;
-  const insertCols = [
-    colsOc.ID_ORDER,
-    colsOc.ID_PRODUCT,
-    colsOc.INFORMATION_ORDER,
-    colsOc.CUSTOMER,
-    colsOc.CONTACT,
-    colsOc.SLOT,
-    colsOc.ORDER_DATE,
-    colsOc.DAYS,
-    colsOc.ORDER_EXPIRED,
-    colsOc.SUPPLY_ID,
-    colsOc.COST,
-    colsOc.PRICE,
-    colsOc.NOTE,
-    colsOc.STATUS,
-    colsOc.REFUND,
-    colsOc.CREATED_AT,
-  ].join(", ");
-  const selectCols = [
-    colsOl.ID_ORDER,
-    colsOl.ID_PRODUCT,
-    colsOl.INFORMATION_ORDER,
-    colsOl.CUSTOMER,
-    colsOl.CONTACT,
-    colsOl.SLOT,
-    colsOl.ORDER_DATE,
-    colsOl.DAYS,
-    colsOl.ORDER_EXPIRED,
-    colsOl.SUPPLY_ID,
-    colsOl.COST,
-    colsOl.PRICE,
-    colsOl.NOTE,
-    colsOl.STATUS,
-    "NULL",
-    "NOW()",
-  ].join(", ");
-
-  const inserted = await pool.query(
-    `INSERT INTO ${ORDER_CANCELED_TABLE} (${insertCols})
-     SELECT ${selectCols} FROM ${ORDER_LIST_TABLE} WHERE ${colsOl.ID_ORDER} = $1`,
-    [id_order]
+  const res = await pool.query(
+    `UPDATE ${ORDER_LIST_TABLE}
+     SET ${COLS_OL.STATUS} = $1,
+         ${COLS_OL.CANCELED_AT} = NOW()
+     WHERE ${COLS_OL.ID_ORDER} = $2`,
+    [ORDER_LIST_STATUS.CANCELLED, id_order]
   );
-  const count = inserted.rowCount ?? 0;
-  if (count > 0) {
-    await pool.query(`DELETE FROM ${ORDER_LIST_TABLE} WHERE ${colsOl.ID_ORDER} = $1`, [id_order]);
-  }
-  return count;
+  return res.rowCount ?? 0;
 }

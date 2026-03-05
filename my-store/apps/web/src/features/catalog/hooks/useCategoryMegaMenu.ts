@@ -53,6 +53,7 @@ export function useCategoryMegaMenu(
       name: p.name,
       description: p.description ?? null,
       base_price: p.base_price ?? 0,
+      from_price: (p as { from_price?: number }).from_price,
       image_url: p.image_url ?? null,
       discount_percentage: p.discount_percentage ?? 0,
       sales_count: p.sales_count ?? 0,

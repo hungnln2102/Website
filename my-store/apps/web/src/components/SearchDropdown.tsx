@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { roundToNearestThousand } from "@/lib/pricing";
 import LazyImage from "@/components/ui/LazyImage";
 
 export type SearchProduct = {
@@ -27,8 +26,6 @@ interface SearchDropdownProps {
   onCategoryClick: (slug: string) => void;
   isVisible: boolean;
 }
-
-const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 
 export default function SearchDropdown({
   searchQuery,
@@ -65,19 +62,12 @@ export default function SearchDropdown({
         </span>
       </div>
       <ul className="max-h-[400px] overflow-y-auto">
-        {filteredProducts.map((product) => {
-              const hasDiscount = product.discount_percentage > 0;
-              const discountedPrice = roundToNearestThousand(
-                product.base_price * (1 - product.discount_percentage / 100)
-              );
-
-              return (
+        {filteredProducts.map((product) => (
                 <li key={product.id}>
                   <button
                     onClick={() => onProductClick(product.slug)}
                     className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800 min-h-[80px] sm:min-h-[72px]"
                   >
-                    {/* Product Image */}
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-800">
                       <LazyImage
                         src={product.image_url || "https://placehold.co/100x100?text=No+Image"}
@@ -85,32 +75,14 @@ export default function SearchDropdown({
                         className="h-full w-full object-cover"
                       />
                     </div>
-
-                    {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <h4 className="line-clamp-2 text-base font-medium text-gray-900 dark:text-slate-100">
                         {product.name}
                       </h4>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <span className="text-lg font-bold text-red-500 dark:text-red-400">
-                          {formatCurrency(discountedPrice)}
-                        </span>
-                        {hasDiscount && (
-                          <>
-                            <span className="text-sm text-gray-400 line-through dark:text-slate-500">
-                              {formatCurrency(product.base_price)}
-                            </span>
-                            <span className="text-sm font-semibold text-red-500 dark:text-red-400">
-                              -{product.discount_percentage}%
-                            </span>
-                          </>
-                        )}
-                      </div>
                     </div>
                   </button>
                 </li>
-              );
-        })}
+              ))}
       </ul>
     </div>
   );

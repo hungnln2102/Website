@@ -3,6 +3,10 @@ import { roundToNearestThousand } from "@/lib/pricing";
 export const formatCurrency = (value: number) =>
   `${roundToNearestThousand(value).toLocaleString("vi-VN")} đ`;
 
+/** Giá = 0 thì hiển thị "Liên Hệ", còn lại format tiền. */
+export const formatPriceOrContact = (value: number) =>
+  value === 0 ? "Liên Hệ" : formatCurrency(value);
+
 export const normalizePackageKey = (value?: string | null) => (value ?? "").trim().toLowerCase();
 
 export interface DurationToken {

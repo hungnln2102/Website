@@ -19,8 +19,19 @@ export {
   confirmBalancePayment,
   confirmTransfer,
 } from "./payment.api";
-export { fetchUserOrders, fetchUserTransactions } from "./user.api";
+export {
+  fetchUserProfile,
+  fetchUserOrders,
+  fetchUserTransactions,
+  updateProfile,
+  changePassword,
+  changeEmail,
+  getSessions,
+  revokeSession,
+  getActivity,
+} from "./user.api";
 export { fetchFormFields } from "./forms.api";
+export { fetchTopupPackages, fetchTopupTransferCode } from "./topup.api";
 export {
   fetchCart,
   addToCart,
@@ -45,6 +56,9 @@ export type {
   ConfirmBalancePaymentItem,
   UserOrderItem,
   UserOrder,
+  UserProfileDto,
+  UserSessionDto,
+  UserActivityLogDto,
   WalletTransactionDto,
   FormFieldDto,
   FormFieldsResponse,

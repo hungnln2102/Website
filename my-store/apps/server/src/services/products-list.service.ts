@@ -22,6 +22,7 @@ type RawProductRow = {
   sales_count: number | bigint | null;
   description: string | null;
   image_url: string | null;
+  min_nonzero_sale_price?: string | null;
 };
 
 export async function getProductsList() {
@@ -45,7 +46,7 @@ export async function getProductsList() {
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         pd.description,
-        p.image_url AS image_url,
+        COALESCE(pd.image_url, p.image_url) AS image_url,
         p.created_at AS created_at
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
@@ -65,7 +66,7 @@ export async function getProductsList() {
       LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE p.package_name IS NOT NULL
     ),
-    ranked AS (
+    sale_calc AS (
       SELECT
         priced.*,
         (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
@@ -74,17 +75,23 @@ export async function getProductsList() {
           * (1 - COALESCE(priced.pct_promo::numeric, 0)) AS promo_price,
         COALESCE(psc.total_sales_count, 0) AS package_sales_count,
         COALESCE(p30d.sold_count_30d, 0) AS sold_count_30d,
-        ROW_NUMBER() OVER (
-          PARTITION BY priced.package
-          ORDER BY (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)) ASC
-        ) AS rn,
         COUNT(*) OVER (PARTITION BY priced.package) AS package_count,
-        BOOL_OR(priced.is_active) OVER (PARTITION BY priced.package) AS has_active_variant
+        BOOL_OR(priced.is_active) OVER (PARTITION BY priced.package) AS has_active_variant,
+        MIN(CASE WHEN (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)) > 0
+          THEN (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
+        END) OVER (PARTITION BY priced.package) AS min_nonzero_sale_price
       FROM priced
-      LEFT JOIN ${TABLES.PRODUCT_SOLD_COUNT} psc
-        ON psc.package_name = priced.package
-      LEFT JOIN ${TABLES.PRODUCT_SOLD_30D} p30d
-        ON p30d.product_id = priced.id
+      LEFT JOIN ${TABLES.PRODUCT_SOLD_COUNT} psc ON psc.package_name = priced.package
+      LEFT JOIN ${TABLES.PRODUCT_SOLD_30D} p30d ON p30d.product_id = priced.id
+    ),
+    ranked AS (
+      SELECT
+        sale_calc.*,
+        ROW_NUMBER() OVER (
+          PARTITION BY sale_calc.package
+          ORDER BY sale_calc.sale_price ASC
+        ) AS rn
+      FROM sale_calc
     )
     SELECT
       id,
@@ -104,7 +111,8 @@ export async function getProductsList() {
       sold_count_30d,
       description,
       image_url,
-      created_at
+      created_at,
+      min_nonzero_sale_price
     FROM ranked
     WHERE rn = 1
     ORDER BY package;
@@ -120,6 +128,7 @@ export async function getProductsList() {
     const hasPromo = row.has_promo === true;
     const extended = row as RawProductRow & { sold_count_30d?: unknown; created_at?: unknown };
 
+    const fromPrice = toNumber((row as RawProductRow & { min_nonzero_sale_price?: string | null }).min_nonzero_sale_price);
     return {
       id: toNumber(row.id),
       slug: slugify(String(name || (row.id_product ?? row.id))),
@@ -129,6 +138,7 @@ export async function getProductsList() {
       description: stripHtml(row.description) || "Chưa có mô tả",
       image_url: resolveImageUrl(row.image_url),
       base_price: basePrice,
+      from_price: fromPrice > 0 ? fromPrice : basePrice,
       discount_percentage: discountPct,
       has_promo: hasPromo,
       is_active: row.is_active !== false,

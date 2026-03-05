@@ -6,13 +6,12 @@
 import pool from "../config/database";
 import { DB_SCHEMA } from "../config/db.config";
 import { handlePaymentSuccess } from "./payment-success.service";
+import { ORDER_CUSTOMER_STATUS } from "../config/status.constants";
 
 const WALLET_TABLE = `${DB_SCHEMA.WALLET!.SCHEMA}.${DB_SCHEMA.WALLET!.TABLE}`;
 const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
 const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
-const ORDER_EXPIRED_TABLE = `${DB_SCHEMA.ORDER_EXPIRED!.SCHEMA}.${DB_SCHEMA.ORDER_EXPIRED!.TABLE}`;
-const ORDER_CANCELED_TABLE = `${DB_SCHEMA.ORDER_CANCELED!.SCHEMA}.${DB_SCHEMA.ORDER_CANCELED!.TABLE}`;
 
 /** Prefix id_order: MAVL (khách lẻ), MAVC (CTV), MAVK (Deal Sốc). */
 export type IdOrderPrefix = "MAVL" | "MAVC" | "MAVK";
@@ -33,7 +32,7 @@ export function generateUniqueIdOrder(prefix: IdOrderPrefix): string {
 
 /**
  * Tạo bộ mã đơn và transaction (gọi trước khi thanh toán để frontend dùng đúng mã, tránh trùng DB).
- * id_order: check order_list, order_expired, order_canceled, order_customer.
+ * id_order: chỉ check order_list và order_customer (không còn dùng order_expired / order_canceled).
  * transaction_id: check wallet_transaction. Retry nếu trùng.
  */
 const MAX_CODES_RETRY = 5;
@@ -52,8 +51,6 @@ export async function createPaymentCodes(
   const idOrderColOl = (COLS_OL.ID_ORDER ?? "id_order") as string;
   const idOrderColOc = (COLS_OC.ID_ORDER ?? "id_order") as string;
   const txIdCol = COLS_WT.TRANSACTION_ID as string;
-  // order_expired, order_canceled có thể dùng cột id_order (theo migration)
-  const idOrderCol = "id_order";
 
   for (let attempt = 0; attempt < MAX_CODES_RETRY; attempt++) {
     const orderIds: string[] = [];
@@ -62,24 +59,11 @@ export async function createPaymentCodes(
     }
     const transactionId = generateMavpTransactionId();
 
-    // Check trùng id_order: bất kỳ bảng order_list, order_expired, order_canceled, order_customer đã có thì sinh lại
     const existsOrderList = await pool.query(
       `SELECT 1 FROM ${ORDER_LIST_TABLE} WHERE ${idOrderColOl} = ANY($1::text[]) LIMIT 1`,
       [orderIds]
     );
     if (existsOrderList.rows.length > 0) continue;
-
-    const existsOrderExpired = await pool.query(
-      `SELECT 1 FROM ${ORDER_EXPIRED_TABLE} WHERE ${idOrderCol} = ANY($1::text[]) LIMIT 1`,
-      [orderIds]
-    );
-    if (existsOrderExpired.rows.length > 0) continue;
-
-    const existsOrderCanceled = await pool.query(
-      `SELECT 1 FROM ${ORDER_CANCELED_TABLE} WHERE ${idOrderCol} = ANY($1::text[]) LIMIT 1`,
-      [orderIds]
-    );
-    if (existsOrderCanceled.rows.length > 0) continue;
 
     const existsOrderCustomer = await pool.query(
       `SELECT 1 FROM ${ORDER_CUSTOMER_TABLE} WHERE ${idOrderColOc} = ANY($1::text[]) LIMIT 1`,
@@ -87,7 +71,6 @@ export async function createPaymentCodes(
     );
     if (existsOrderCustomer.rows.length > 0) continue;
 
-    // Check trùng transaction_id: bảng wallet_transaction
     const existsTx = await pool.query(
       `SELECT 1 FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
       [transactionId]
@@ -116,6 +99,8 @@ export interface ConfirmBalancePaymentParams {
   accountId: number;
   amount: number; // total to deduct (must equal sum of item line totals)
   items: BalanceOrderItem[];
+  /** Tiền được giảm (tổng: số tiền gốc - giá khuyến mãi) khi mua có giảm giá. Ghi vào wallet_transactions.bonus_applied. */
+  bonusApplied?: number;
   /** MAVL | MAVC | MAVK. Default MAVL. */
   idOrderPrefix?: IdOrderPrefix;
   /** Nếu cung cấp thì dùng thay vì sinh mới (số phần tử phải bằng items.length). */
@@ -137,7 +122,7 @@ export interface ConfirmBalancePaymentResult {
 export async function confirmBalancePayment(
   params: ConfirmBalancePaymentParams
 ): Promise<ConfirmBalancePaymentResult> {
-  const { accountId, amount, items, idOrderPrefix = "MAVL", orderIds: providedOrderIds, transactionId: providedTxId } = params;
+  const { accountId, amount, items, bonusApplied = 0, idOrderPrefix = "MAVL", orderIds: providedOrderIds, transactionId: providedTxId } = params;
 
   if (!items.length || amount <= 0) {
     throw new Error("Invalid order: no items or invalid amount");
@@ -157,6 +142,7 @@ export async function confirmBalancePayment(
   const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
   const txIdCol = COLS_WT.TRANSACTION_ID;
   const methodCol = COLS_WT.METHOD;
+  const bonusAppliedCol = COLS_WT.BONUS_APPLIED;
 
   try {
     await client.query("BEGIN");
@@ -193,12 +179,13 @@ export async function confirmBalancePayment(
       [newBalance, accountId]
     );
 
+    const bonusValue = Math.max(0, Math.round(Number(bonusApplied) || 0));
     const insertTx = await client.query(
       `INSERT INTO ${WALLET_TX_TABLE}
-       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, created_at)
-       VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, $4, $5, 'Mcoin', NOW())
+       (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${bonusAppliedCol}, created_at)
+       VALUES ($1, $2, 'PURCHASE', 'DEBIT', $3, $4, $5, 'Mcoin', $6, NOW())
        RETURNING id`,
-      [transactionId, accountId, amount, currentBalance, newBalance]
+      [transactionId, accountId, amount, currentBalance, newBalance, bonusValue]
     );
     const paymentId = insertTx.rows[0]?.id;
 
@@ -213,8 +200,8 @@ export async function confirmBalancePayment(
       await client.query(
         `INSERT INTO ${ORDER_CUSTOMER_TABLE}
          (${idOrderCol}, account_id, status, ${paymentIdCol}, created_at, updated_at)
-         VALUES ($1, $2, 'Đang Tạo Đơn', $3, NOW(), NOW())`,
-        [idOrder, accountId, paymentId]
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [idOrder, accountId, ORDER_CUSTOMER_STATUS.CREATING, paymentId]
       );
     }
 

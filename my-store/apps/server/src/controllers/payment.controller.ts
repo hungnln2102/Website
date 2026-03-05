@@ -9,6 +9,7 @@ import { confirmBalancePayment, createPaymentCodes, generateMavpTransactionId, g
 import { handlePaymentSuccess } from "../services/payment-success.service";
 import type { OrderListItemInput } from "../services/order-list.service";
 import { logPaymentEvent, logSecurityEvent } from "../utils/logger";
+import { ORDER_CUSTOMER_STATUS } from "../config/status.constants";
 
 interface ReqUser {
   userId?: string;
@@ -73,8 +74,8 @@ async function createQrOrder(
     if (i >= orderIds.length) orderIds.push(idOrder);
     await pool.query(
       `INSERT INTO ${ORDER_CUSTOMER_TABLE} (${idOrderCol}, account_id, status, ${paymentIdCol}, created_at, updated_at)
-       VALUES ($1, $2, 'Đang Tạo Đơn', $3, NOW(), NOW())`,
-      [idOrder, accountId, paymentId]
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [idOrder, accountId, ORDER_CUSTOMER_STATUS.CREATING, paymentId]
     );
   }
 
@@ -151,15 +152,15 @@ export async function createPayment(req: Request, res: Response) {
     const idOrder = String(orderId).trim();
 
     const updated = await pool.query(
-      `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'pending', updated_at = NOW() WHERE id_order = $1 AND account_id = $2 RETURNING ${paymentIdCol}`,
-      [idOrder, accountId]
+      `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $3, updated_at = NOW() WHERE id_order = $1 AND account_id = $2 RETURNING ${paymentIdCol}`,
+      [idOrder, accountId, ORDER_CUSTOMER_STATUS.PENDING]
     );
     let useTxId: string;
     if (updated.rowCount === 0) {
       useTxId = `TX${accountId}${Date.now().toString(36).toUpperCase()}QR`;
       await pool.query(
-        `INSERT INTO ${ORDER_CUSTOMER_TABLE} (id_order, account_id, status, ${paymentIdCol}, created_at, updated_at) VALUES ($1, $2, 'pending', $3, NOW(), NOW())`,
-        [idOrder, accountId, useTxId]
+        `INSERT INTO ${ORDER_CUSTOMER_TABLE} (id_order, account_id, status, ${paymentIdCol}, created_at, updated_at) VALUES ($1, $2, $4, $3, NOW(), NOW())`,
+        [idOrder, accountId, useTxId, ORDER_CUSTOMER_STATUS.PENDING]
       );
     } else {
       useTxId = (updated.rows[0]?.[paymentIdCol] ?? `TX${accountId}${Date.now().toString(36).toUpperCase()}QR`) as string;
@@ -214,7 +215,7 @@ export async function createPayment(req: Request, res: Response) {
 export async function confirmBalance(req: Request, res: Response) {
   try {
     const { userId } = (req as Request & { user: { userId: string } }).user;
-    const { amount, items, orderIds: bodyOrderIds, transactionId: bodyTransactionId } = req.body;
+    const { amount, items, orderIds: bodyOrderIds, transactionId: bodyTransactionId, bonusApplied: bodyBonusApplied } = req.body;
     const idOrderPrefix = (req.body.idOrderPrefix as "MAVL" | "MAVC" | "MAVK" | undefined) || "MAVL";
 
     const totalFromItems = (items as { price?: unknown; quantity?: unknown }[]).reduce(
@@ -233,6 +234,7 @@ export async function confirmBalance(req: Request, res: Response) {
     const result = await confirmBalancePayment({
       accountId: parseInt(userId, 10),
       amount: Math.round(Number(amount)),
+      bonusApplied: bodyBonusApplied != null ? Math.max(0, Math.round(Number(bodyBonusApplied))) : undefined,
       items: (items as { id_product?: unknown; name?: unknown; variant_name?: unknown; duration?: unknown; note?: unknown; quantity?: unknown; price?: unknown; extraInfo?: Record<string, string> }[]).map(
         (it) => ({
           id_product: String(it.id_product).trim(),
@@ -323,7 +325,7 @@ export async function confirmTransfer(req: Request, res: Response) {
 
     if (oc.rows.length > 0) {
       // Tìm thấy theo id_order
-      if (oc.rows[0].status === "paid") {
+      if (oc.rows[0].status === ORDER_CUSTOMER_STATUS.PAID) {
         return res.json({
           success: true,
           message: "Đơn hàng đã được xác nhận thanh toán trước đó",
@@ -331,8 +333,8 @@ export async function confirmTransfer(req: Request, res: Response) {
       }
       paymentId = oc.rows[0][paymentIdCol] as string | number | null;
       await pool.query(
-        `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE id_order = $1 AND account_id = $2`,
-        [idOrderParam, accountId]
+        `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $3, updated_at = NOW() WHERE id_order = $1 AND account_id = $2`,
+        [idOrderParam, accountId, ORDER_CUSTOMER_STATUS.PAID]
       );
       orderIds = [idOrderParam];
     } else {
@@ -359,7 +361,7 @@ export async function confirmTransfer(req: Request, res: Response) {
           error: "Không tìm thấy đơn hàng chờ thanh toán của bạn",
         });
       }
-      const alreadyPaid = ocAll.rows.every((r) => r.status === "paid");
+      const alreadyPaid = ocAll.rows.every((r) => r.status === ORDER_CUSTOMER_STATUS.PAID);
       if (alreadyPaid) {
         orderIds = ocAll.rows.map((r) => String(r[idOrderCol] ?? "")).filter(Boolean);
         return res.json({
@@ -368,8 +370,8 @@ export async function confirmTransfer(req: Request, res: Response) {
         });
       }
       await pool.query(
-        `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = 'paid', updated_at = NOW() WHERE ${paymentIdCol} = $1 AND account_id = $2`,
-        [paymentIdNum, accountId]
+        `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $3, updated_at = NOW() WHERE ${paymentIdCol} = $1 AND account_id = $2`,
+        [paymentIdNum, accountId, ORDER_CUSTOMER_STATUS.PAID]
       );
       orderIds = ocAll.rows.map((r) => String(r[idOrderCol] ?? "")).filter(Boolean);
     }

@@ -13,9 +13,11 @@ type Product = Database["public"]["Tables"]["products"]["Row"] | NormalizedProdu
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
 
-function NewProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
-  const discountedPrice = roundToNearestThousand(product.base_price * (1 - product.discount_percentage / 100));
-  
+function NewProductCard({ product, onClick }: { product: Product & { from_price?: number }; onClick: () => void }) {
+  const displayPrice = (product.from_price != null ? product.from_price : product.base_price) || 0;
+  const showContact = displayPrice === 0;
+  const discountedPrice = roundToNearestThousand(displayPrice * (1 - product.discount_percentage / 100));
+
   return (
     <div 
       onClick={onClick}
@@ -52,11 +54,11 @@ function NewProductCard({ product, onClick }: { product: Product; onClick: () =>
           <div className="flex flex-col gap-0.5">
              <div className="flex items-center gap-1.5">
                 <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {formatCurrency(discountedPrice)}
+                  {showContact ? "Liên Hệ" : formatCurrency(discountedPrice)}
                 </span>
-                {product.discount_percentage > 0 && (
+                {!showContact && product.discount_percentage > 0 && (
                    <span className="text-[10px] font-bold text-gray-400 line-through">
-                    {formatCurrency(product.base_price)}
+                    {formatCurrency(displayPrice)}
                   </span>
                 )}
              </div>

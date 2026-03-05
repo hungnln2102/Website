@@ -48,6 +48,7 @@ export const useProducts = () => {
         description: p.description,
         full_description: null,
         base_price: p.base_price ?? 0,
+        from_price: (p as { from_price?: number }).from_price,
         image_url: p.image_url,
         is_featured: false,
         discount_percentage: p.discount_percentage ?? 0,

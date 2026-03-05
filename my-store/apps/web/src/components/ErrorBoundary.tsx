@@ -36,6 +36,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
+    const msg = this.state.error?.message ?? '';
+    const isChunkLoadError =
+      /failed to fetch dynamically imported module|loading chunk \d+ failed|import\.meta\.url/i.test(msg);
+    if (isChunkLoadError) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 

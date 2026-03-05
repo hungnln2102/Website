@@ -1,5 +1,9 @@
-import { User, Receipt } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { User, Receipt, Pencil, X, Check } from "lucide-react";
 import { TierProgressBar } from "./TierProgressBar";
+import { updateProfile } from "@/lib/api";
 
 /** Còn lại = cycle_end_at - now → "x Ngày hh:mm" */
 function formatRemaining(cycleEndAt: string, nowDate: Date): string {
@@ -15,7 +19,7 @@ function formatRemaining(cycleEndAt: string, nowDate: Date): string {
 
 /** Parse ngày từ API: "yyyy-mm-dd hh:mm:ss" (VN) hoặc ISO → Date (coi là giờ local khi không có Z) */
 function parseCycleDate(s: string): Date {
-  if (!s) return new Date(NaN);
+  if (!s || typeof s !== "string") return new Date(NaN);
   if (s.includes("T") || s.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(s)) return new Date(s);
   return new Date(s.replace(" ", "T"));
 }
@@ -33,13 +37,18 @@ function isValidApiCycle(c: unknown): c is { cycleStartAt: string; cycleEndAt: s
 type AccountOverviewProps = {
   user: any;
   formatDate: (date: string | null | undefined) => string;
-  /** Chu kỳ từ API profile — luôn ưu tiên để hiển thị đúng từ tier_cycles */
   currentCycleFromApi?: unknown;
-  /** Đang load profile: không dùng client fallback (01/01-30/06), tránh flash sai */
   profileLoading?: boolean;
+  /** Gọi sau khi cập nhật profile thành công để refetch dữ liệu */
+  refetchProfile?: () => void;
 };
 
-export function AccountOverview({ user, formatDate, currentCycleFromApi, profileLoading }: AccountOverviewProps) {
+export function AccountOverview({ user, formatDate, currentCycleFromApi, profileLoading, refetchProfile }: AccountOverviewProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(user?.firstName ?? "");
+  const [editLastName, setEditLastName] = useState(user?.lastName ?? "");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const nowDate = user?.serverNow ? new Date(user.serverNow) : new Date();
   // Chỉ hiển thị chu kỳ khi có dữ liệu từ API (tier_cycles). Không fallback.
   const hasApiCycle = isValidApiCycle(currentCycleFromApi);
@@ -79,13 +88,96 @@ export function AccountOverview({ user, formatDate, currentCycleFromApi, profile
               <div className="grid grid-cols-2 gap-4">
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Họ</p>
-                  <p className="font-semibold text-gray-900 dark:text-white capitalize truncate">{user?.firstName || "N/A"}</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white text-sm"
+                      placeholder="Họ"
+                    />
+                  ) : (
+                    <p className="font-semibold text-gray-900 dark:text-white capitalize truncate">{user?.firstName || "N/A"}</p>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Tên</p>
-                  <p className="font-semibold text-gray-900 dark:text-white capitalize truncate">{user?.lastName || "N/A"}</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white text-sm"
+                      placeholder="Tên"
+                    />
+                  ) : (
+                    <p className="font-semibold text-gray-900 dark:text-white capitalize truncate">{user?.lastName || "N/A"}</p>
+                  )}
                 </div>
               </div>
+              {refetchProfile && (
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setSaveError(null);
+                          const fn = (editFirstName ?? "").trim();
+                          const ln = (editLastName ?? "").trim();
+                          if (!fn || !ln) {
+                            setSaveError("Vui lòng điền đầy đủ họ và tên.");
+                            return;
+                          }
+                          setSaving(true);
+                          const res = await updateProfile({ firstName: fn, lastName: ln });
+                          setSaving(false);
+                          if (res.success) {
+                            refetchProfile();
+                            setIsEditing(false);
+                          } else {
+                            setSaveError(res.error ?? "Cập nhật thất bại.");
+                          }
+                        }}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                      >
+                        <Check className="h-4 w-4" />
+                        {saving ? "Đang lưu..." : "Lưu"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditFirstName(user?.firstName ?? "");
+                          setEditLastName(user?.lastName ?? "");
+                          setSaveError(null);
+                        }}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                        Hủy
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditFirstName(user?.firstName ?? "");
+                        setEditLastName(user?.lastName ?? "");
+                        setSaveError(null);
+                        setIsEditing(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Chỉnh sửa họ tên
+                    </button>
+                  )}
+                  {saveError && <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>}
+                </div>
+              )}
               {/* Row 2: Ngày sinh + Ngày tham gia */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="min-w-0">

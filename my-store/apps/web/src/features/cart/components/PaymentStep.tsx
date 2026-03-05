@@ -29,6 +29,8 @@ import { ROUTES } from "@/lib/constants";
 interface PaymentStepProps {
   cartItems: CartItemData[];
   total: number;
+  /** Tiền được giảm (gốc - khuyến mãi) để ghi vào wallet_transactions.bonus_applied */
+  discount?: number;
   paymentMethod: PaymentMethod;
   onBack: () => void;
   onPaymentSuccess: (orderId: string, newBalance?: number) => void;
@@ -44,6 +46,7 @@ type PaymentState = "loading" | "ready" | "processing" | "success" | "failed" | 
 export function PaymentStep({
   cartItems,
   total,
+  discount = 0,
   paymentMethod,
   onBack,
   onPaymentSuccess,
@@ -230,6 +233,7 @@ export function PaymentStep({
     const result = await confirmBalancePayment(total, items, {
       orderIds: paymentCodes?.orderIds,
       transactionId: paymentCodes?.transactionId,
+      bonusApplied: discount > 0 ? discount : undefined,
     });
     if (result.success && result.data?.newBalance != null) {
       setPaymentState("success");
@@ -241,7 +245,7 @@ export function PaymentStep({
       setError(result.error || "Xác nhận thanh toán thất bại.");
       onPaymentFailed(result.error || "Xác nhận thanh toán thất bại.");
     }
-  }, [total, cartItems, paymentCodes, onPaymentSuccess, onPaymentFailed]);
+  }, [total, cartItems, paymentCodes, discount, onPaymentSuccess, onPaymentFailed]);
 
   // Copy to clipboard
   const handleCopy = async (text: string, field: string) => {
