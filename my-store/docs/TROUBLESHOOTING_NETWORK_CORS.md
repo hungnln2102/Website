@@ -43,6 +43,8 @@ Trình duyệt chặn request vì response **không có** header `Access-Control
 
 3. Nếu dùng **Nginx** trả 502/503 khi Node down, response đó **không** có CORS. Cách xử lý đúng là cho Node chạy ổn định (mục 1); không nên cấu hình CORS trên Nginx cho 502/503 thay cho việc sửa API.
 
+4. **Nginx có đang strip header CORS không?** Nếu API (Node) đã trả `Access-Control-Allow-Origin` nhưng trình duyệt vẫn báo thiếu header, có thể Nginx đang xóa. Trong block `location` proxy tới API, **không** dùng `proxy_hide_header Access-Control-Allow-Origin`; nếu có `proxy_pass_header Access-Control-*` thì giữ. Sau khi sửa code (middleware fallback CORS cho mavrykpremium.store), rebuild image và deploy lại.
+
 ---
 
 ## 3. Checklist nhanh

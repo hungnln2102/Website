@@ -139,6 +139,21 @@ if (process.env.NODE_ENV !== "production") {
   console.log("[Server] CORS allowed origins:", baseCorsOrigins);
 }
 
+// Fallback CORS: luôn cho phép www + non-www mavrykpremium.store (tránh lỗi khi env/build chưa đồng bộ)
+const ALLOWED_ORIGINS_FALLBACK = [
+  "https://mavrykpremium.store",
+  "https://www.mavrykpremium.store",
+];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS_FALLBACK.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: baseCorsOrigins,
