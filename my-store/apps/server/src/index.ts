@@ -111,13 +111,33 @@ if (process.env.NODE_ENV === 'production' && corsOriginList.length === 0) {
   throw new Error('CORS_ORIGIN must be set in production (e.g. https://mavrykpremium.store,https://www.mavrykpremium.store)');
 }
 
-const corsOrigins: (string | RegExp)[] = process.env.NODE_ENV === 'production'
-  ? corsOriginList
+/** Thêm cả www và non-www cho mỗi origin (vd. https://mavrykpremium.store ↔ https://www.mavrykpremium.store) */
+function withWwwVariants(origins: string[]): string[] {
+  const set = new Set<string>(origins);
+  for (const url of origins) {
+    try {
+      const u = new URL(url);
+      if (u.hostname.startsWith('www.')) {
+        set.add(`${u.protocol}//${u.hostname.slice(4)}${u.port ? `:${u.port}` : ''}${u.pathname}`);
+      } else if (!u.hostname.includes('.')) {
+        continue;
+      } else {
+        set.add(`${u.protocol}//www.${u.hostname}${u.port ? `:${u.port}` : ''}${u.pathname}`);
+      }
+    } catch {
+      set.add(url);
+    }
+  }
+  return [...set];
+}
+
+const baseCorsOrigins = process.env.NODE_ENV === 'production'
+  ? withWwwVariants(corsOriginList)
   : ['http://localhost:3001', 'http://localhost:4001', ...corsOriginList];
 
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: baseCorsOrigins,
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true,
     maxAge: 86400, // 24 hours
