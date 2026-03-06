@@ -58,6 +58,9 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       ID: "id",
       CATEGORY_ID: "category_id",
       PACKAGE_NAME: "package_name",
+      CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
+      IS_ACTIVE: "is_active",
     },
   },
 
@@ -71,6 +74,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       DISPLAY_NAME: "display_name",
       FORM_ID: "form_id",
       IS_ACTIVE: "is_active",
+      UPDATED_AT: "updated_at",
     },
   },
 
@@ -97,6 +101,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       RULES: "rules",
       IMAGE_URL: "image_url",
       SHORT_DESC: "short_desc",
+      UPDATED_AT: "updated_at",
     },
   },
 
@@ -128,6 +133,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       VARIANT_ID: "variant_id",
       SUPPLIER_ID: "supplier_id",
       PRICE: "price",
+      CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
     },
   },
 
@@ -386,7 +393,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   },
 
   // ── Orders ────────────────────────────────────────────────────────────────
-  // order_list, order_expired, order_canceled: cột id_product kiểu int (variant_id, FK product.variant.id)
+  // order_list: cột id_product kiểu int (variant_id, FK product.variant.id)
 
   ORDER_LIST: {
     SCHEMA: SCHEMA_ORDERS,
@@ -401,7 +408,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       SLOT: "slot",
       ORDER_DATE: "order_date",       // date
       DAYS: "days",                   // text
-      ORDER_EXPIRED: "order_expired", // date
+      EXPIRED_AT: "expired_at",        // date, ngày hết hạn
       SUPPLY_ID: "supply_id",         // int4, id của partner.supplier
       COST: "cost",                   // int4
       PRICE: "price",                 // int4
@@ -409,53 +416,6 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       STATUS: "status",
       REFUND: "refund",               // numeric
       CANCELED_AT: "canceled_at",     // timestamptz
-    },
-  },
-
-  ORDER_EXPIRED: {
-    SCHEMA: SCHEMA_ORDERS,
-    TABLE: "order_expired",
-    COLS: {
-      ID: "id",
-      ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product",
-      INFORMATION_ORDER: "information_order",
-      CUSTOMER: "customer",
-      CONTACT: "contact",
-      SLOT: "slot",
-      ORDER_DATE: "order_date",
-      DAYS: "days",
-      ORDER_EXPIRED: "order_expired",
-      SUPPLY_ID: "supply_id",
-      COST: "cost",
-      PRICE: "price",
-      NOTE: "note",
-      STATUS: "status",
-      ARCHIVED_AT: "archived_at",
-    },
-  },
-
-  ORDER_CANCELED: {
-    SCHEMA: SCHEMA_ORDERS,
-    TABLE: "order_canceled",
-    COLS: {
-      ID: "id",
-      ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product",
-      INFORMATION_ORDER: "information_order",
-      CUSTOMER: "customer",
-      CONTACT: "contact",
-      SLOT: "slot",
-      ORDER_DATE: "order_date",
-      DAYS: "days",
-      ORDER_EXPIRED: "order_expired",
-      SUPPLY_ID: "supply_id",
-      COST: "cost",
-      PRICE: "price",
-      NOTE: "note",
-      STATUS: "status",
-      REFUND: "refund",
-      CREATED_AT: "createdate",
     },
   },
 
@@ -723,8 +683,6 @@ export const TABLES = {
   SUPPLIER:         t("SUPPLIER"),
   SUPPLIER_PAYMENTS: t("SUPPLIER_PAYMENTS"),
   ORDER_LIST:       t("ORDER_LIST"),
-  ORDER_EXPIRED:    t("ORDER_EXPIRED"),
-  ORDER_CANCELED:   t("ORDER_CANCELED"),
   ORDER_CUSTOMER:   t("ORDER_CUSTOMER"),
   PAYMENT_RECEIPT:  t("PAYMENT_RECEIPT"),
   REFUND:           t("REFUND"),

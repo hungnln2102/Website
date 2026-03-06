@@ -119,7 +119,7 @@ export function OrderDetailModal({ order, onClose, now, copiedId, onCopyId }: Or
                 const compoundName = formatCompoundProductName(item);
                 const infoNote = item.information_order || item.note;
                 const slot = item.slot;
-                const expDate = item.order_expired ? new Date(item.order_expired) : null;
+                const expDate = item.expired_at ? new Date(item.expired_at) : null;
                 return (
                   <div
                     key={idx}

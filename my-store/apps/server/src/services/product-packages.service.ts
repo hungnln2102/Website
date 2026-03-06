@@ -17,7 +17,7 @@ export async function getProductPackages(packageName: string) {
   const query = `
     WITH supply_max AS (
       SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
-      FROM product.supplier_cost sc
+      FROM ${TABLES.SUPPLIER_COST} sc
       GROUP BY sc.variant_id
     ),
     priced AS (
@@ -26,7 +26,7 @@ export async function getProductPackages(packageName: string) {
         p.package_name AS package,
         v.variant_name AS package_product,
         v.display_name AS id_product,
-        v.created_at AS created_at,
+        v.updated_at AS created_at,
         v.is_active AS is_active,
         v.form_id AS form_id,
         COALESCE(pc.pct_ctv, 0) AS pct_ctv,
@@ -37,19 +37,20 @@ export async function getProductPackages(packageName: string) {
         pd.description,
         pd.image_url,
         pd.rules as purchase_rules
-      FROM product.variant v
-      LEFT JOIN product.product p ON p.id = v.product_id
+      FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN LATERAL (
         SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
-        FROM product.price_config pc
+        FROM ${TABLES.PRICE_CONFIG} pc
         WHERE pc.variant_id = v.id
         ORDER BY pc.updated_at DESC NULLS LAST
         LIMIT 1
       ) pc ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
-      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE p.package_name ILIKE $1
+        AND (p.is_active IS NULL OR p.is_active = true)
     )
     SELECT
       *,

@@ -60,24 +60,10 @@ SELECT
   CURRENT_TIMESTAMP AS updated_at
 FROM product.variant v
 LEFT JOIN (
-  SELECT variant_id, SUM(sales_count)::int AS sales_count
-  FROM (
-    SELECT ol.id_product::int AS variant_id, COUNT(*) AS sales_count
-    FROM orders.order_list ol
-    WHERE ol.id_product IS NOT NULL
-    GROUP BY ol.id_product
-    UNION ALL
-    SELECT ol.id_product::int AS variant_id, COUNT(*) AS sales_count
-    FROM orders.order_list ol
-    WHERE ol.id_product IS NOT NULL
-    GROUP BY ol.id_product
-    UNION ALL
-    SELECT oe.id_product::int AS variant_id, COUNT(*) AS sales_count
-    FROM orders.order_expired oe
-    WHERE oe.id_product IS NOT NULL
-    GROUP BY oe.id_product
-  ) combined_orders
-  GROUP BY variant_id
+  SELECT ol.id_product::int AS variant_id, COUNT(*)::int AS sales_count
+  FROM orders.order_list ol
+  WHERE ol.id_product IS NOT NULL
+  GROUP BY ol.id_product
 ) order_totals ON order_totals.variant_id = v.id;
 
 CREATE UNIQUE INDEX idx_variant_sold_count_variant_id ON product.variant_sold_count(variant_id);

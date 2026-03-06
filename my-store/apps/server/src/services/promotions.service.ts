@@ -39,6 +39,8 @@ export async function getPromotionsList() {
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
+      WHERE (p.is_active IS NULL OR p.is_active = true)
+        AND (v.is_active IS NULL OR v.is_active = true)
     )
     SELECT
       product_id,

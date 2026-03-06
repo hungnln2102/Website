@@ -35,7 +35,7 @@ const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as {
   INFORMATION_ORDER: string;
   ID_PRODUCT: string;
   PRICE: string;
-  ORDER_EXPIRED: string;
+  EXPIRED_AT: string;
   SLOT: string;
 };
 
@@ -208,7 +208,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
               ol.id_order as "${COLS_OL.ID_ORDER}", ol.id_product as "${COLS_OL.ID_PRODUCT}",
               ol.price as "${COLS_OL.PRICE}", ol.order_date as "${COLS_OL.ORDER_DATE}",
               ol.status as "${COLS_OL.STATUS}", ol.information_order as "${COLS_OL.INFORMATION_ORDER}",
-              ol.order_expired as "${COLS_OL.ORDER_EXPIRED}", ol.slot as "${COLS_OL.SLOT}",
+              ol.expired_at as "${COLS_OL.EXPIRED_AT}", ol.slot as "${COLS_OL.SLOT}",
               v.${COLS_V.VARIANT_NAME} as product_display_name
        FROM ${ORDER_CUSTOMER_TABLE} oc
        INNER JOIN ${ORDER_LIST_TABLE} ol ON ol.id_order = oc.id_order
@@ -252,7 +252,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
         id_product: row[COLS_OL.ID_PRODUCT] ?? null,
         price: parseFloat(row[COLS_OL.PRICE]) || 0,
         information_order: infoText ?? null,
-        order_expired: row[COLS_OL.ORDER_EXPIRED] ?? null,
+        expired_at: row[COLS_OL.EXPIRED_AT] ?? null,
         display_name: row.product_display_name ?? null,
         slot: row[COLS_OL.SLOT] ?? null,
         ...info,

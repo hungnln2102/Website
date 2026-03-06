@@ -8,8 +8,7 @@ DROP MATERIALIZED VIEW IF EXISTS product.product_sold_count CASCADE;
 
 -- ============================================
 -- VIEW 1: Variant Sold Count (Chi tiết từng gói)
--- order_list.id_product đã chuyển sang kiểu int (variant_id)
--- order_expired: giữ join qua display_name nếu id_product vẫn là text
+-- order_list.id_product là variant_id (kiểu int). Toàn bộ đơn (kể cả Hết Hạn, Chưa Hoàn, Đã Hoàn) đã gom vào order_list.
 -- ============================================
 CREATE MATERIALIZED VIEW product.variant_sold_count AS
 SELECT
@@ -21,28 +20,11 @@ SELECT
 FROM product.variant v
 LEFT JOIN (
   SELECT
-    variant_id,
-    SUM(sales_count)::int AS sales_count
-  FROM (
-    -- Count from order_list (id_product = variant id, kiểu int)
-    SELECT
-      ol.id_product::int AS variant_id,
-      COUNT(*) AS sales_count
-    FROM orders.order_list ol
-    WHERE ol.id_product IS NOT NULL
-    GROUP BY ol.id_product
-
-    UNION ALL
-
-    -- Count from order_expired (id_product đã là int = variant_id)
-    SELECT
-      oe.id_product::int AS variant_id,
-      COUNT(*) AS sales_count
-    FROM orders.order_expired oe
-    WHERE oe.id_product IS NOT NULL
-    GROUP BY oe.id_product
-  ) combined_orders
-  GROUP BY variant_id
+    ol.id_product::int AS variant_id,
+    COUNT(*)::int AS sales_count
+  FROM orders.order_list ol
+  WHERE ol.id_product IS NOT NULL
+  GROUP BY ol.id_product
 ) order_totals ON order_totals.variant_id = v.id;
 
 -- Create indexes for variant_sold_count

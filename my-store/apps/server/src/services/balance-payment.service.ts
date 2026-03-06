@@ -32,7 +32,7 @@ export function generateUniqueIdOrder(prefix: IdOrderPrefix): string {
 
 /**
  * Tạo bộ mã đơn và transaction (gọi trước khi thanh toán để frontend dùng đúng mã, tránh trùng DB).
- * id_order: chỉ check order_list và order_customer (không còn dùng order_expired / order_canceled).
+ * id_order: chỉ check order_list và order_customer.
  * transaction_id: check wallet_transaction. Retry nếu trùng.
  */
 const MAX_CODES_RETRY = 5;

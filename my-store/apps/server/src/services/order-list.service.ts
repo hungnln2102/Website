@@ -30,7 +30,7 @@ async function ensureOrderListSequence(): Promise<void> {
   );
 }
 
-/** Parse duration "12m" / "30d" thành số ngày (để tính order_expired). */
+/** Parse duration "12m" / "30d" thành số ngày (để tính expired_at). */
 function parseDaysFromDuration(duration: string | undefined | null): number | null {
   if (!duration || typeof duration !== "string") return null;
   const m = duration.trim().match(/--?\s*(\d+)\s*([md])/i) || duration.trim().match(/(\d+)\s*([md])/i);
@@ -50,7 +50,7 @@ export interface OrderListItemInput {
   price: number;
   /** Thông tin bổ sung (JSON string hoặc null) */
   information_order?: string | null;
-  /** "12m" / "30d" để tính days và order_expired */
+  /** "12m" / "30d" để tính days và expired_at */
   duration?: string | null;
 }
 
@@ -97,7 +97,7 @@ export async function insertOrderListFromPayment(params: InsertOrderListParams):
     COLS_OL.CONTACT,
     COLS_OL.ORDER_DATE,
     COLS_OL.DAYS,
-    COLS_OL.ORDER_EXPIRED,
+    COLS_OL.EXPIRED_AT,
     COLS_OL.PRICE,
     COLS_OL.STATUS,
   ].join(", ");
@@ -215,7 +215,7 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
 
 /**
  * Hủy đơn: cập nhật status thành "Đã Hủy" và ghi canceled_at trong order_list.
- * Không còn chuyển sang bảng order_canceled.
+ * Cập nhật status "Đã Hủy" và canceled_at trong order_list.
  * Gọi từ POST /api/orders/cancel (Bot nút "Hủy Đơn").
  */
 export async function cancelOrder(id_order: string): Promise<number> {

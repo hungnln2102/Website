@@ -84,7 +84,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS order_list_id_order_key
 ```sql
 INSERT INTO orders.order_list (
   id_order, id_product, information_order, customer, contact,
-  order_date, days, order_expired, price, status
+  order_date, days, expired_at, price, status
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (id_order) DO UPDATE SET
@@ -94,7 +94,7 @@ ON CONFLICT (id_order) DO UPDATE SET
   contact          = EXCLUDED.contact,
   order_date       = EXCLUDED.order_date,
   days             = EXCLUDED.days,
-  order_expired    = EXCLUDED.order_expired,
+  expired_at       = EXCLUDED.expired_at,
   price            = EXCLUDED.price,
   status           = EXCLUDED.status;
 ```
@@ -162,7 +162,7 @@ Vậy **ON CONFLICT DO UPDATE** chỉ xử lý đúng khi “cùng một đơn b
 
 - **Mục đích:** Backend sinh mã đơn (`orderIds`) và mã giao dịch (`transactionId`) một lần, dùng cho bước thanh toán sau.
 - **Check trùng DB:** Trước khi trả về, backend kiểm tra:
-  - **id_order:** Bất kỳ mã nào trong `orderIds` đã tồn tại trong **order_list**, **order_expired**, **order_canceled**, hoặc **order_customer** → sinh lại bộ mã và kiểm tra lại (tối đa 5 lần).
+  - **id_order:** Bất kỳ mã nào trong `orderIds` đã tồn tại trong **order_list** hoặc **order_customer** → sinh lại bộ mã và kiểm tra lại (tối đa 5 lần).
   - **transaction_id:** Đã tồn tại trong **wallet_transaction** → sinh lại và kiểm tra lại.
   Chỉ trả về khi tất cả mã **chưa có** trong các bảng trên.
 - **Khi gọi:** Khi khách bấm **Thanh toán Mcoin** hoặc **Thanh toán QR** (bước chọn phương thức / trước khi xác nhận).

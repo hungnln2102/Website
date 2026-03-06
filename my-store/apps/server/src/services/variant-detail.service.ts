@@ -29,8 +29,8 @@ export class VariantDetailService {
         pd.description,
         pd.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
-      FROM product.variant v
-      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.id = $1
@@ -55,8 +55,8 @@ export class VariantDetailService {
         pd.description,
         pd.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
-      FROM product.variant v
-      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.display_name = $1
@@ -73,7 +73,7 @@ export class VariantDetailService {
     const query = `
       WITH supply_max AS (
         SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
-        FROM product.supplier_cost sc
+        FROM ${TABLES.SUPPLIER_COST} sc
         GROUP BY sc.variant_id
       )
       SELECT 
@@ -92,13 +92,13 @@ export class VariantDetailService {
         COALESCE(pc.pct_khach, 0) as pct_khach,
         pc.pct_promo,
         COALESCE(sm.price_max, 0) as price_max
-      FROM product.variant v
-      LEFT JOIN product.product_desc pd ON pd.variant_id = v.id
+      FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       LEFT JOIN LATERAL (
         SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
-        FROM product.price_config pc
+        FROM ${TABLES.PRICE_CONFIG} pc
         WHERE pc.variant_id = v.id
         ORDER BY pc.updated_at DESC NULLS LAST
         LIMIT 1

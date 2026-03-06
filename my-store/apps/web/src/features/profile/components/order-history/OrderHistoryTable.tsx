@@ -43,7 +43,7 @@ export function OrderHistoryTable({
             const total = getOrderTotal(order);
             const status = getDynamicStatus(order);
             const productNames = order.items.map((i) => formatCompoundProductName(i)).join(", ");
-            const dbExpDateStr = order.items[0]?.order_expired;
+            const dbExpDateStr = order.items[0]?.expired_at;
             const expDate = dbExpDateStr ? new Date(dbExpDateStr) : null;
             return (
               <tr

@@ -65,6 +65,7 @@ export async function getProductsList() {
         ON vsc.variant_id = v.id
       LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE p.package_name IS NOT NULL
+        AND (p.is_active IS NULL OR p.is_active = true)
     ),
     sale_calc AS (
       SELECT

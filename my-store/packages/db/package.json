@@ -20,7 +20,12 @@
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
     "db:migrate:30d": "node scripts/run_migration_30d.js",
-    "db:migrate:variant-index": "node scripts/run_variant_index.js"
+    "db:migrate:variant-index": "node scripts/run_variant_index.js",
+    "db:migrate:variant-sold-count": "node scripts/run_variant_sold_count_view.js",
+    "db:migrate:rename-order-expired": "node scripts/run_rename_order_expired.js",
+    "db:migrate:schema-updates": "node scripts/run_schema_updates.js",
+    "db:migrate:all": "node scripts/run_all_migrations.js",
+    "db:migrate:package-name": "node scripts/run_add_package_name.js"
   },
   "devDependencies": {
     "prisma": "^7.1.0",

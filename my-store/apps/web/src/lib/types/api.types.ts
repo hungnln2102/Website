@@ -149,7 +149,7 @@ export type UserOrderItem = {
   quantity?: number;
   unitPrice?: number;
   information_order?: string | null;
-  order_expired?: string | null;
+  expired_at?: string | null;
   display_name?: string | null;
   slot?: string | null;
 };

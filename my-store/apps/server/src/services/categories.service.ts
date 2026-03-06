@@ -21,7 +21,7 @@ export async function getCategoriesList(): Promise<CategoryRow[]> {
       c.color,
       COALESCE(
         ARRAY_AGG(DISTINCT p.id ORDER BY p.id)
-          FILTER (WHERE p.package_name IS NOT NULL),
+          FILTER (WHERE p.package_name IS NOT NULL AND (p.is_active IS NULL OR p.is_active = true)),
         ARRAY[]::int[]
       ) AS product_ids
     FROM ${TABLES.CATEGORY} c

@@ -64,7 +64,7 @@ Khi ghi order_list (cả Mcoin và QR):
 
 1. Ghi **order_customer** (như hiện tại).
 2. Ghi vào **order_list** cho từng id_order (mỗi item = 1 dòng):
-   - **Có ngay**: id_order, customer (từ account), contact (mặc định Website), order_date, days (từ variant/duration), order_expired (order_date + days), id_product/variant, **variant_id**, information_order, **price** (từ item), status (vd. "Đang Tạo Đơn").
+   - **Có ngay**: id_order, customer (từ account), contact (mặc định Website), order_date, days (từ variant/duration), expired_at (order_date + days), id_product/variant, **variant_id**, information_order, **price** (từ item), status (vd. "Đang Tạo Đơn").
    - **Để trống (Bot điền sau)**: slot, note, supply (NCC), cost.
 3. Gửi thông báo **đơn hàng mới** lên **Telegram topic 2733**.
 

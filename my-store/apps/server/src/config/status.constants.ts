@@ -32,7 +32,6 @@ export type OrderCustomerStatus = (typeof ORDER_CUSTOMER_STATUS)[keyof typeof OR
 // ─────────────────────────────────────────────────────────────────────────────
 // order_list.status
 // Nguồn duy nhất để xác định trạng thái đơn hàng.
-// order_expired / order_canceled không còn được dùng để chuyển đơn.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ORDER_LIST_STATUS = {

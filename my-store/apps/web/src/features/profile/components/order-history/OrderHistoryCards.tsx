@@ -14,7 +14,7 @@ export function OrderHistoryCards({ orders, now, onSelectOrder }: OrderHistoryCa
       {orders.map((order) => {
         const total = getOrderTotal(order);
         const status = getDynamicStatus(order);
-        const mobileExpDate = order.items[0]?.order_expired ? new Date(order.items[0].order_expired) : null;
+        const mobileExpDate = order.items[0]?.expired_at ? new Date(order.items[0].expired_at) : null;
         return (
           <div
             key={order.id_order}

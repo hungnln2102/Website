@@ -50,7 +50,7 @@ export function getDynamicStatus(order: UserOrder): OrderStatusInfo {
     return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
   }
 
-  const expDateStr = order.items[0]?.order_expired || calculateExpirationDate(order.order_date, duration);
+  const expDateStr = order.items[0]?.expired_at || calculateExpirationDate(order.order_date, duration);
   if (!expDateStr) {
     return { label: "Đã Thanh Toán", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30" };
   }

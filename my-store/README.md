@@ -90,6 +90,11 @@ Open [http://localhost:3001](http://localhost:3001) to see the application.
 - `npm run db:generate` - Generate Prisma client
 - `npm run db:migrate` - Run database migrations
 - `npm run db:migrate:variant-index` - Tạo index variant (product_id, is_active) để tối ưu tốc độ /products, /promotions
+- `npm run db:migrate:variant-sold-count` - Tạo materialized view variant_sold_count, product_sold_count (fix lỗi "relation does not exist")
+- `npm run db:migrate:rename-order-expired` - Đổi tên cột order_list.order_expired → expired_at
+- `npm run db:migrate:schema-updates` - Thêm updated_at, is_active (product); updated_at (variant, product_desc); created_at, updated_at (supplier_cost)
+- `npm run db:migrate:package-name` - Thêm cột package_name vào product (fix lỗi "column p.package_name does not exist")
+- `npm run db:migrate:all` - Chạy tất cả migrations (file all_migrations.sql)
 - `npm run db:start` - Start local PostgreSQL (Docker)
 - `npm run db:stop` - Stop local PostgreSQL
 
