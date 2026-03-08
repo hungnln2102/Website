@@ -34,6 +34,7 @@ const CartPage = lazyWithRetry(() => import("@/features/cart/CartPage"));
 const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage"));
 const TopupPage = lazyWithRetry(() => import("@/features/topup/TopupPage"));
 const CheckProfilePage = lazyWithRetry(() => import("@/features/CheckProfile/checkprofile"));
+const ServicePlaceholderPage = lazyWithRetry(() => import("@/features/CheckProfile/ServicePlaceholderPage"));
 const AdobeGuidePage = lazyWithRetry(() => import("@/features/guide/AdobeGuidePage"));
 const AboutPage = lazyWithRetry(() => import("@/features/about/AboutPage"));
 const PaymentSuccessPage = lazyWithRetry(() => import("@/features/payment/PaymentSuccessPage"));
@@ -134,6 +135,9 @@ export default function App() {
         )}
         {view === "topup" && <TopupPage />}
         {view === "otp" && <CheckProfilePage />}
+        {view === "renew-adobe" && <ServicePlaceholderPage serviceId="renew-adobe" />}
+        {view === "renew-zoom" && <ServicePlaceholderPage serviceId="renew-zoom" />}
+        {view === "netflix" && <ServicePlaceholderPage serviceId="netflix" />}
         {view === "adobe-guide" && <AdobeGuidePage />}
         {view === "about" && <AboutPage />}
         {view === "payment-success" && (

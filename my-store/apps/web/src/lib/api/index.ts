@@ -23,6 +23,7 @@ export {
   fetchUserProfile,
   fetchUserOrders,
   fetchUserTransactions,
+  fetchUserReviews,
   updateProfile,
   changePassword,
   changeEmail,
@@ -68,3 +69,4 @@ export type {
   CartCountResponse,
 } from "../types";
 export type { VariantFullDataDto } from "./variant.api";
+export type { UserReviewDto } from "./user.api";

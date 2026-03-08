@@ -3,15 +3,12 @@
  */
 import pool from "../config/database";
 import { TABLES } from "../config/db.config";
+import { SUPPLY_MAX_CTE } from "../utils/product-sql.shared";
 import { resolveImageUrl, slugify, stripHtml, toNumber } from "../utils/product-helpers";
 
 export async function getPromotionsList() {
   const query = `
-    WITH supply_max AS (
-      SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
-      FROM ${TABLES.SUPPLIER_COST} sc
-      GROUP BY sc.variant_id
-    ),
+    WITH ${SUPPLY_MAX_CTE},
     priced AS (
       SELECT
         p.id AS product_id,

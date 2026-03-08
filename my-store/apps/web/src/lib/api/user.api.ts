@@ -159,6 +159,32 @@ export async function revokeSession(sessionId: number): Promise<ApiResult> {
   }
 }
 
+export interface UserReviewDto {
+  id: number;
+  productId: number;
+  productName: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export async function fetchUserReviews(): Promise<{
+  success: boolean;
+  data?: UserReviewDto[];
+  error?: string;
+}> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/user/reviews`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, error: (body as any).error || "Không thể tải bình luận." };
+    }
+    return { success: true, data: (body as any).data ?? [] };
+  } catch {
+    return { success: false, error: "Lỗi kết nối máy chủ." };
+  }
+}
+
 export async function getActivity(params?: { limit?: number }): Promise<{
   success: boolean;
   logs?: UserActivityLogDto[];

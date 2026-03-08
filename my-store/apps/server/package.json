@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
     "pg": "^8.17.2",
+    "rate-limit-redis": "^4.3.1",
     "resend": "^6.9.2",
     "sepay-pg-node": "^1.0.0",
     "svix": "^1.85.0",

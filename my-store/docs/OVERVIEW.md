@@ -89,6 +89,19 @@ Tài liệu gộp toàn bộ thông tin dự án: kiến trúc, luồng thanh to
 
 ---
 
+## 2.7 Scripts thủ công
+
+Các script SQL trong `packages/db/scripts/` dùng cho kiểm tra và chạy thủ công:
+
+| File | Mô tả | Cách dùng |
+|------|-------|-----------|
+| `check_cron_jobs.sql` | Kiểm tra pg_cron, cron jobs `product_sold_30d`, lịch sử chạy, dữ liệu order_list 30d, materialized view | Chạy trong psql hoặc GUI (pgAdmin, DBeaver): `psql $DATABASE_URL -f packages/db/scripts/check_cron_jobs.sql` |
+| `manual_refresh_30d.sql` | Refresh thủ công MV `product.product_sold_30d` | `psql $DATABASE_URL -f packages/db/scripts/manual_refresh_30d.sql` hoặc gọi `SELECT product.refresh_product_sold_30d();` |
+
+Khi cron không chạy hoặc cần cập nhật MV ngay, dùng `manual_refresh_30d.sql`.
+
+---
+
 ## 3. Migrations — Chạy tất cả
 
 **File duy nhất**: `packages/db/prisma/migrations/all_migrations.sql`
@@ -96,15 +109,7 @@ Tài liệu gộp toàn bộ thông tin dự án: kiến trúc, luồng thanh to
 Gom toàn bộ migrations: package_name, schema updates, expired_at, supply_id, index, materialized views, order system.
 
 ```bash
-# Chạy tất cả migrations (khuyến nghị)
 npm run db:migrate:all -w @my-store/db
-
-# Hoặc chạy từng script riêng (nếu cần)
-npm run db:migrate:package-name -w @my-store/db
-npm run db:migrate:schema-updates -w @my-store/db
-npm run db:migrate:rename-order-expired -w @my-store/db
-npm run db:migrate:variant-sold-count -w @my-store/db
-npm run db:migrate:variant-index -w @my-store/db
 ```
 
 ---
@@ -186,15 +191,6 @@ npm run db:migrate:variant-sold-count -w @my-store/db
 
 ---
 
-## 9. Tham chiếu tài liệu gốc
+## 9. Lưu ý
 
-Các file chi tiết (có thể archive sau khi dùng OVERVIEW):
-
-- ORDER_SYSTEM.md — Luồng thanh toán Mcoin & QR
-- ORDER_SYSTEM_TASKS.md — Task triển khai
-- ORDER_LIST_ID_ORDER.md — id_order, ON CONFLICT
-- Notify_Succes_Order.md — Telegram, Bot /done
-- ORDER_EXPIRED_ORDER_CANCELED_USAGE.md — Refactor order_expired → expired_at
-- TROUBLESHOOTING_NETWORK_CORS.md — 503, CORS
-- SYSTEM_EVALUATION.md — Đánh giá kiến trúc
-- SCHEMA_ID_REFACTOR.md — Kế hoạch id_product → variant_id
+Tài liệu và migrations đã được gộp vào file này và `all_migrations.sql`. Các file chi tiết trước đây đã xóa.

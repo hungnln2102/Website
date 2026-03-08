@@ -1,7 +1,7 @@
 import { env } from "@my-store/env/server";
 import { Pool } from "pg";
 
-/** PostgreSQL connection pool. Schema ref: docs/database.md */
+/** PostgreSQL connection pool. Schema ref: docs/OVERVIEW.md */
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: 20,

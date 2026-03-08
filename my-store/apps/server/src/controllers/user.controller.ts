@@ -3,6 +3,7 @@
  */
 import type { Request, Response } from "express";
 import pool from "../config/database";
+import logger from "../utils/logger";
 import { DB_SCHEMA } from "../config/db.config";
 import { auditService } from "../services/audit.service";
 import { authService } from "../services/auth.service";
@@ -116,18 +117,16 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       for (const table of tablesToTry) {
         currentCycle = await runCycleQuery(table);
         if (currentCycle) {
-          if (process.env.NODE_ENV !== "production") {
-            console.log("[Profile] tier_cycles: found from " + table + ", id=" + currentCycle.id);
-          }
+          if (process.env.NODE_ENV !== "production") logger.debug("[Profile] tier_cycles: found from " + table + ", id=" + currentCycle.id);
           break;
         }
       }
       if (!currentCycle && process.env.NODE_ENV !== "production") {
-        console.log("[Profile] tier_cycles: no row from " + tablesToTry.join(", "));
+        logger.debug("[Profile] tier_cycles: no row from " + tablesToTry.join(", "));
       }
     } catch (e) {
       const err = e as Error & { code?: string };
-      console.warn("[Profile] Could not load current tier cycle from DB:", err?.message ?? e, "code=" + (err?.code ?? ""));
+      logger.warn("[Profile] Could not load current tier cycle from DB: " + (err?.message ?? String(e)) + " code=" + (err?.code ?? ""));
       for (const table of tablesToTry) {
         try {
           currentCycle = await runCycleQuery(table);
@@ -140,9 +139,7 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
 
     // Fallback: nếu DB không trả về chu kỳ (bảng trống, sai schema, hoặc không có bản ghi chứa NOW()), dùng config
     if (!currentCycle) {
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Profile] currentCycle fallback: using config or full year, currentCycleConfig=" + (currentCycleConfig ? currentCycleConfig.name : "null"));
-      }
+      if (process.env.NODE_ENV !== "production") logger.debug("[Profile] currentCycle fallback: using config or full year, currentCycleConfig=" + (currentCycleConfig ? currentCycleConfig.name : "null"));
       if (currentCycleConfig) {
         const cycleStartAt = new Date(now.getFullYear(), currentCycleConfig.startMonth - 1, currentCycleConfig.startDay);
         const cycleEndAt = new Date(now.getFullYear(), currentCycleConfig.endMonth - 1, currentCycleConfig.endDay);
@@ -167,7 +164,7 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
     }
 
     if (process.env.NODE_ENV !== "production") {
-      console.log("[Profile] response currentCycle:", currentCycle ? { id: currentCycle.id, cycleStartAt: currentCycle.cycleStartAt, cycleEndAt: currentCycle.cycleEndAt, status: currentCycle.status } : "null");
+      logger.debug("[Profile] response currentCycle: " + JSON.stringify(currentCycle ? { id: currentCycle.id, cycleStartAt: currentCycle.cycleStartAt, cycleEndAt: currentCycle.cycleEndAt, status: currentCycle.status } : null));
     }
 
     res.json({
@@ -187,7 +184,7 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       currentCycle,
     });
   } catch (err) {
-    console.error("Get profile error:", err);
+    logger.error("Get profile error:", err);
     res.status(500).json({ error: "Lỗi lấy thông tin tài khoản" });
   }
 }
@@ -218,8 +215,6 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
        LIMIT 200`,
       [accountId]
     );
-    console.log("getOrders Query executing for accountId", accountId);
-    console.log("Rows found:", result.rows.length);
     const orderMap = new Map<
       string,
       { id_order: string; order_date: string; status: string; payment_id: string | null; items: any[] }
@@ -246,7 +241,7 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
           info = JSON.parse(infoText);
         }
       } catch (err) {
-        console.error("JSON parse error:", err);
+        logger.error("JSON parse error:", err);
       }
       orderMap.get(idOrder)!.items.push({
         id_product: row[COLS_OL.ID_PRODUCT] ?? null,
@@ -265,10 +260,9 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
       payment_id: o.payment_id ?? null,
       items: o.items,
     }));
-    console.log("Returning orders count:", orders.length);
     res.json({ data: orders });
   } catch (err) {
-    console.error("Get orders error:", err);
+    logger.error("Get orders error:", err);
     res.status(500).json({ error: "Lỗi lấy lịch sử đơn hàng" });
   }
 }
@@ -293,7 +287,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     });
     res.json({ message: "Cập nhật thông tin thành công" });
   } catch (err) {
-    console.error("Update profile error:", err);
+    logger.error("Update profile error:", err);
     res.status(500).json({ error: "Lỗi cập nhật thông tin" });
   }
 }
@@ -366,7 +360,7 @@ export async function changePassword(req: Request, res: Response): Promise<void>
       message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại trên tất cả thiết bị.",
     });
   } catch (err) {
-    console.error("Change password error:", err);
+    logger.error("Change password error:", err);
     res.status(500).json({ error: "Lỗi đổi mật khẩu" });
   }
 }
@@ -417,7 +411,7 @@ export async function changeEmail(req: Request, res: Response): Promise<void> {
     });
     res.json({ message: "Cập nhật email thành công" });
   } catch (err) {
-    console.error("Change email error:", err);
+    logger.error("Change email error:", err);
     res.status(500).json({ error: "Lỗi cập nhật email" });
   }
 }
@@ -436,7 +430,7 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
       })),
     });
   } catch (err) {
-    console.error("Get sessions error:", err);
+    logger.error("Get sessions error:", err);
     res.status(500).json({ error: "Lỗi lấy danh sách phiên đăng nhập" });
   }
 }
@@ -453,7 +447,7 @@ export async function revokeSession(req: Request, res: Response): Promise<void> 
     await refreshTokenService.revokeTokenById(sessionId);
     res.json({ message: "Đã xóa phiên đăng nhập" });
   } catch (err) {
-    console.error("Revoke session error:", err);
+    logger.error("Revoke session error:", err);
     res.status(500).json({ error: "Lỗi xóa phiên đăng nhập" });
   }
 }
@@ -474,8 +468,42 @@ export async function getActivity(req: Request, res: Response): Promise<void> {
       })),
     });
   } catch (err) {
-    console.error("Get activity error:", err);
+    logger.error("Get activity error:", err);
     res.status(500).json({ error: "Lỗi lấy lịch sử hoạt động" });
+  }
+}
+
+export async function getReviews(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = getUserId(req);
+    const REVIEW_TABLE = `${DB_SCHEMA.REVIEW!.SCHEMA}.${DB_SCHEMA.REVIEW!.TABLE}`;
+    const COLS_R = DB_SCHEMA.REVIEW!.COLS as Record<string, string>;
+    const PRODUCT_TABLE = `${DB_SCHEMA.PRODUCT!.SCHEMA}.${DB_SCHEMA.PRODUCT!.TABLE}`;
+    const COLS_P = DB_SCHEMA.PRODUCT!.COLS as Record<string, string>;
+    const result = await pool.query(
+      `SELECT r.id, r.${COLS_R.PRODUCT_ID} as product_id, r.${COLS_R.RATING} as rating, r.${COLS_R.COMMENT} as comment, r.${COLS_R.CREATED_AT} as created_at,
+              p.${COLS_P.PACKAGE_NAME} as product_name
+       FROM ${REVIEW_TABLE} r
+       LEFT JOIN ${PRODUCT_TABLE} p ON p.id = r.${COLS_R.PRODUCT_ID}
+       WHERE r.${COLS_R.ACCOUNT_ID} = $1
+       ORDER BY r.${COLS_R.CREATED_AT} DESC
+       LIMIT 100`,
+      [userId]
+    );
+    res.json({
+      success: true,
+      data: result.rows.map((r) => ({
+        id: r.id,
+        productId: r.product_id,
+        productName: r.product_name ?? null,
+        rating: parseFloat(r.rating) || 0,
+        comment: r.comment ?? null,
+        createdAt: r.created_at,
+      })),
+    });
+  } catch (err) {
+    logger.error("Get reviews error:", err);
+    res.status(500).json({ success: false, error: "Lỗi lấy bình luận" });
   }
 }
 
@@ -500,7 +528,7 @@ export async function getTransactions(req: Request, res: Response): Promise<void
       })),
     });
   } catch (err) {
-    console.error("Get transactions error:", err);
+    logger.error("Get transactions error:", err);
     res.status(500).json({ error: "Lỗi lấy lịch sử giao dịch" });
   }
 }

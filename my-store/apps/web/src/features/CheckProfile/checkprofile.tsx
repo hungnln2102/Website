@@ -1,6 +1,7 @@
 import { useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
+import { ServicesSidebar } from "./ServicesSidebar";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
@@ -411,8 +412,10 @@ export default function CheckProfilePage() {
         />
       </div>
 
-      <main className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-10">
-        <div className="w-full max-w-4xl">
+      <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl gap-6 px-4 py-10">
+        <ServicesSidebar />
+        <div className="flex flex-1 min-w-0 items-center justify-center">
+          <div className="w-full max-w-4xl">
           {/* Title */}
           <div className="mb-5 px-1">
             <h1 className="text-2xl font-bold tracking-tight text-slate-50">Fix lỗi Adobe</h1>
@@ -710,6 +713,7 @@ export default function CheckProfilePage() {
               Bảo mật bởi Mavryk Premium Store
             </span>
           </div>
+        </div>
         </div>
       </main>
 

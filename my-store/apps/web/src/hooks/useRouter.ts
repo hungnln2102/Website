@@ -12,6 +12,9 @@ export type View =
   | "promotions"
   | "all-products"
   | "otp"
+  | "renew-adobe"
+  | "renew-zoom"
+  | "netflix"
   | "adobe-guide"
   | "login"
   | "cart"
@@ -55,6 +58,13 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   const otpPath = ROUTES.otp.replace(/^\/+|\/+$/g, "");
   if (path === otpPath || path === "otp")
     return { view: "otp", slug: null, parentPath: ROUTES.home };
+
+  if (path === "renew-adobe")
+    return { view: "renew-adobe", slug: null, parentPath: ROUTES.fixAdobeEdu };
+  if (path === "renew-zoom")
+    return { view: "renew-zoom", slug: null, parentPath: ROUTES.fixAdobeEdu };
+  if (path === "netflix")
+    return { view: "netflix", slug: null, parentPath: ROUTES.fixAdobeEdu };
 
   const adobeGuidePath = ROUTES.adobeGuide.replace(/^\/+|\/+$/g, "");
   if (path === adobeGuidePath || path === "huong-dan-adobe")

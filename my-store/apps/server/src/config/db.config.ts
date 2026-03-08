@@ -692,4 +692,5 @@ export const TABLES = {
   SAVING_GOALS:     t("SAVING_GOALS"),
   ACCOUNT_PROMOTIONS: t("ACCOUNT_PROMOTIONS"),
   PROMOTION_CODES:  t("PROMOTION_CODES"),
+  REVIEW:           t("REVIEW"),
 } as const;

@@ -18,5 +18,6 @@ router.get("/sessions", userController.getSessions);
 router.delete("/sessions/:sessionId", userController.revokeSession);
 router.get("/activity", userController.getActivity);
 router.get("/transactions", userController.getTransactions);
+router.get("/reviews", userController.getReviews);
 
 export default router;

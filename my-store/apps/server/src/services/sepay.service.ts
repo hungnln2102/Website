@@ -266,20 +266,49 @@ export class SepayService {
         transactionId: transaction_id,
       });
 
-      console.log(`✅ Payment confirmed for order ${order_invoice_number}`);
+      logPaymentEvent('PAYMENT_CONFIRMED_LOG', {
+        orderId: order_invoice_number,
+        message: 'Payment confirmed',
+      });
     } else if (payment_status === 'FAILED' || payment_status === 'CANCELLED') {
-      // TODO: Update order status in database
-      // await prisma.order.update({
-      //   where: { id: order_invoice_number },
-      //   data: { status: 'FAILED' },
-      // });
+      const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+      const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
+      const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+      const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+      const txIdCol = COLS_WT.TRANSACTION_ID as string;
+      const paymentIdCol = COLS_OC.PAYMENT_ID as string;
+
+      const orderIdsToCancel: string[] = [];
+      const wtRow = await pool.query(
+        `SELECT id FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1 LIMIT 1`,
+        [order_invoice_number]
+      );
+      if (wtRow.rows.length > 0) {
+        const paymentId = wtRow.rows[0].id;
+        const ocList = await pool.query(
+          `SELECT id_order FROM ${ORDER_CUSTOMER_TABLE} WHERE ${paymentIdCol} = $1`,
+          [paymentId]
+        );
+        orderIdsToCancel.push(...ocList.rows.map((r) => r.id_order as string));
+      } else {
+        const ocRow = await pool.query(
+          `SELECT id_order FROM ${ORDER_CUSTOMER_TABLE} WHERE id_order = $1 LIMIT 1`,
+          [order_invoice_number]
+        );
+        if (ocRow.rows.length > 0) orderIdsToCancel.push(order_invoice_number);
+      }
+      if (orderIdsToCancel.length > 0) {
+        await pool.query(
+          `UPDATE ${ORDER_CUSTOMER_TABLE} SET status = $1, updated_at = NOW() WHERE id_order = ANY($2::text[])`,
+          [ORDER_CUSTOMER_STATUS.CANCELLED, orderIdsToCancel]
+        );
+      }
 
       logPaymentEvent('PAYMENT_FAILED', {
         orderId: order_invoice_number,
         status: payment_status,
+        cancelledOrders: orderIdsToCancel.length,
       });
-
-      console.log(`❌ Payment failed for order ${order_invoice_number}`);
     }
   }
 

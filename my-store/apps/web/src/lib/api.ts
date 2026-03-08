@@ -24,6 +24,7 @@ export {
   fetchUserProfile,
   fetchUserOrders,
   fetchUserTransactions,
+  fetchUserReviews,
   updateProfile,
   changePassword,
   changeEmail,
