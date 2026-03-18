@@ -9,14 +9,14 @@ const pool = new pg.Pool({
 
 async function run() {
   try {
-    console.log("Checking columns for product.product_desc...");
-    const res = await pool.query("SELECT * FROM product.product_desc LIMIT 1");
+    console.log("Checking columns for product.variant...");
+    const res = await pool.query("SELECT * FROM product.variant LIMIT 1");
     if (res.rows.length > 0) {
-      console.log("Columns found in product_desc:", Object.keys(res.rows[0]).join(', '));
+      console.log("Columns found in variant:", Object.keys(res.rows[0]).join(', '));
       console.log("Sample row:", JSON.stringify(res.rows[0], null, 2));
     } else {
-      console.log("No rows in product_desc, trying to get schema info...");
-      const schemaRes = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'product_desc'");
+      console.log("No rows in variant, trying to get schema info...");
+      const schemaRes = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'variant'");
       console.log("Columns in schema:", schemaRes.rows.map(r => r.column_name).join(', '));
     }
   } catch (e) {

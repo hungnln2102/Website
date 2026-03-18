@@ -17,27 +17,20 @@ export async function getPromotionsList() {
         v.variant_name AS package_product,
         v.display_name AS id_product,
         v.is_active AS is_active,
-        COALESCE(pc.pct_ctv, 0) AS pct_ctv,
-        COALESCE(pc.pct_khach, 0) AS pct_khach,
-        pc.pct_promo AS pct_promo,
+        COALESCE(v.pct_ctv, 0) AS pct_ctv,
+        COALESCE(v.pct_khach, 0) AS pct_khach,
+        v.pct_promo AS pct_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
-        pd.description,
-        pd.image_url AS image_url
+        v.description,
+        v.image_url AS image_url
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
-      INNER JOIN LATERAL (
-        SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
-        FROM ${TABLES.PRICE_CONFIG} pc
-        WHERE pc.variant_id = v.id AND pc.pct_promo IS NOT NULL AND pc.pct_promo > 0
-        ORDER BY pc.updated_at DESC NULLS LAST
-        LIMIT 1
-      ) pc ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE (p.is_active IS NULL OR p.is_active = true)
         AND (v.is_active IS NULL OR v.is_active = true)
+        AND v.pct_promo IS NOT NULL AND v.pct_promo > 0
     )
     SELECT
       product_id,

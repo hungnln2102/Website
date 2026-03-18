@@ -26,11 +26,10 @@ export class VariantDetailService {
         v.product_id,
         SPLIT_PART(v.display_name, '--', 1) as base_name,
         SPLIT_PART(v.display_name, '--', 2) as duration,
-        pd.description,
-        pd.image_url,
+        v.description,
+        v.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
       FROM ${TABLES.VARIANT} v
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.id = $1
@@ -52,11 +51,10 @@ export class VariantDetailService {
         v.product_id,
         SPLIT_PART(v.display_name, '--', 1) as base_name,
         SPLIT_PART(v.display_name, '--', 2) as duration,
-        pd.description,
-        pd.image_url,
+        v.description,
+        v.image_url,
         COALESCE(vsc.sales_count, 0) as sold_count
       FROM ${TABLES.VARIANT} v
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.display_name = $1
@@ -84,25 +82,17 @@ export class VariantDetailService {
         v.form_id,
         SPLIT_PART(v.display_name, '--', 1) as base_name,
         SPLIT_PART(v.display_name, '--', 2) as duration,
-        pd.description,
-        pd.image_url,
-        pd.rules as purchase_rules,
+        v.description,
+        v.image_url,
+        v.rules as purchase_rules,
         COALESCE(vsc.sales_count, 0) as sold_count,
-        COALESCE(pc.pct_ctv, 0) as pct_ctv,
-        COALESCE(pc.pct_khach, 0) as pct_khach,
-        pc.pct_promo,
+        COALESCE(v.pct_ctv, 0) as pct_ctv,
+        COALESCE(v.pct_khach, 0) as pct_khach,
+        v.pct_promo,
         COALESCE(sm.price_max, 0) as price_max
       FROM ${TABLES.VARIANT} v
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
-      LEFT JOIN LATERAL (
-        SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
-        FROM ${TABLES.PRICE_CONFIG} pc
-        WHERE pc.variant_id = v.id
-        ORDER BY pc.updated_at DESC NULLS LAST
-        LIMIT 1
-      ) pc ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       WHERE SPLIT_PART(v.display_name, '--', 1) = $1
       ORDER BY 

@@ -58,6 +58,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       ID: "id",
       CATEGORY_ID: "category_id",
       PACKAGE_NAME: "package_name",
+      IMAGE_URL: "image_url",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
       IS_ACTIVE: "is_active",
@@ -74,34 +75,15 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       DISPLAY_NAME: "display_name",
       FORM_ID: "form_id",
       IS_ACTIVE: "is_active",
+      CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
-    },
-  },
-
-  PRICE_CONFIG: {
-    SCHEMA: SCHEMA_PRODUCT,
-    TABLE: "price_config",
-    COLS: {
-      ID: "id",
-      VARIANT_ID: "variant_id",
-      PCT_CTV: "pct_ctv",
-      PCT_KHACH: "pct_khach",
-      PCT_PROMO: "pct_promo",
-      UPDATED_AT: "updated_at",
-    },
-  },
-
-  PRODUCT_DESC: {
-    SCHEMA: SCHEMA_PRODUCT,
-    TABLE: "product_desc",
-    COLS: {
-      ID: "id",
-      VARIANT_ID: "variant_id",
+      SHORT_DESC: "short_desc",
       DESCRIPTION: "description",
       RULES: "rules",
       IMAGE_URL: "image_url",
-      SHORT_DESC: "short_desc",
-      UPDATED_AT: "updated_at",
+      PCT_CTV: "pct_ctv",
+      PCT_KHACH: "pct_khach",
+      PCT_PROMO: "pct_promo",
     },
   },
 
@@ -151,6 +133,24 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
+  /**
+   * Alias: product_desc đã gộp vào variant (description, image_url, short_desc, rules).
+   * Giữ entry riêng để các query LEFT JOIN PRODUCT_DESC vẫn hoạt động.
+   */
+  PRODUCT_DESC: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "variant",
+    COLS: {
+      ID: "id",
+      VARIANT_ID: "id",
+      DESCRIPTION: "description",
+      IMAGE_URL: "image_url",
+      SHORT_DESC: "short_desc",
+      RULES: "rules",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
   /** Materialized view: tổng số đã bán theo package */
   PRODUCT_SOLD_COUNT: {
     SCHEMA: SCHEMA_PRODUCT,
@@ -190,35 +190,23 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
-  /** Kho tài khoản (admin_orderlist) */
-  ACCOUNT_STORAGE: {
-    SCHEMA: SCHEMA_PRODUCT,
-    TABLE: "account_storage",
-    COLS: {
-      ID: "id",
-      USERNAME: "username",
-      PASSWORD: "password",
-      MAIL_2ND: "mail_2nd",
-      MAIL_FAMILY: "mail_family",
-      STORAGE: "storage",
-      NOTE: "note",
-    },
-  },
-
   /** Tồn kho sản phẩm (admin_orderlist) */
   PRODUCT_STOCK: {
     SCHEMA: SCHEMA_PRODUCT,
-    TABLE: "product_stock",
+    TABLE: "product_stocks",
     COLS: {
       ID: "id",
       PRODUCT_TYPE: "product_type",
       ACCOUNT_USERNAME: "account_username",
-      ACCOUNT_PASSWORD: "account_password",
       BACKUP_EMAIL: "backup_email",
-      TWO_FA_CODE: "two_fa_code",
+      PASSWORD_ENCRYPTED: "password_encrypted",
+      TWO_FA_ENCRYPTED: "two_fa_encrypted",
+      STATUS: "status",
+      EXPIRES_AT: "expires_at",
+      IS_VERIFIED: "is_verified",
       NOTE: "note",
-      STOCK_STATUS: "stock_status",
       CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
     },
   },
 
@@ -229,15 +217,13 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       PACKAGE_ID: "package_id",
-      USERNAME: "account_user",
-      PASSWORD: "account_pass",
-      MAIL_2ND: "recovery_mail",
-      NOTE: "note",
-      EXPIRED: "expiry_date",
       SUPPLIER: "supplier",
       COST: "cost",
       SLOT: "slot",
       MATCH: "match",
+      STOCK_ID: "stock_id",
+      STORAGE_ID: "storage_id",
+      STORAGE_TOTAL: "storage_total",
     },
   },
 
@@ -472,6 +458,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       BAN_REASON: "ban_reason",
       UPDATED_AT: "updated_at",
       CREATED_AT: "created_at",
+      ROLE_ID: "role_id",
+      MAIL_BACKUP_ID: "mail_backup_id",
     },
   },
 
@@ -615,8 +603,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       AMOUNT: "amount",
       BALANCE_BEFORE: "balance_before",
       BALANCE_AFTER: "balance_after",
+      PROMO_CODE: "promo_code",
       PROMOTION_ID: "promotion_id",
-      /** Tiền được giảm (số tiền gốc - giá khuyến mãi) khi mua có giảm giá. */
       BONUS_APPLIED: "bonus_applied",
       CREATED_AT: "created_at",
       METHOD: "method",
@@ -666,31 +654,58 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
 const t = (key: string) => `${DB_SCHEMA[key]!.SCHEMA}.${DB_SCHEMA[key]!.TABLE}`;
 
 export const TABLES = {
-  PRODUCT:          t("PRODUCT"),
-  VARIANT:          t("VARIANT"),
-  PRICE_CONFIG:     t("PRICE_CONFIG"),
-  PRODUCT_DESC:     t("PRODUCT_DESC"),
-  CATEGORY:         t("CATEGORY"),
-  PRODUCT_CATEGORY: t("PRODUCT_CATEGORY"),
-  SUPPLIER_COST:    t("SUPPLIER_COST"),
-  PRODUCT_SOLD_30D: t("PRODUCT_SOLD_30D"),
+  // Product
+  PRODUCT:            t("PRODUCT"),
+  VARIANT:            t("VARIANT"),
+  CATEGORY:           t("CATEGORY"),
+  PRODUCT_CATEGORY:   t("PRODUCT_CATEGORY"),
+  SUPPLIER_COST:      t("SUPPLIER_COST"),
+  PRODUCT_SOLD_30D:   t("PRODUCT_SOLD_30D"),
   PRODUCT_SOLD_COUNT: t("PRODUCT_SOLD_COUNT"),
   VARIANT_SOLD_COUNT: t("VARIANT_SOLD_COUNT"),
-  PRODUCTID_PAYMENT: t("PRODUCTID_PAYMENT"),
-  ACCOUNT_STORAGE:  t("ACCOUNT_STORAGE"),
-  PRODUCT_STOCK:    t("PRODUCT_STOCK"),
-  PACKAGE_PRODUCT:  t("PACKAGE_PRODUCT"),
-  SUPPLIER:         t("SUPPLIER"),
-  SUPPLIER_PAYMENTS: t("SUPPLIER_PAYMENTS"),
-  ORDER_LIST:       t("ORDER_LIST"),
-  ORDER_CUSTOMER:   t("ORDER_CUSTOMER"),
-  PAYMENT_RECEIPT:  t("PAYMENT_RECEIPT"),
-  REFUND:           t("REFUND"),
-  ADMIN_USERS:      t("ADMIN_USERS"),
-  MASTER_WALLET_TYPES: t("MASTER_WALLET_TYPES"),
+  PRODUCT_DESC:       t("PRODUCT_DESC"),
+  PRODUCTID_PAYMENT:  t("PRODUCTID_PAYMENT"),
+  PRODUCT_STOCK:      t("PRODUCT_STOCK"),
+  PACKAGE_PRODUCT:    t("PACKAGE_PRODUCT"),
+  // Partner / Supplier
+  SUPPLIER:           t("SUPPLIER"),
+  SUPPLIER_PAYMENTS:  t("SUPPLIER_PAYMENTS"),
+  // Orders
+  ORDER_LIST:         t("ORDER_LIST"),
+  ORDER_CUSTOMER:     t("ORDER_CUSTOMER"),
+  PAYMENT_RECEIPT:    t("PAYMENT_RECEIPT"),
+  REFUND:             t("REFUND"),
+  // Admin
+  ADMIN_USERS:        t("ADMIN_USERS"),
+  // Finance
+  MASTER_WALLET_TYPES:  t("MASTER_WALLET_TYPES"),
   TRANS_DAILY_BALANCES: t("TRANS_DAILY_BALANCES"),
-  SAVING_GOALS:     t("SAVING_GOALS"),
+  SAVING_GOALS:       t("SAVING_GOALS"),
+  // Promotion
   ACCOUNT_PROMOTIONS: t("ACCOUNT_PROMOTIONS"),
-  PROMOTION_CODES:  t("PROMOTION_CODES"),
-  REVIEW:           t("REVIEW"),
+  PROMOTION_CODES:    t("PROMOTION_CODES"),
+  // Form Desc
+  FORM_NAME:          t("FORM_NAME"),
+  FORM_INPUT:         t("FORM_INPUT"),
+  INPUTS:             t("INPUTS"),
+  // Identity
+  ACCOUNT:            t("ACCOUNT"),
+  PASSWORD_HISTORY:   t("PASSWORD_HISTORY"),
+  REFRESH_TOKEN:      t("REFRESH_TOKEN"),
+  // Customer
+  CUSTOMER_PROFILES:      t("CUSTOMER_PROFILES"),
+  CUSTOMER_SPEND_STATS:   t("CUSTOMER_SPEND_STATS"),
+  CUSTOMER_TYPE_HISTORY:  t("CUSTOMER_TYPE_HISTORY"),
+  CUSTOMER_TIERS:         t("CUSTOMER_TIERS"),
+  // Cycles
+  TIER_CYCLES:        t("TIER_CYCLES"),
+  // Cart
+  CART_ITEMS:         t("CART_ITEMS"),
+  // Wallet
+  WALLET:             t("WALLET"),
+  WALLET_TRANSACTION: t("WALLET_TRANSACTION"),
+  // Review
+  REVIEW:             t("REVIEW"),
+  // Audit
+  AUDIT_LOG:          t("AUDIT_LOG"),
 } as const;

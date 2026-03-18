@@ -36,31 +36,20 @@ export async function getProductsList() {
         p.package_name AS package,
         v.variant_name AS package_product,
         v.is_active AS is_active,
-        COALESCE(pc.pct_ctv, 0) AS pct_ctv,
-        COALESCE(pc.pct_khach, 0) AS pct_khach,
-        pc.pct_promo AS pct_promo,
-        (pc.pct_promo IS NOT NULL) AS has_promo,
+        COALESCE(v.pct_ctv, 0) AS pct_ctv,
+        COALESCE(v.pct_khach, 0) AS pct_khach,
+        v.pct_promo AS pct_promo,
+        (v.pct_promo IS NOT NULL) AS has_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
-        pd.description,
-        COALESCE(pd.image_url, p.image_url) AS image_url,
+        v.description,
+        COALESCE(v.image_url, p.image_url) AS image_url,
         p.created_at AS created_at
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
-      LEFT JOIN LATERAL (
-        SELECT
-          pc.pct_ctv,
-          pc.pct_khach,
-          pc.pct_promo
-        FROM ${TABLES.PRICE_CONFIG} pc
-        WHERE pc.variant_id = v.id
-        ORDER BY pc.updated_at DESC NULLS LAST
-        LIMIT 1
-      ) pc ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE p.package_name IS NOT NULL
         AND (p.is_active IS NULL OR p.is_active = true)
     ),

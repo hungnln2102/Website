@@ -31,7 +31,7 @@ export interface AddCartItemInput {
   accountId: string | number;
   variantId: string;
   quantity?: number;
-  /** retail | promo | ctv — dùng để lấy đúng giá từ price_config */
+  /** retail | promo | ctv — dùng để lấy đúng giá từ variant */
   priceType?: CartPriceType;
   /** Thông tin bổ sung: { "input_name": "value" } hoặc format cũ { additionalInfo, additionalInfoLabels }; sẽ chuẩn hóa trước khi lưu */
   extraInfo?: unknown;
@@ -205,7 +205,7 @@ export async function getCartItemCount(accountId: string | number): Promise<numb
   return Number(result[0]?.total || 0);
 }
 
-/** Item trả về cho FE: dữ liệu sản phẩm từ variant + price_config theo price_type */
+/** Item trả về cho FE: dữ liệu sản phẩm từ variant theo price_type */
 export interface CartItemEnriched {
   id: string;
   variantId: string;
@@ -237,7 +237,7 @@ function toNum(v: unknown): number {
 }
 
 /**
- * Cart items kèm tên/giá/hình từ variant + price_config (giá theo price_type).
+ * Cart items kèm tên/giá/hình từ variant (giá theo price_type).
  * Đối chiếu: cart_items.variant_id → supplier_cost.variant_id để lấy price_max.
  */
 export async function getCartItemsEnriched(accountId: string | number): Promise<CartItemEnriched[]> {
@@ -271,15 +271,11 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
        c.id, c.variant_id, c.quantity, COALESCE(c.price_type, 'retail') AS price_type, c.extra_info, c.created_at, c.updated_at,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       pd.image_url, pd.description, pd.rules AS purchase_rules,
-       COALESCE(pc.pct_ctv, 0) AS pct_ctv, COALESCE(pc.pct_khach, 0) AS pct_khach, pc.pct_promo,
+       v.image_url, v.description, v.rules AS purchase_rules,
+       COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${CART_FULL} c
      LEFT JOIN ${schema}.variant v ON v.id::text = c.variant_id::text
-     LEFT JOIN ${schema}.product_desc pd ON pd.variant_id = v.id
-     LEFT JOIN LATERAL (
-       SELECT pct_ctv, pct_khach, pct_promo FROM ${schema}.price_config WHERE variant_id::text = c.variant_id::text ORDER BY updated_at DESC NULLS LAST LIMIT 1
-     ) pc ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = (v.id)::int
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max
@@ -400,14 +396,10 @@ export async function getVariantProductData(
        v.id AS variant_id,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       pd.image_url, pd.description, pd.rules AS purchase_rules,
-       COALESCE(pc.pct_ctv, 0) AS pct_ctv, COALESCE(pc.pct_khach, 0) AS pct_khach, pc.pct_promo,
+       v.image_url, v.description, v.rules AS purchase_rules,
+       COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${schema}.variant v
-     LEFT JOIN ${schema}.product_desc pd ON pd.variant_id = v.id
-     LEFT JOIN LATERAL (
-       SELECT pct_ctv, pct_khach, pct_promo FROM ${schema}.price_config WHERE variant_id = v.id ORDER BY updated_at DESC NULLS LAST LIMIT 1
-     ) pc ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = v.id
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max

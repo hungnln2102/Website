@@ -13,8 +13,11 @@ const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WAL
 const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 
-/** Prefix id_order: MAVL (khách lẻ), MAVC (CTV), MAVK (Deal Sốc). */
-export type IdOrderPrefix = "MAVL" | "MAVC" | "MAVK";
+/**
+ * Prefix id_order — đồng bộ với admin_orderlist/backend/src/services/orderCodeService.js.
+ * MAVL (khách lẻ), MAVC (CTV), MAVK (Deal Sốc), MAVT (Quà Tặng), MAVN (Nhập Hàng), MAVS (Sinh Viên).
+ */
+export type IdOrderPrefix = "MAVL" | "MAVC" | "MAVK" | "MAVT" | "MAVN" | "MAVS";
 
 /** Sinh mã giao dịch MAVP... (dùng cho wallet_transaction.transaction_id). */
 export function generateMavpTransactionId(): string {
@@ -23,11 +26,14 @@ export function generateMavpTransactionId(): string {
   return `MAVP${n}${r}`.slice(0, 16);
 }
 
-/** Sinh một id_order duy nhất (MAVL/MAVC/MAVK + timestamp + random). */
+/**
+ * Sinh một id_order duy nhất: PREFIX(4) + TIMESTAMP(6) + RANDOM(6) = 16 chars.
+ * Algorithm đồng bộ với admin_orderlist/backend/src/services/orderCodeService.js
+ */
 export function generateUniqueIdOrder(prefix: IdOrderPrefix): string {
   const r = Math.random().toString(36).slice(2, 8).toUpperCase();
   const n = String(Date.now()).slice(-6);
-  return `${prefix}${n}${r}`.slice(0, 32);
+  return `${prefix}${n}${r}`.slice(0, 16);
 }
 
 /**

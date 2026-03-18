@@ -29,26 +29,18 @@ export async function getProductPackages(packageName: string) {
         v.updated_at AS created_at,
         v.is_active AS is_active,
         v.form_id AS form_id,
-        COALESCE(pc.pct_ctv, 0) AS pct_ctv,
-        COALESCE(pc.pct_khach, 0) AS pct_khach,
-        pc.pct_promo,
+        COALESCE(v.pct_ctv, 0) AS pct_ctv,
+        COALESCE(v.pct_khach, 0) AS pct_khach,
+        v.pct_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sold_count_30d,
-        pd.description,
-        pd.image_url,
-        pd.rules as purchase_rules
+        v.description,
+        v.image_url,
+        v.rules as purchase_rules
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
-      LEFT JOIN LATERAL (
-        SELECT pc.pct_ctv, pc.pct_khach, pc.pct_promo
-        FROM ${TABLES.PRICE_CONFIG} pc
-        WHERE pc.variant_id = v.id
-        ORDER BY pc.updated_at DESC NULLS LAST
-        LIMIT 1
-      ) pc ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
-      LEFT JOIN ${TABLES.PRODUCT_DESC} pd ON pd.variant_id = v.id
       WHERE p.package_name ILIKE $1
         AND (p.is_active IS NULL OR p.is_active = true)
     )

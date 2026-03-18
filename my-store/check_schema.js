@@ -9,7 +9,7 @@ const pool = new pg.Pool({
 
 async function run() {
   try {
-    const tables = ['product.product', 'product.variant', 'product.price_config', 'product.product_desc', 'product.supplier_cost'];
+    const tables = ['product.product', 'product.variant', 'product.supplier_cost'];
     
     for (const table of tables) {
       console.log(`\nColumns for table: ${table}`);
