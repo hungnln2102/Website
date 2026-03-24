@@ -8,10 +8,10 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 /** Use Redis store when REDIS_URL or REDIS_HOST is set in production */
 const useRedis = process.env.NODE_ENV === 'production' && !!(REDIS_URL || process.env.REDIS_HOST);
 
-let redisStore: RedisStore | undefined;
+let redisClient: Redis | undefined;
 if (useRedis) {
   try {
-    const client = REDIS_URL
+    redisClient = REDIS_URL
       ? new Redis(REDIS_URL)
       : new Redis({
           host: REDIS_HOST,
@@ -20,19 +20,26 @@ if (useRedis) {
           db: parseInt(process.env.REDIS_DB || '0', 10),
           maxRetriesPerRequest: 3,
         });
-    redisStore = new RedisStore({
-      sendCommand: (command: string, ...args: string[]) =>
-        client.call(command, ...args) as Promise<number>,
-    });
   } catch {
-    redisStore = undefined;
+    redisClient = undefined;
   }
 }
 
-function createLimiter(baseOptions: Parameters<typeof rateLimit>[0]) {
+function createRedisStore(prefix: string): RedisStore | undefined {
+  if (!redisClient) return undefined;
+
+  return new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      redisClient!.call(command, ...args) as Promise<number>,
+    prefix,
+  });
+}
+
+function createLimiter(name: string, baseOptions: Parameters<typeof rateLimit>[0]) {
+  const store = createRedisStore(`rl:${name}:`);
   return rateLimit({
     ...baseOptions,
-    ...(redisStore && { store: redisStore }),
+    ...(store && { store }),
   });
 }
 
@@ -41,7 +48,7 @@ function createLimiter(baseOptions: Parameters<typeof rateLimit>[0]) {
  * Allows 1000 requests per 15 minutes per IP (increased for development)
  * Uses Redis store in production when REDIS_URL or REDIS_HOST is set
  */
-export const generalLimiter = createLimiter({
+export const generalLimiter = createLimiter('general', {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per windowMs
   message: {
@@ -63,7 +70,7 @@ export const generalLimiter = createLimiter({
  * Strict rate limiter for data-heavy endpoints
  * Allows 10 requests per 15 minutes per IP
  */
-export const strictLimiter = createLimiter({
+export const strictLimiter = createLimiter('strict', {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit each IP to 10 requests per windowMs
   message: {
@@ -78,7 +85,7 @@ export const strictLimiter = createLimiter({
  * Very strict rate limiter for sensitive operations
  * Allows 5 requests per 15 minutes per IP
  */
-export const veryStrictLimiter = createLimiter({
+export const veryStrictLimiter = createLimiter('very-strict', {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 requests per windowMs
   message: {
@@ -93,7 +100,7 @@ export const veryStrictLimiter = createLimiter({
  * Auth rate limiter for login/register - brute force protection
  * Allows 5 attempts per 15 minutes per IP
  */
-export const authLimiter = createLimiter({
+export const authLimiter = createLimiter('auth', {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 login/register attempts per 15 minutes
   message: {
@@ -109,7 +116,7 @@ export const authLimiter = createLimiter({
  * Check user rate limiter - prevent username/email enumeration
  * Allows 10 checks per 5 minutes per IP
  */
-export const checkUserLimiter = createLimiter({
+export const checkUserLimiter = createLimiter('check-user', {
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 10,
   message: {
