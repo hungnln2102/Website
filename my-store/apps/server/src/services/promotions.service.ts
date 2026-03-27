@@ -30,7 +30,8 @@ export async function getPromotionsList() {
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       WHERE (p.is_active IS NULL OR p.is_active = true)
         AND (v.is_active IS NULL OR v.is_active = true)
-        AND v.pct_promo IS NOT NULL AND v.pct_promo > 0
+        AND v.pct_promo IS NOT NULL
+        AND v.pct_promo > 0
     )
     SELECT
       product_id,
@@ -55,7 +56,7 @@ export async function getPromotionsList() {
     const name =
       (rowSummary.package_product as string) ||
       (rowSummary.package as string) ||
-      "Khuyen mai";
+      "Khuyến mãi";
     const basePrice = toNumber(rowSummary.sale_price);
     const discountPctRaw = toNumber(rowSummary.pct_promo);
     const discountPct = discountPctRaw > 1 ? discountPctRaw : discountPctRaw * 100;
@@ -66,6 +67,7 @@ export async function getPromotionsList() {
       slug: slugify((rowSummary.package as string) || String(rowSummary.product_id)),
       name,
       package: (rowSummary.package as string) ?? "",
+      package_product: (rowSummary.package_product as string) ?? null,
       id_product: rowSummary.id_product,
       description:
         stripHtml((rowSummary.description as string) ?? null) || "Khuyến mãi đặc biệt",

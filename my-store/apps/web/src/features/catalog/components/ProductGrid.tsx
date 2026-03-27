@@ -8,6 +8,8 @@ import { ProductCardSkeleton } from "@/components/ui/skeleton";
 interface Product {
   id: string;
   name: string;
+  package: string;
+  package_product?: string | null;
   slug: string;
   description?: string | null;
   base_price: number;

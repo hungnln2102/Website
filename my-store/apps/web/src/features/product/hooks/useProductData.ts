@@ -3,11 +3,22 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProductPackages, fetchProducts, fetchProductInfo, fetchCategories, type CategoryDto } from "@/lib/api";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { productsMock, productPackagesMock, reviewsMock } from "@/lib/mockData";
+import { slugify } from "@/lib/utils";
 import { parseDurationToken } from "../utils";
 import type { DurationOption } from "../components/DurationSelector";
 
-export function useProductData(slug: string, selectedPackage: string | null) {
+export function useProductData(
+  slug: string,
+  selectedPackage: string | null,
+  selectedDuration: string | null
+) {
   const queryClient = useQueryClient();
+
+  const legacyPackageQuery = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("package")?.trim() || null;
+  }, []);
 
   // Fetch all products
   const {
@@ -26,10 +37,33 @@ export function useProductData(slug: string, selectedPackage: string | null) {
   });
 
   // Find current product
-  const productData = useMemo(
-    () => allProducts.find((p) => p.slug === slug) ?? null,
-    [allProducts, slug]
-  );
+  const productData = useMemo(() => {
+    const exactMatch = allProducts.find((p) => p.slug === slug) ?? null;
+    if (exactMatch) return exactMatch;
+
+    const normalizedTargets = [legacyPackageQuery, slug]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .map((value) => slugify(value));
+
+    if (normalizedTargets.length === 0) return null;
+
+    return (
+      allProducts.find((product) => {
+        const productKeys = [product.slug, product.name, product.package]
+          .filter((value): value is string => Boolean(value?.trim()))
+          .map((value) => slugify(value));
+
+        return normalizedTargets.some((target) =>
+          productKeys.some(
+            (key) =>
+              key === target ||
+              key.includes(target) ||
+              target.includes(key)
+          )
+        );
+      }) ?? null
+    );
+  }, [allProducts, legacyPackageQuery, slug]);
 
   // Fetch packages
   const {
@@ -44,13 +78,36 @@ export function useProductData(slug: string, selectedPackage: string | null) {
     enabled: !!productData?.package,
   });
 
+  const matchedPackageVariant = useMemo(() => {
+    if (!selectedPackage || !selectedDuration || packageData.length === 0) {
+      return null;
+    }
+
+    const normalizedPackageKey = selectedPackage.trim().toLowerCase();
+
+    return (
+      packageData.find((pkg) => {
+        const packageKey = (pkg.package_product ?? pkg.package ?? "")
+          .trim()
+          .toLowerCase();
+
+        return (
+          packageKey === normalizedPackageKey &&
+          parseDurationToken(pkg.id_product)?.key === selectedDuration
+        );
+      }) ?? null
+    );
+  }, [packageData, selectedDuration, selectedPackage]);
+
   // Extract base_name for product info
   const baseName = useMemo(() => {
-    if (packageData.length === 0) return null;
-    const firstItem = packageData[0];
-    const idProduct = firstItem.id_product || firstItem.package_product || "";
+    const idProduct =
+      matchedPackageVariant?.id_product ||
+      matchedPackageVariant?.package_product ||
+      "";
+
     return idProduct.split("--")[0] || null;
-  }, [packageData]);
+  }, [matchedPackageVariant]);
 
   // Fetch product info
   const {
@@ -74,14 +131,17 @@ export function useProductData(slug: string, selectedPackage: string | null) {
             name: productData.name,
             slug: productData.slug,
             description: productData.description,
-            full_description: null,
+            short_description: productData.short_description ?? null,
+            full_description: productData.full_description ?? null,
+            seo_title: productData.seo_title ?? null,
+            image_alt: productData.image_alt ?? null,
             base_price: productData.base_price ?? 0,
             image_url: productData.image_url,
             is_featured: false,
             discount_percentage: productData.discount_percentage ?? 0,
             sales_count: productData.sales_count ?? 0,
             average_rating: productData.average_rating ?? 0,
-            purchase_rules: null,
+            purchase_rules: productData.purchase_rules ?? null,
             created_at: new Date().toISOString(),
           }
         : null,
@@ -117,6 +177,7 @@ export function useProductData(slug: string, selectedPackage: string | null) {
             created_at: createdAt,
             sold_count_30d: existing ? Math.max(existing.sold_count_30d || 0, soldCount30d) : soldCount30d,
             has_promo: existing ? existing.has_promo || pctPromo > 0 : pctPromo > 0,
+            short_description: pkg.short_description || existing?.short_description || null,
             image_url: pkg.image_url || existing?.image_url || null,
             description: pkg.description || existing?.description || null,
             purchase_rules: pkg.purchase_rules || existing?.purchase_rules || null,
@@ -126,6 +187,9 @@ export function useProductData(slug: string, selectedPackage: string | null) {
           existing.has_promo = existing.has_promo || pctPromo > 0;
           if (createdAt && (!existing.created_at || new Date(createdAt) < new Date(existing.created_at))) {
             existing.created_at = createdAt;
+          }
+          if (!existing.short_description && pkg.short_description) {
+            existing.short_description = pkg.short_description;
           }
           if (!existing.image_url && pkg.image_url) existing.image_url = pkg.image_url;
           if (!existing.description && pkg.description) existing.description = pkg.description;
@@ -212,19 +276,60 @@ export function useProductData(slug: string, selectedPackage: string | null) {
 
   // Selected package info
   const selectedPackageImageUrl = useMemo(() => {
-    if (!selectedPackage || !packages.length) return null;
+    if (matchedPackageVariant?.image_url) {
+      return matchedPackageVariant.image_url;
+    }
+
+    if (!selectedPackage || !selectedDuration || packageData.length > 0) {
+      return null;
+    }
+
     const pkg = packages.find((p: any) => p.id === selectedPackage);
     return pkg?.image_url || null;
-  }, [selectedPackage, packages]);
+  }, [
+    matchedPackageVariant,
+    packageData.length,
+    packages,
+    selectedDuration,
+    selectedPackage,
+  ]);
 
   const selectedPackageInfo = useMemo(() => {
-    if (!selectedPackage || !packages.length) return { description: null, purchase_rules: null };
+    if (!selectedPackage) {
+      return {
+        short_description: null,
+        description: null,
+        purchase_rules: null,
+        seo_heading: null,
+      };
+    }
+
+    if (matchedPackageVariant) {
+      return {
+        short_description: matchedPackageVariant.short_description || null,
+        description: matchedPackageVariant.description || null,
+        purchase_rules: matchedPackageVariant.purchase_rules || null,
+        seo_heading: matchedPackageVariant.seo_heading || null,
+      };
+    }
+
+    if (!selectedDuration || packageData.length > 0) {
+      return {
+        short_description: null,
+        description: null,
+        purchase_rules: null,
+        seo_heading: null,
+      };
+    }
+
     const pkg = packages.find((p: any) => p.id === selectedPackage);
     return {
+      short_description: pkg?.short_description || null,
       description: pkg?.description || null,
       purchase_rules: pkg?.purchase_rules || null,
+      seo_heading: pkg?.seo_heading || null,
     };
-  }, [selectedPackage, packages]);
+  }, [matchedPackageVariant, packageData.length, packages, selectedDuration, selectedPackage]);
 
   // Reviews
   const reviews = product ? reviewsMock.filter((r) => r.product_id === product.id) : [];

@@ -110,9 +110,7 @@ export function invalidateCache(req: Request, res: Response): void {
   const keysParam = (req.query.keys as string | undefined)?.trim();
 
   if (!keysParam) {
-    cache.delete(CACHE_KEYS.products);
-    cache.delete(CACHE_KEYS.promotions);
-    cache.delete(CACHE_KEYS.categories);
+    cache.clear();
     console.log("[cache] invalidated ALL product caches");
     res.json({ message: "All product caches invalidated" });
     return;
@@ -123,6 +121,8 @@ export function invalidateCache(req: Request, res: Response): void {
     if (k === "products") cache.delete(CACHE_KEYS.products);
     else if (k === "promotions") cache.delete(CACHE_KEYS.promotions);
     else if (k === "categories") cache.delete(CACHE_KEYS.categories);
+    else if (k === "all") cache.clear();
+    else if (k.startsWith("packages:")) cache.delete(k);
   }
   console.log(`[cache] invalidated: ${keys.join(", ")}`);
   res.json({ message: `Caches invalidated: ${keys.join(", ")}` });

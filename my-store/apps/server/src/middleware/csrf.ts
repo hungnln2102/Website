@@ -47,6 +47,7 @@ const EXEMPT_PATHS = [
   // Order API – Bot Telegram xác thực bằng X-Api-Key (NOTIFY_ORDER_API_KEY)
   "/orders/notify-done",
   "/orders/cancel",
+  "/seo/product-audit",
   // Topup test endpoint (development only)
   "/topup/test",
 ];

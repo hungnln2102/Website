@@ -7,7 +7,13 @@ export type ProductDto = {
   slug: string;
   name: string;
   package: string;
+  package_product?: string | null;
   description: string;
+  short_description?: string | null;
+  full_description?: string | null;
+  purchase_rules?: string | null;
+  seo_title?: string | null;
+  image_alt?: string | null;
   image_url: string;
   base_price: number;
   discount_percentage: number;
@@ -33,9 +39,13 @@ export type ProductPackageDto = {
   id_product?: string | null;
   cost: number;
   pct_promo?: number;
+  short_description?: string | null;
   description?: string | null;
   image_url?: string | null;
   purchase_rules?: string | null;
+  seo_heading?: string | null;
+  seo_title?: string | null;
+  seo_slug?: string | null;
   created_at?: string | null;
   sold_count_30d?: number;
   is_active?: boolean;
@@ -57,14 +67,23 @@ export type VariantDetailDto = {
   product_id: number;
   base_name: string;
   duration: string;
+  short_description?: string | null;
   description: string | null;
+  purchase_rules?: string | null;
+  seo_heading?: string | null;
+  seo_title?: string | null;
+  seo_slug?: string | null;
   image_url: string | null;
   sold_count: number;
 };
 
 export type ProductInfoDto = {
   base_name: string;
+  short_description?: string | null;
   description: string | null;
+  seo_heading?: string | null;
+  seo_title?: string | null;
+  seo_slug?: string | null;
   image_url: string | null;
   purchase_rules: string | null;
   total_sold_count: number;

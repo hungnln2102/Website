@@ -38,6 +38,8 @@ export default function NewProductsPage({
         .map((p) => ({
           id: String(p.id),
           name: p.name,
+          package: p.package,
+          package_product: p.package_product ?? null,
           slug: p.slug || slugify(p.name),
           description: p.description || null,
           base_price: p.base_price ?? 0,

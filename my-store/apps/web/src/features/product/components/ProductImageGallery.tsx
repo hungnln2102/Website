@@ -3,6 +3,7 @@
 interface ProductImageGalleryProps {
   imageUrl: string | null;
   productName: string;
+  altText?: string | null;
   selectedPackage?: string | null;
   description?: string | null;
   hasCustomImage?: boolean;
@@ -11,21 +12,24 @@ interface ProductImageGalleryProps {
 export function ProductImageGallery({
   imageUrl,
   productName,
+  altText,
   selectedPackage,
   description,
 }: ProductImageGalleryProps) {
-  const altText = `Hình ảnh chi tiết sản phẩm ${productName}${
-    selectedPackage ? ` - ${selectedPackage}` : ""
-  }${description ? ` - ${description.substring(0, 150)}` : ""}`;
+  const resolvedAltText =
+    altText ||
+    `Hình ảnh chi tiết sản phẩm ${productName}${
+      selectedPackage ? ` - ${selectedPackage}` : ""
+    }${description ? ` - ${description.substring(0, 150)}` : ""}`;
 
   return (
-    <div className="group relative mx-auto w-full max-w-md flex items-center justify-center h-[400px]">
+    <div className="group relative mx-auto flex h-[400px] w-full max-w-md items-center justify-center">
       <img
         src={imageUrl || "https://placehold.co/400x400?text=No+Image"}
-        alt={altText}
+        alt={resolvedAltText}
         loading="lazy"
         decoding="async"
-        className="max-w-full max-h-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+        className="max-h-full max-w-full rounded-xl object-contain transition-transform duration-500 group-hover:scale-[1.02]"
       />
     </div>
   );

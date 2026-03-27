@@ -3,13 +3,20 @@
 import { Star, Shield, Package, Users } from "lucide-react";
 
 interface ProductInfoProps {
-  name: string;
+  heading: string;
+  summary: string;
   averageRating: number;
   reviewCount: number;
   salesCount: number;
 }
 
-export function ProductInfo({ name, averageRating, reviewCount, salesCount }: ProductInfoProps) {
+export function ProductInfo({
+  heading,
+  summary,
+  averageRating,
+  reviewCount,
+  salesCount,
+}: ProductInfoProps) {
   const features = [
     { icon: Shield, label: "Bản quyền chính hãng", color: "text-blue-600" },
     { icon: Package, label: "Hỗ trợ cài đặt", color: "text-indigo-600" },
@@ -18,9 +25,13 @@ export function ProductInfo({ name, averageRating, reviewCount, salesCount }: Pr
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-md dark:border-slate-700/50 dark:bg-slate-800/80">
-      <h1 className="mb-2 text-base font-bold tracking-tight text-gray-900 dark:text-white">
-        {name}
-      </h1>
+      <h1 className="sr-only">{heading}</h1>
+      <h2 className="mb-2 text-base font-bold tracking-tight text-gray-900 dark:text-white">
+        Chi tiết sản phẩm
+      </h2>
+      <p className="mb-3 line-clamp-3 text-[15px] font-medium leading-6 text-gray-700 dark:text-slate-200">
+        {summary}
+      </p>
 
       {/* Rating and Sales */}
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-gray-100 pb-3 dark:border-slate-700">

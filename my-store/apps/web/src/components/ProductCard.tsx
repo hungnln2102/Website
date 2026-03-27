@@ -10,6 +10,8 @@ import ProductTag from "@/components/ProductTag";
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
 type ProductCardProps = Product & {
+  package?: string | null;
+  package_product?: string | null;
   package_count?: number;
   /** Giá hiển thị "Từ X đ": bỏ qua 0đ, lấy giá tiếp theo. Nếu 0 thì hiển thị "Liên Hệ". */
   from_price?: number;
@@ -84,7 +86,7 @@ export default function ProductCard({
         </div>
 
         <div className="p-3">
-          <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
+          <h3 className="product-card__title product-card__title--minimal mb-1 text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
             {name}
           </h3>
           {!hidePriceAndDescription && shortDescription && (
@@ -184,8 +186,8 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-1 flex min-h-[36px] items-start justify-between gap-1 md:mb-1.5">
-            <h3 className={`flex-1 line-clamp-2 text-[15px] font-semibold tracking-tight text-gray-800 transition-colors drop-shadow-sm ${titleHover} dark:text-slate-200 md:text-base [text-shadow:0_0_1px_rgba(255,255,255,0.3)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.2)]`}>
+          <div className="mb-1.5 flex min-h-[44px] items-start justify-between gap-1 md:mb-2">
+            <h3 className={`product-card__title product-card__title--default flex-1 text-gray-800 transition-colors ${titleHover} dark:text-slate-200`}>
               {name}
             </h3>
           </div>

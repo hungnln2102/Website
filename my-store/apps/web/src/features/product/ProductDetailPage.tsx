@@ -1,35 +1,40 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Footer from "@/components/Footer";
-import { ErrorMessage } from "@/components/ui/error-message";
 import MenuBar from "@/components/MenuBar";
 import SiteHeader from "@/components/SiteHeader";
-import { MetaTags } from "@/components/SEO";
-import { useScroll } from "@/hooks/useScroll";
-import { slugify } from "@/lib/utils";
-import { fetchFormFields, type CategoryDto } from "@/lib/api";
+import { MetaTags, StructuredData } from "@/components/SEO";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { useAuth } from "@/features/auth/hooks";
+import { useScroll } from "@/hooks/useScroll";
+import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
+import { generateProductSchema } from "@/lib/seo";
+import { slugify } from "@/lib/utils";
 
 import { useProductData, useProductDetailState } from "./hooks";
 import {
-  ProductLoadingSkeleton,
-  ProductNotFound,
+  META_DESCRIPTION_FALLBACK,
+  getCustomerFacingDescription,
+  isInternalProductPlaceholder,
+} from "./utils/contentPresentation";
+import {
+  AdditionalInfoSection,
+  BuyButton,
+  DurationSelector,
+  PackageSelector,
+  ProductDescription,
   ProductImageGallery,
   ProductInfo,
-  PackageSelector,
-  DurationSelector,
-  AdditionalInfoSection,
-  getDefaultAdditionalInfo,
-  isAdditionalInfoValid,
-  BuyButton,
-  ProductDescription,
-  ReviewSection,
+  ProductLoadingSkeleton,
+  ProductNotFound,
   PurchasePolicy,
   RelatedProducts,
+  ReviewSection,
+  isAdditionalInfoValid,
 } from "./components";
 
 interface ProductDetailPageProps {
@@ -77,35 +82,40 @@ export default function ProductDetailPage({
     handleRetryProducts,
     handleRetryPackages,
     handleRetryProductInfo,
-  } = useProductData(slug, selectedPackage);
+  } = useProductData(slug, selectedPackage, selectedDuration);
 
-  // Get selected duration data
   const selectedDurationData = useMemo(
     () => durationOptions.find((option) => option.key === selectedDuration) || null,
     [durationOptions, selectedDuration]
   );
+  const hasSelectedVariant = Boolean(selectedPackage && selectedDuration);
+  const variantSelectionPrompt = selectedPackage
+    ? "\u0043h\u1ecdn th\u1eddi h\u1ea1n s\u1eed d\u1ee5ng \u0111\u1ec3 xem \u0111\u00fang th\u00f4ng tin c\u1ee7a bi\u1ebfn th\u1ec3 n\u00e0y."
+    : "\u0043h\u1ecdn g\u00f3i s\u1ea3n ph\u1ea9m v\u00e0 th\u1eddi h\u1ea1n s\u1eed d\u1ee5ng \u0111\u1ec3 xem \u0111\u00fang th\u00f4ng tin c\u1ee7a bi\u1ebfn th\u1ec3 n\u00e0y.";
 
-  // form_id: chỉ lấy khi đã chọn thời gian → form thông tin bổ sung đúng với variant (gói + thời gian)
   const formId = selectedDuration ? (selectedDurationData?.form_id ?? null) : null;
   const { data: formFieldsData } = useQuery({
     queryKey: ["form-fields", formId],
     queryFn: () => fetchFormFields(formId!),
     enabled: !!formId && formId > 0,
   });
-  const formData = formFieldsData?.success && formFieldsData?.data ? formFieldsData.data : null;
+  const formData =
+    formFieldsData?.success && formFieldsData?.data ? formFieldsData.data : null;
 
   useEffect(() => {
     resetAdditionalInfoForForm(formId);
-  }, [selectedPackage, selectedDuration, formId, resetAdditionalInfoForForm]);
+  }, [formId, resetAdditionalInfoForForm, selectedDuration, selectedPackage]);
 
-  // Bỏ chọn gói nếu gói đó không còn thời hạn nào khả dụng (đều hết hàng)
   useEffect(() => {
     if (!selectedPackage || packages.length === 0) return;
-    const pkg = packages.find((p: { id: string; has_available_duration?: boolean }) => p.id === selectedPackage);
+    const pkg = packages.find(
+      (item: { id: string; has_available_duration?: boolean }) =>
+        item.id === selectedPackage
+    );
     if (pkg && pkg.has_available_duration === false) {
       handlePackageSelect(null);
     }
-  }, [selectedPackage, packages, handlePackageSelect]);
+  }, [handlePackageSelect, packages, selectedPackage]);
 
   const seoMetadata = useMemo(() => {
     if (!product) {
@@ -116,38 +126,84 @@ export default function ProductDetailPage({
       };
     }
 
-    const title = `${product.name} - ${APP_CONFIG.name}`;
-    const description =
-      product.description ||
-      `Mua ${product.name} chính hãng, giá tốt tại ${APP_CONFIG.name}. ${APP_CONFIG.description}`;
-
-    const url = `${APP_CONFIG.url}/${encodeURIComponent(product.slug)}`;
-
     return {
-      title,
-      description,
-      url,
+      title:
+        (product as { seo_title?: string | null }).seo_title ||
+        `${product.name} | ${APP_CONFIG.name}`,
+      description:
+        product.description && !isInternalProductPlaceholder(product.description)
+          ? product.description
+          : META_DESCRIPTION_FALLBACK,
+      url: `${APP_CONFIG.url}/${encodeURIComponent(product.slug)}`,
       image: product.image_url || `${APP_CONFIG.url}/favicon.png`,
       type: "product" as const,
     };
   }, [product]);
 
-  // Show loading state
+  const seoHeading =
+    (hasSelectedVariant ? selectedPackageInfo.seo_heading : null) ||
+    (hasSelectedVariant ? selectedPackage : null) ||
+    product?.name ||
+    "Chi tiết sản phẩm";
+
+  const detailDescriptionHtml = hasSelectedVariant
+    ? selectedPackageInfo.description || null
+    : null;
+
+  const detailPolicyHtml = hasSelectedVariant
+    ? selectedPackageInfo.purchase_rules || null
+    : null;
+
+  const imageAltText =
+    (product as { image_alt?: string | null } | null)?.image_alt ||
+    product?.description ||
+    product?.name ||
+    "Hình ảnh sản phẩm";
+
+  const activeImageUrl = selectedPackageImageUrl || product?.image_url || null;
+
+  const productSummarySource =
+    !hasSelectedVariant
+      ? variantSelectionPrompt
+      : !isInternalProductPlaceholder(selectedPackageInfo.short_description)
+      ? selectedPackageInfo.short_description
+      : null;
+
+  const productSummary = productSummarySource
+    ? getCustomerFacingDescription(productSummarySource)
+    : "Thông tin ngắn về sản phẩm đang được cập nhật.";
+
+  const productSchema = useMemo(() => {
+    if (!product) return null;
+
+    return generateProductSchema({
+      name: product.name,
+      description: product.description || undefined,
+      image: activeImageUrl || undefined,
+      price: selectedDurationData?.price ?? product.base_price ?? 0,
+      brand: APP_CONFIG.name,
+    });
+  }, [activeImageUrl, product, selectedDurationData]);
+
   if (loading) {
     return <ProductLoadingSkeleton />;
   }
 
-  // Show not found state
   if (!product) {
     return (
-      <ProductNotFound error={productsError} onRetry={handleRetryProducts} onBack={onBack} />
+      <ProductNotFound
+        error={productsError}
+        onRetry={handleRetryProducts}
+        onBack={onBack}
+      />
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <MetaTags metadata={seoMetadata} />
-      {/* Header */}
+      {productSchema ? <StructuredData data={productSchema} /> : null}
+
       <div
         className={`sticky top-0 z-50 transition-all duration-500 ${
           isScrolled ? "shadow-xl shadow-blue-900/5 backdrop-blur-xl" : ""
@@ -159,22 +215,22 @@ export default function ProductDetailPage({
           onSearchChange={setSearchQuery}
           onLogoClick={onBack}
           searchPlaceholder="Tìm kiếm sản phẩm..."
-          products={allProducts.map((p) => ({
-            id: String(p.id),
-            name: p.name,
-            slug: p.slug,
-            image_url: p.image_url,
-            base_price: p.base_price ?? 0,
-            discount_percentage: p.discount_percentage ?? 0,
+          products={allProducts.map((item) => ({
+            id: String(item.id),
+            name: item.name,
+            slug: item.slug,
+            image_url: item.image_url,
+            base_price: item.base_price ?? 0,
+            discount_percentage: item.discount_percentage ?? 0,
           }))}
-          categories={categories.map((c: CategoryDto) => ({
-            id: String(c.id),
-            name: c.name,
-            slug: slugify(c.name),
+          categories={categories.map((category: CategoryDto) => ({
+            id: String(category.id),
+            name: category.name,
+            slug: slugify(category.name),
           }))}
           onProductClick={onProductClick}
-          onCategoryClick={(catSlug) => {
-            window.history.pushState({}, "", ROUTES.category(catSlug));
+          onCategoryClick={(categorySlug) => {
+            window.history.pushState({}, "", ROUTES.category(categorySlug));
             window.dispatchEvent(new Event("popstate"));
           }}
           user={user}
@@ -182,83 +238,90 @@ export default function ProductDetailPage({
         />
         <MenuBar
           isScrolled={isScrolled}
-          categories={categories.map((c: CategoryDto) => ({
-            id: String(c.id),
-            name: c.name,
-            slug: slugify(c.name),
+          categories={categories.map((category: CategoryDto) => ({
+            id: String(category.id),
+            name: category.name,
+            slug: slugify(category.name),
             icon: null,
           }))}
           selectedCategory={null}
-          onSelectCategory={(catSlug) => {
-            if (catSlug) {
-              window.history.pushState({}, "", ROUTES.category(catSlug));
-              window.dispatchEvent(new Event("popstate"));
-            }
+          onSelectCategory={(categorySlug) => {
+            if (!categorySlug) return;
+            window.history.pushState({}, "", ROUTES.category(categorySlug));
+            window.dispatchEvent(new Event("popstate"));
           }}
         />
       </div>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
-        {/* Back Button */}
         <div className="mb-4 flex items-center">
           <button
             onClick={onBack}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Quay về</span>
           </button>
         </div>
 
-        {/* Error States */}
-        {productsError && (
-          <ErrorMessage title="Lỗi tải sản phẩm" message={productsError} onRetry={handleRetryProducts} className="mb-4" />
-        )}
-        {packagesError && (
-          <ErrorMessage title="Lỗi tải gói sản phẩm" message={packagesError} onRetry={handleRetryPackages} className="mb-4" />
-        )}
-        {productInfoError && (
-          <ErrorMessage title="Lỗi tải thông tin chi tiết" message={productInfoError} onRetry={handleRetryProductInfo} className="mb-4" />
-        )}
+        {productsError ? (
+          <ErrorMessage
+            title="Lỗi tải sản phẩm"
+            message={productsError}
+            onRetry={handleRetryProducts}
+            className="mb-4"
+          />
+        ) : null}
+        {packagesError ? (
+          <ErrorMessage
+            title="Lỗi tải gói sản phẩm"
+            message={packagesError}
+            onRetry={handleRetryPackages}
+            className="mb-4"
+          />
+        ) : null}
+        {productInfoError ? (
+          <ErrorMessage
+            title="Lỗi tải thông tin chi tiết"
+            message={productInfoError}
+            onRetry={handleRetryProductInfo}
+            className="mb-4"
+          />
+        ) : null}
 
-        {/* Main Content Grid */}
         <div className="mb-8 grid grid-cols-1 gap-6 sm:mb-10 sm:gap-8 lg:grid-cols-[1.05fr_1fr]">
-          {/* Left Column - Image & Info */}
-          <div className="space-y-6 lg:space-y-8 w-full">
+          <div className="w-full space-y-6 lg:space-y-8">
             <ProductImageGallery
-              imageUrl={
-                selectedPackageImageUrl ||
-                (packages[0] as { image_url?: string | null } | undefined)?.image_url ||
-                product.image_url
-              }
+              imageUrl={activeImageUrl}
               productName={product.name}
+              altText={imageAltText}
               selectedPackage={selectedPackage}
               description={product.description}
-              hasCustomImage={!!(selectedPackageImageUrl || (packages[0] as { image_url?: string | null } | undefined)?.image_url)}
+              hasCustomImage={!!selectedPackageImageUrl}
             />
             <ProductInfo
-              name={product.name}
+              heading={seoHeading}
+              summary={productSummary}
               averageRating={product.average_rating}
               reviewCount={reviews.length}
               salesCount={product.sales_count}
             />
           </div>
 
-          {/* Right Column - Package Selection */}
-          {packages.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-slate-700/50 dark:bg-slate-900/90 sm:rounded-2xl sm:p-5 sm:shadow-2xl space-y-5 sm:space-y-6">
+          {packages.length > 0 ? (
+            <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-slate-700/50 dark:bg-slate-900/90 sm:space-y-6 sm:rounded-2xl sm:p-5 sm:shadow-2xl">
               <PackageSelector
                 packages={packages}
                 selectedPackage={selectedPackage}
                 onSelect={handlePackageSelect}
               />
-              {durationOptions.length > 0 && (
+              {durationOptions.length > 0 ? (
                 <DurationSelector
                   options={durationOptions}
                   selectedDuration={selectedDuration}
                   onSelect={handleDurationSelect}
                 />
-              )}
+              ) : null}
               <AdditionalInfoSection
                 values={additionalInfo}
                 onChange={setAdditionalInfo}
@@ -270,44 +333,49 @@ export default function ProductDetailPage({
                 selectedDuration={selectedDuration}
                 selectedDurationData={selectedDurationData}
                 productName={product.name}
-                imageUrl={
-                  selectedPackageImageUrl ||
-                  (packages[0] as { image_url?: string | null } | undefined)?.image_url ||
-                  product.image_url
-                }
-                additionalInfoValid={isAdditionalInfoValid(additionalInfo, formData?.fields)}
+                imageUrl={activeImageUrl}
+                additionalInfoValid={isAdditionalInfoValid(
+                  additionalInfo,
+                  formData?.fields
+                )}
                 additionalInfo={additionalInfo}
                 additionalInfoLabels={
                   formData?.fields
-                    ? Object.fromEntries(formData.fields.map((f) => [String(f.input_id), f.input_name]))
+                    ? Object.fromEntries(
+                        formData.fields.map((field) => [
+                          String(field.input_id),
+                          field.input_name,
+                        ])
+                      )
                     : undefined
                 }
               />
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Bottom Grid */}
         <div className="mb-10 grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Left - Description & Reviews */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="space-y-8 lg:col-span-2">
             <ProductDescription
-              htmlDescription={selectedPackageInfo.description || productInfo?.description}
-              textDescription={product.description}
+              htmlDescription={detailDescriptionHtml}
+              textDescription={hasSelectedVariant ? product.description : null}
+              pendingMessage={hasSelectedVariant ? null : variantSelectionPrompt}
             />
-            <ReviewSection reviews={reviews} averageRating={product.average_rating} />
+            <ReviewSection
+              reviews={reviews}
+              averageRating={product.average_rating}
+            />
           </div>
 
-          {/* Right - Purchase Policy */}
           <div className="lg:col-span-1">
             <PurchasePolicy
-              htmlPolicy={selectedPackageInfo.purchase_rules || productInfo?.purchase_rules}
-              textPolicy={product.purchase_rules}
+              htmlPolicy={detailPolicyHtml}
+              textPolicy={null}
+              pendingMessage={hasSelectedVariant ? null : variantSelectionPrompt}
             />
           </div>
         </div>
 
-        {/* Related Products */}
         <RelatedProducts products={relatedProducts} onProductClick={onProductClick} />
       </main>
 

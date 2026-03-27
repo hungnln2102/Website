@@ -8,7 +8,8 @@ export interface NormalizedProduct {
   id: string;
   category_id: null;
   name: string;
-  package: any;
+  package: string;
+  package_product?: string | null;
   slug: string;
   description: string | null;
   full_description: null;
@@ -146,6 +147,7 @@ export function useHomeData() {
         category_id: null,
         name: p.name,
         package: p.package,
+        package_product: p.package_product ?? null,
         slug: p.slug,
         description: p.description,
         full_description: null,
