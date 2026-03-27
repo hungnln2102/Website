@@ -27,7 +27,13 @@ export default function Footer() {
               className="mb-2 flex items-center gap-2 text-left transition-opacity hover:opacity-90"
               aria-label="Về trang chủ Mavryk Premium Store"
             >
-              <img src={logo} alt="" className="h-7 w-7 rounded-lg bg-white object-contain p-1" />
+              <img
+                src={logo}
+                alt="Mavryk Premium Store"
+                title="Mavryk Premium Store"
+                loading="lazy"
+                className="h-7 w-7 rounded-lg bg-white object-contain p-1"
+              />
               <span className="text-base font-bold text-white">
                 Mavryk Premium <span className="text-blue-400">Store</span>
               </span>
@@ -128,6 +134,7 @@ export default function Footer() {
             <img
               src="https://images.dmca.com/Badges/dmca_protected_sml_120l.png?ID=c788f409-9a7f-422c-9359-bf1582035d73"
               alt="DMCA.com Protection Status"
+              title="DMCA.com Protection Status"
               className="h-6 object-contain"
             />
           </a>

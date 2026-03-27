@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, type MouseEvent } from "react";
+import { useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import BannerSlider from "@/components/BannerSlider";
@@ -10,7 +10,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { MetaTags, StructuredData } from "@/components/SEO";
 import { generateOrganizationSchema, generateWebSiteSchema, generateFAQSchema } from "@/lib/seo/metadata";
 import { faqs } from "@/lib/seo/faq-data";
-import { APP_CONFIG, ROUTES } from "@/lib/constants";
+import { APP_CONFIG } from "@/lib/constants";
 import { validateSearchQuery } from "@/lib/validation/search";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
@@ -97,40 +97,6 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     },
     [setSearchQuery]
   );
-
-  const handleInternalLinkClick = useCallback(
-    (event: MouseEvent<HTMLAnchorElement>, href: string) => {
-      event.preventDefault();
-      window.history.pushState({}, "", href);
-      window.dispatchEvent(new PopStateEvent("popstate"));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    []
-  );
-
-  const quickLinks = useMemo(
-    () => [
-      { label: "Tất cả sản phẩm", href: ROUTES.allProducts },
-      { label: "Sản phẩm mới", href: ROUTES.newProducts },
-      { label: "Khuyến mãi", href: ROUTES.promotions },
-      { label: "Giới thiệu", href: ROUTES.about },
-      { label: "Fix Adobe", href: ROUTES.fixAdobeEdu },
-      { label: "Hướng dẫn Adobe", href: ROUTES.adobeGuide },
-      { label: "Đăng nhập", href: ROUTES.login },
-      { label: "Giỏ hàng", href: ROUTES.cart },
-    ],
-    []
-  );
-
-  const categoryQuickLinks = useMemo(
-    () =>
-      categories.slice(0, 4).map((category) => ({
-        label: `Danh mục ${category.name}`,
-        href: ROUTES.category(category.slug),
-      })),
-    [categories]
-  );
-
   // SEO Metadata
   const seoMetadata = useMemo(() => {
     const baseTitle = homeHeading;
@@ -219,15 +185,16 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
       <StructuredData data={structuredData} />
 
       {/* Main Content */}
-      <main id="main-content" className="relative z-0 mx-auto max-w-7xl px-3 pt-6 pb-8 sm:px-6 sm:pt-10 lg:px-8">
-        <section className="mb-6 rounded-2xl border border-blue-100 bg-white p-5 shadow-sm shadow-blue-900/5 dark:border-slate-800 dark:bg-slate-900/80 sm:mb-8 sm:p-6">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-blue-600 dark:text-blue-300">
+      <main id="main-content" className="relative z-0 mx-auto flex max-w-7xl flex-col px-3 pt-6 pb-8 sm:px-6 sm:pt-10 lg:px-8">
+        <section className="order-last mt-10 self-center w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-800/80 bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.88))] px-6 py-7 shadow-[0_20px_60px_rgba(2,6,23,0.24)] sm:mt-12 sm:px-8 sm:py-9">
+          <p className="mb-3 text-[11px] font-black uppercase tracking-[0.34em] text-blue-300/85">
             Trang chủ Mavryk Premium Store
           </p>
-          <h1 className="max-w-4xl text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+          <h1 className="max-w-4xl text-3xl font-black tracking-tight text-white sm:text-4xl">
             {homeHeading}
           </h1>
-          <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-[15px]">
+          <div className="mt-5 h-px w-full bg-gradient-to-r from-blue-500/50 via-slate-600/40 to-transparent" />
+          <div className="mt-5 max-w-4xl space-y-5 text-[15px] leading-8 text-slate-300 sm:text-base">
             <p>
               Mavryk Premium Store là cửa hàng phần mềm bản quyền chính hãng dành cho
               người cần mua nhanh, dùng ổn định và có hỗ trợ rõ ràng sau bán hàng. Tại
@@ -252,18 +219,6 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
               trình hỗ trợ rõ ràng, đây là điểm bắt đầu phù hợp để khám phá toàn bộ hệ
               thống sản phẩm hiện có.
             </p>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {[...quickLinks, ...categoryQuickLinks].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(event) => handleInternalLinkClick(event, link.href)}
-                className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100 dark:hover:bg-blue-500/20"
-              >
-                {link.label}
-              </a>
-            ))}
           </div>
         </section>
 
@@ -315,3 +270,4 @@ export default function HomePage({ onProductClick, searchQuery, setSearchQuery }
     </div>
   );
 }
+

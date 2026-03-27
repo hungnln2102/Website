@@ -27,7 +27,7 @@ export function PurchasePolicy({
       <div className="product-policy-card">
         <div className="relative z-10">
           <h3 className="mb-4 text-lg font-bold text-white">
-            {"Ch\u00ednh s\u00e1ch mua h\u00e0ng"}
+            {"Chính sách mua hàng"}
           </h3>
 
           <div className="space-y-4 text-sm font-medium leading-relaxed text-blue-50/90">
@@ -49,7 +49,7 @@ export function PurchasePolicy({
             <div className="flex items-center gap-3">
               <Shield className="h-5 w-5 text-indigo-200" />
               <span className="text-sm font-bold text-white">
-                {"Thanh to\u00e1n b\u1ea3o m\u1eadt 100%"}
+                {"Thanh toán bảo mật 100%"}
               </span>
             </div>
           </div>

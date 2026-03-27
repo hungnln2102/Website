@@ -89,8 +89,8 @@ export default function ProductDetailPage({
   );
   const hasSelectedVariant = Boolean(selectedPackage && selectedDuration);
   const variantSelectionPrompt = selectedPackage
-    ? "\u0043h\u1ecdn th\u1eddi h\u1ea1n s\u1eed d\u1ee5ng \u0111\u1ec3 xem \u0111\u00fang th\u00f4ng tin c\u1ee7a bi\u1ebfn th\u1ec3 n\u00e0y."
-    : "\u0043h\u1ecdn g\u00f3i s\u1ea3n ph\u1ea9m v\u00e0 th\u1eddi h\u1ea1n s\u1eed d\u1ee5ng \u0111\u1ec3 xem \u0111\u00fang th\u00f4ng tin c\u1ee7a bi\u1ebfn th\u1ec3 n\u00e0y.";
+    ? "Chọn thời hạn sử dụng để xem đúng thông tin của biến thể này."
+    : "Chọn gói sản phẩm và thời hạn sử dụng để xem đúng thông tin của biến thể này.";
 
   const formId = selectedDuration ? (selectedDurationData?.form_id ?? null) : null;
   const { data: formFieldsData } = useQuery({
@@ -116,6 +116,12 @@ export default function ProductDetailPage({
     }
   }, [handlePackageSelect, packages, selectedPackage]);
 
+  const seoHeading =
+    (hasSelectedVariant ? selectedPackageInfo.seo_heading : null) ||
+    (hasSelectedVariant ? selectedPackage : null) ||
+    product?.name ||
+    "Chi tiết sản phẩm";
+
   const seoMetadata = useMemo(() => {
     if (!product) {
       return {
@@ -125,10 +131,18 @@ export default function ProductDetailPage({
       };
     }
 
+    const fallbackTitleBase = hasSelectedVariant
+      ? [seoHeading, selectedDurationData?.label].filter(Boolean).join(" - ")
+      : product.name;
+
+    const fallbackTitle = fallbackTitleBase
+      .toLocaleLowerCase("vi-VN")
+      .includes("chính hãng")
+      ? `${fallbackTitleBase} | ${APP_CONFIG.name}`
+      : `${fallbackTitleBase} chính hãng | ${APP_CONFIG.name}`;
+
     return {
-      title:
-        (product as { seo_title?: string | null }).seo_title ||
-        `${product.name} | ${APP_CONFIG.name}`,
+      title: (product as { seo_title?: string | null }).seo_title || fallbackTitle,
       description:
         product.description && !isInternalProductPlaceholder(product.description)
           ? product.description
@@ -137,13 +151,7 @@ export default function ProductDetailPage({
       image: product.image_url || `${APP_CONFIG.url}/favicon.png`,
       type: "product" as const,
     };
-  }, [product]);
-
-  const seoHeading =
-    (hasSelectedVariant ? selectedPackageInfo.seo_heading : null) ||
-    (hasSelectedVariant ? selectedPackage : null) ||
-    product?.name ||
-    "Chi tiết sản phẩm";
+  }, [hasSelectedVariant, product, selectedDurationData?.label, seoHeading]);
 
   const currentCategory = useMemo(() => {
     if (!product?.category_id) return null;
@@ -223,8 +231,8 @@ export default function ProductDetailPage({
     if (!product) return [];
 
     const items = [
-      { name: "Trang chu", url: `${APP_CONFIG.url}${ROUTES.home}` },
-      { name: "San pham", url: `${APP_CONFIG.url}${ROUTES.allProducts}` },
+      { name: "Trang chủ", url: `${APP_CONFIG.url}${ROUTES.home}` },
+      { name: "Sản phẩm", url: `${APP_CONFIG.url}${ROUTES.allProducts}` },
     ];
 
     if (currentCategory) {
@@ -258,15 +266,15 @@ export default function ProductDetailPage({
 
   const internalLinks = useMemo(() => {
     const links: Array<{ label: string; href: string }> = [
-      { label: "T\u1ea5t c\u1ea3 s\u1ea3n ph\u1ea9m", href: ROUTES.allProducts },
-      { label: "S\u1ea3n ph\u1ea9m m\u1edbi", href: ROUTES.newProducts },
-      { label: "Khuy\u1ebfn m\u00e3i", href: ROUTES.promotions },
-      { label: "Gi\u1edbi thi\u1ec7u", href: ROUTES.about },
+      { label: "Tất cả sản phẩm", href: ROUTES.allProducts },
+      { label: "Sản phẩm mới", href: ROUTES.newProducts },
+      { label: "Khuyến mãi", href: ROUTES.promotions },
+      { label: "Giới thiệu", href: ROUTES.about },
     ];
 
     if (currentCategory) {
       links.unshift({
-        label: `Danh m\u1ee5c ${currentCategory.name}`,
+        label: `Danh mục ${currentCategory.name}`,
         href: ROUTES.category(slugify(currentCategory.name)),
       });
     }
@@ -352,7 +360,10 @@ export default function ProductDetailPage({
         />
       </div>
 
-      <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <main
+        id="main-content"
+        className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
+      >
         <div className="mb-4 flex items-center">
           <button
             onClick={onBack}

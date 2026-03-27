@@ -26,10 +26,10 @@ const DEFAULT_SITE_NAME = "Mavryk Premium";
 
 const decodeHtmlEntities = (value: string): string =>
   value
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
+    .replace(/ /gi, " ")
+    .replace(/&/gi, "&")
+    .replace(/"/gi, '"')
+    .replace(/'/gi, "'")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&#(\d+);/g, (_match, code) =>

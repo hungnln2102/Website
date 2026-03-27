@@ -9,7 +9,7 @@ const TELEGRAM_TOPIC_ID = parseInt(process.env.TELEGRAM_TOPIC_ID || "2733", 10);
 /** Escape HTML để tránh vỡ nội dung và bảo mật */
 function escapeHtml(s: string): string {
   return String(s)
-    .replace(/&/g, "&amp;")
+    .replace(/&/g, "&")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");

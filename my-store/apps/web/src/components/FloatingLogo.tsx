@@ -31,7 +31,6 @@ const actions = [
 export default function FloatingLogo() {
   const [open, setOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
-
   // Ẩn dòng "Liên hệ với chúng tôi" sau 5 giây, giữ logo
   useEffect(() => {
     const timer = setTimeout(() => setBannerVisible(false), 5000);
@@ -82,7 +81,12 @@ export default function FloatingLogo() {
         {open ? (
           <X className="h-6 w-6 text-gray-800" />
         ) : (
-          <img src={logo} alt="Logo" className="h-9 w-9 rounded-full object-contain sm:h-12 sm:w-12" />
+          <img
+            src={logo}
+            alt="Logo"
+            title="Mavryk Premium Store"
+            className="h-9 w-9 rounded-full object-contain sm:h-12 sm:w-12"
+          />
         )}
         </button>
       </div>

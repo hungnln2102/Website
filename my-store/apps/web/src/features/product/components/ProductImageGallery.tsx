@@ -27,7 +27,9 @@ export function ProductImageGallery({
       <img
         src={imageUrl || "https://placehold.co/400x400?text=No+Image"}
         alt={resolvedAltText}
-        loading="lazy"
+        title={resolvedAltText}
+        loading="eager"
+        fetchPriority="high"
         decoding="async"
         className="max-h-full max-w-full rounded-xl object-contain transition-transform duration-500 group-hover:scale-[1.02]"
       />

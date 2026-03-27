@@ -130,6 +130,7 @@ const handleMobileMenuClose = () => {
   return (
     <>
       <nav 
+        id="navigation"
         ref={menuRef}
         className={`sticky z-50 border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20 transition-all duration-500 ${
           isScrolled ? "top-[60px] sm:top-[64px] md:top-[68px]" : "top-[72px] sm:top-[76px] md:top-[80px]"
