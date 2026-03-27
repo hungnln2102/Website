@@ -9,16 +9,24 @@ const useRedis = process.env.NODE_ENV === 'production' && !!(REDIS_URL || proces
 function createRedisStore(prefix: string): RedisStore | undefined {
   if (!useRedis) return undefined;
 
-  return new RedisStore({
-    sendCommand: async (command: string, ...args: string[]) => {
-      const redis = getRedisClient();
-      if (!redis) {
-        throw new Error("Redis unavailable for rate limiter");
-      }
-      return redis.call(command, ...args) as Promise<number>;
-    },
-    prefix,
-  });
+  const redis = getRedisClient();
+  if (!redis) {
+    return undefined;
+  }
+
+  try {
+    return new RedisStore({
+      sendCommand: (command: string, ...args: string[]) =>
+        redis.call(command, ...args) as Promise<number>,
+      prefix,
+    });
+  } catch (error) {
+    console.warn(
+      "[RateLimiter] Redis store unavailable, using memory store:",
+      (error as Error)?.message ?? error
+    );
+    return undefined;
+  }
 }
 
 function createLimiter(name: string, baseOptions: Parameters<typeof rateLimit>[0]) {
