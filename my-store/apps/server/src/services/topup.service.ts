@@ -10,6 +10,10 @@ const TABLE = TABLES.PRODUCTID_PAYMENT;
 const COLS = DB_SCHEMA.PRODUCTID_PAYMENT!.COLS as Record<string, string>;
 const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
 const TX_ID_COL = DB_SCHEMA.WALLET_TRANSACTION!.COLS!.TRANSACTION_ID as string;
+const PRODUCT_ID_COL = COLS.PRODUCT_ID as string;
+const AMOUNT_COL = COLS.AMOUNT as string;
+const PROMOTION_PERCENT_COL = COLS.PROMOTION_PERCENT as string;
+const IS_ACTIVE_COL = COLS.IS_ACTIVE as string;
 
 const MAVNAP_PREFIX = "MAVNAP";
 const MAX_RETRY = 5;
@@ -43,29 +47,29 @@ export interface TopupPackageRow {
 }
 
 export async function getTopupPackages(): Promise<TopupPackageRow[]> {
-  const query = `SELECT ${COLS.PRODUCT_ID}, ${COLS.AMOUNT}, ${COLS.PROMOTION_PERCENT}
+  const query = `SELECT ${PRODUCT_ID_COL}, ${AMOUNT_COL}, ${PROMOTION_PERCENT_COL}
     FROM ${TABLE}
-    WHERE ${COLS.IS_ACTIVE} = true
-    ORDER BY ${COLS.AMOUNT} ASC`;
+    WHERE ${IS_ACTIVE_COL} = true
+    ORDER BY ${AMOUNT_COL} ASC`;
   const { rows } = await pool.query<Record<string, unknown>>(query);
   return rows.map((r) => ({
-    product_id: String(r[COLS.PRODUCT_ID] ?? ""),
-    amount: Number(r[COLS.AMOUNT] ?? 0),
-    promotion_percent: Number(r[COLS.PROMOTION_PERCENT] ?? 0),
+    product_id: String(r[PRODUCT_ID_COL] ?? ""),
+    amount: Number(r[AMOUNT_COL] ?? 0),
+    promotion_percent: Number(r[PROMOTION_PERCENT_COL] ?? 0),
   }));
 }
 
 export async function getTopupPackageByProductId(productId: string): Promise<TopupPackageRow | null> {
-  const query = `SELECT ${COLS.PRODUCT_ID}, ${COLS.AMOUNT}, ${COLS.PROMOTION_PERCENT}
+  const query = `SELECT ${PRODUCT_ID_COL}, ${AMOUNT_COL}, ${PROMOTION_PERCENT_COL}
     FROM ${TABLE}
-    WHERE ${COLS.PRODUCT_ID} = $1 AND ${COLS.IS_ACTIVE} = true
+    WHERE ${PRODUCT_ID_COL} = $1 AND ${IS_ACTIVE_COL} = true
     LIMIT 1`;
   const { rows } = await pool.query<Record<string, unknown>>(query, [productId]);
-  if (rows.length === 0) return null;
   const r = rows[0];
+  if (!r) return null;
   return {
-    product_id: String(r[COLS.PRODUCT_ID] ?? ""),
-    amount: Number(r[COLS.AMOUNT] ?? 0),
-    promotion_percent: Number(r[COLS.PROMOTION_PERCENT] ?? 0),
+    product_id: String(r[PRODUCT_ID_COL] ?? ""),
+    amount: Number(r[AMOUNT_COL] ?? 0),
+    promotion_percent: Number(r[PROMOTION_PERCENT_COL] ?? 0),
   };
 }

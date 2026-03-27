@@ -8,7 +8,7 @@ import { walletService } from "../services/wallet.service";
 import * as topupService from "../services/topup.service";
 
 /** GET /api/topup/transfer-code — tạo mã nội dung chuyển khoản MAVNAPXXXXX (không trùng wallet_transactions). */
-export async function getTransferCode(req: Request, res: Response): Promise<void> {
+export async function getTransferCode(_req: Request, res: Response): Promise<void> {
   try {
     const code = await topupService.generateTopupTransferCode();
     res.json({ transactionCode: code });
@@ -18,7 +18,7 @@ export async function getTransferCode(req: Request, res: Response): Promise<void
   }
 }
 
-export async function getPackages(req: Request, res: Response): Promise<void> {
+export async function getPackages(_req: Request, res: Response): Promise<void> {
   try {
     const packages = await topupService.getTopupPackages();
     res.json({

@@ -26,6 +26,7 @@ export function initRedis(): Promise<boolean> {
         port: REDIS_PORT,
         password: REDIS_PASSWORD || undefined,
         db: REDIS_DB,
+        enableOfflineQueue: false,
         retryStrategy: (times) => {
           if (times > 3) {
             console.warn("[Redis] Max retries reached, falling back to in-memory");
@@ -52,6 +53,10 @@ export function initRedis(): Promise<boolean> {
       });
 
       redisClient.on("close", () => {
+        isRedisConnected = false;
+      });
+
+      redisClient.on("end", () => {
         isRedisConnected = false;
       });
 
@@ -109,56 +114,73 @@ export class RedisMap<T> {
     const redis = getRedisClient();
 
     if (redis) {
-      await redis.set(this.getKey(key), JSON.stringify(value), "EX", ttl);
-    } else {
-      this.fallbackMap.set(key, {
-        value,
-        expiresAt: Date.now() + ttl * 1000,
-      });
+      try {
+        await redis.set(this.getKey(key), JSON.stringify(value), "EX", ttl);
+        return;
+      } catch (error) {
+        console.warn("[RedisMap] set failed, using fallback:", (error as Error)?.message ?? error);
+      }
     }
+
+    this.fallbackMap.set(key, {
+      value,
+      expiresAt: Date.now() + ttl * 1000,
+    });
   }
 
   async get(key: string): Promise<T | null> {
     const redis = getRedisClient();
 
     if (redis) {
-      const data = await redis.get(this.getKey(key));
-      return data ? JSON.parse(data) : null;
-    } else {
-      const entry = this.fallbackMap.get(key);
-      if (!entry) return null;
-      if (Date.now() > entry.expiresAt) {
-        this.fallbackMap.delete(key);
-        return null;
+      try {
+        const data = await redis.get(this.getKey(key));
+        return data ? JSON.parse(data) : null;
+      } catch (error) {
+        console.warn("[RedisMap] get failed, using fallback:", (error as Error)?.message ?? error);
       }
-      return entry.value;
     }
+
+    const entry = this.fallbackMap.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.fallbackMap.delete(key);
+      return null;
+    }
+    return entry.value;
   }
 
   async delete(key: string): Promise<void> {
     const redis = getRedisClient();
 
     if (redis) {
-      await redis.del(this.getKey(key));
-    } else {
-      this.fallbackMap.delete(key);
+      try {
+        await redis.del(this.getKey(key));
+      } catch (error) {
+        console.warn("[RedisMap] delete failed, using fallback:", (error as Error)?.message ?? error);
+      }
     }
+
+    this.fallbackMap.delete(key);
   }
 
   async exists(key: string): Promise<boolean> {
     const redis = getRedisClient();
 
     if (redis) {
-      return (await redis.exists(this.getKey(key))) === 1;
-    } else {
-      const entry = this.fallbackMap.get(key);
-      if (!entry) return false;
-      if (Date.now() > entry.expiresAt) {
-        this.fallbackMap.delete(key);
-        return false;
+      try {
+        return (await redis.exists(this.getKey(key))) === 1;
+      } catch (error) {
+        console.warn("[RedisMap] exists failed, using fallback:", (error as Error)?.message ?? error);
       }
-      return true;
     }
+
+    const entry = this.fallbackMap.get(key);
+    if (!entry) return false;
+    if (Date.now() > entry.expiresAt) {
+      this.fallbackMap.delete(key);
+      return false;
+    }
+    return true;
   }
 
   async incr(key: string, ttlSeconds?: number): Promise<number> {
@@ -166,29 +188,33 @@ export class RedisMap<T> {
     const redis = getRedisClient();
 
     if (redis) {
-      const fullKey = this.getKey(key);
-      const value = await redis.incr(fullKey);
-      if (value === 1) {
-        await redis.expire(fullKey, ttl);
+      try {
+        const fullKey = this.getKey(key);
+        const value = await redis.incr(fullKey);
+        if (value === 1) {
+          await redis.expire(fullKey, ttl);
+        }
+        return value;
+      } catch (error) {
+        console.warn("[RedisMap] incr failed, using fallback:", (error as Error)?.message ?? error);
       }
-      return value;
-    } else {
-      const entry = this.fallbackMap.get(key);
-      let newValue: number;
-      
-      if (!entry || Date.now() > entry.expiresAt) {
-        newValue = 1;
-      } else {
-        newValue = (entry.value as unknown as number) + 1;
-      }
-      
-      this.fallbackMap.set(key, {
-        value: newValue as unknown as T,
-        expiresAt: Date.now() + ttl * 1000,
-      });
-      
-      return newValue;
     }
+
+    const entry = this.fallbackMap.get(key);
+    let newValue: number;
+
+    if (!entry || Date.now() > entry.expiresAt) {
+      newValue = 1;
+    } else {
+      newValue = (entry.value as unknown as number) + 1;
+    }
+
+    this.fallbackMap.set(key, {
+      value: newValue as unknown as T,
+      expiresAt: Date.now() + ttl * 1000,
+    });
+
+    return newValue;
   }
 
   async getAll(pattern: string): Promise<Map<string, T>> {
@@ -196,20 +222,25 @@ export class RedisMap<T> {
     const redis = getRedisClient();
 
     if (redis) {
-      const keys = await redis.keys(`${this.prefix}:${pattern}`);
-      for (const key of keys) {
-        const data = await redis.get(key);
-        if (data) {
-          const shortKey = key.replace(`${this.prefix}:`, "");
-          result.set(shortKey, JSON.parse(data));
+      try {
+        const keys = await redis.keys(`${this.prefix}:${pattern}`);
+        for (const key of keys) {
+          const data = await redis.get(key);
+          if (data) {
+            const shortKey = key.replace(`${this.prefix}:`, "");
+            result.set(shortKey, JSON.parse(data));
+          }
         }
+        return result;
+      } catch (error) {
+        console.warn("[RedisMap] getAll failed, using fallback:", (error as Error)?.message ?? error);
       }
-    } else {
-      const now = Date.now();
-      for (const [key, entry] of this.fallbackMap.entries()) {
-        if (now <= entry.expiresAt) {
-          result.set(key, entry.value);
-        }
+    }
+
+    const now = Date.now();
+    for (const [key, entry] of this.fallbackMap.entries()) {
+      if (now <= entry.expiresAt) {
+        result.set(key, entry.value);
       }
     }
 

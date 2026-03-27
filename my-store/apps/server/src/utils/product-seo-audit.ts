@@ -48,8 +48,9 @@ const getSeoLevel = (score: number): SeoAuditLevel => {
 
 const getIntroText = (descriptionHtml: string, descriptionText: string): string => {
   const paragraphs = extractProductSeoTagTexts(descriptionHtml, "p");
-  if (paragraphs.length > 0) {
-    return paragraphs[0];
+  const firstParagraph = paragraphs[0];
+  if (firstParagraph) {
+    return firstParagraph;
   }
   return descriptionText.slice(0, 220).trim();
 };

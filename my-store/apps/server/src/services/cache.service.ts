@@ -1,209 +1,214 @@
-import Redis from 'ioredis';
+import { getRedisClient, isRedisAvailable } from "../config/redis";
 
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379');
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
-const REDIS_DB = parseInt(process.env.REDIS_DB || '0');
-
-// Create Redis client
-let redis: Redis | null = null;
-
-try {
-  redis = new Redis({
-    host: REDIS_HOST,
-    port: REDIS_PORT,
-    password: REDIS_PASSWORD,
-    db: REDIS_DB,
-    retryStrategy: (times) => {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-    maxRetriesPerRequest: 3,
-  });
-
-  redis.on('connect', () => {
-    console.log('✅ Redis connected');
-  });
-
-  redis.on('error', (err) => {
-    console.error('❌ Redis error:', err);
-  });
-} catch (error) {
-  console.warn('⚠️  Redis not available. Caching disabled.');
-  redis = null;
+interface FallbackCacheEntry<T> {
+  value: T;
+  expiresAt: number;
 }
 
 export class CacheService {
-  private redis: Redis | null;
-  private defaultTTL = 300; // 5 minutes
+  private readonly defaultTTL = 300;
+  private readonly fallbackStore = new Map<string, FallbackCacheEntry<unknown>>();
 
-  constructor() {
-    this.redis = redis;
-  }
+  private getFallbackEntry<T>(key: string): T | null {
+    const entry = this.fallbackStore.get(key);
+    if (!entry) return null;
 
-  /**
-   * Check if Redis is available
-   */
-  isAvailable(): boolean {
-    return this.redis !== null && this.redis.status === 'ready';
-  }
-
-  /**
-   * Get value from cache
-   */
-  async get<T>(key: string): Promise<T | null> {
-    if (!this.isAvailable()) return null;
-
-    try {
-      const value = await this.redis!.get(key);
-      if (!value) return null;
-
-      return JSON.parse(value) as T;
-    } catch (error) {
-      console.error('Cache get error:', error);
+    if (Date.now() > entry.expiresAt) {
+      this.fallbackStore.delete(key);
       return null;
     }
+
+    return entry.value as T;
   }
 
-  /**
-   * Set value in cache
-   */
-  async set(key: string, value: any, ttl: number = this.defaultTTL): Promise<void> {
-    if (!this.isAvailable()) return;
-
-    try {
-      const serialized = JSON.stringify(value);
-      await this.redis!.setex(key, ttl, serialized);
-    } catch (error) {
-      console.error('Cache set error:', error);
-    }
+  private setFallbackValue<T>(key: string, value: T, ttl: number): void {
+    this.fallbackStore.set(key, {
+      value,
+      expiresAt: Date.now() + ttl * 1000,
+    });
   }
 
-  /**
-   * Delete key from cache
-   */
-  async del(key: string): Promise<void> {
-    if (!this.isAvailable()) return;
-
-    try {
-      await this.redis!.del(key);
-    } catch (error) {
-      console.error('Cache delete error:', error);
-    }
+  private currentRedis() {
+    return getRedisClient();
   }
 
-  /**
-   * Delete keys matching pattern
-   */
-  async delPattern(pattern: string): Promise<void> {
-    if (!this.isAvailable()) return;
+  isAvailable(): boolean {
+    return isRedisAvailable();
+  }
 
-    try {
-      const keys = await this.redis!.keys(pattern);
-      if (keys.length > 0) {
-        await this.redis!.del(...keys);
+  async get<T>(key: string): Promise<T | null> {
+    const redis = this.currentRedis();
+
+    if (redis) {
+      try {
+        const value = await redis.get(key);
+        if (!value) return null;
+        return JSON.parse(value) as T;
+      } catch (error) {
+        console.error("Cache get error:", error);
       }
-    } catch (error) {
-      console.error('Cache delete pattern error:', error);
+    }
+
+    return this.getFallbackEntry<T>(key);
+  }
+
+  async set(key: string, value: unknown, ttl: number = this.defaultTTL): Promise<void> {
+    const redis = this.currentRedis();
+
+    if (redis) {
+      try {
+        const serialized = JSON.stringify(value);
+        await redis.set(key, serialized, "EX", ttl);
+        return;
+      } catch (error) {
+        console.error("Cache set error:", error);
+      }
+    }
+
+    this.setFallbackValue(key, value, ttl);
+  }
+
+  async del(key: string): Promise<void> {
+    const redis = this.currentRedis();
+
+    if (redis) {
+      try {
+        await redis.del(key);
+      } catch (error) {
+        console.error("Cache delete error:", error);
+      }
+    }
+
+    this.fallbackStore.delete(key);
+  }
+
+  async delPattern(pattern: string): Promise<void> {
+    const redis = this.currentRedis();
+
+    if (redis) {
+      try {
+        const keys = await redis.keys(pattern);
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } catch (error) {
+        console.error("Cache delete pattern error:", error);
+      }
+    }
+
+    if (!pattern.includes("*")) {
+      this.fallbackStore.delete(pattern);
+      return;
+    }
+
+    const regex = new RegExp(
+      `^${pattern
+        .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*/g, ".*")}$`
+    );
+
+    for (const key of this.fallbackStore.keys()) {
+      if (regex.test(key)) {
+        this.fallbackStore.delete(key);
+      }
     }
   }
 
-  /**
-   * Check if key exists
-   */
   async exists(key: string): Promise<boolean> {
-    if (!this.isAvailable()) return false;
+    const redis = this.currentRedis();
 
-    try {
-      const result = await this.redis!.exists(key);
-      return result === 1;
-    } catch (error) {
-      console.error('Cache exists error:', error);
-      return false;
+    if (redis) {
+      try {
+        const result = await redis.exists(key);
+        return result === 1;
+      } catch (error) {
+        console.error("Cache exists error:", error);
+      }
     }
+
+    return this.getFallbackEntry(key) !== null;
   }
 
-  /**
-   * Get or set (cache-aside pattern)
-   */
   async getOrSet<T>(
     key: string,
     fetchFn: () => Promise<T>,
     ttl: number = this.defaultTTL
   ): Promise<T> {
-    // Try to get from cache
     const cached = await this.get<T>(key);
     if (cached !== null) {
       return cached;
     }
 
-    // Fetch from source
     const value = await fetchFn();
-
-    // Store in cache
     await this.set(key, value, ttl);
-
     return value;
   }
 
-  /**
-   * Increment counter
-   */
   async incr(key: string): Promise<number> {
-    if (!this.isAvailable()) return 0;
+    const redis = this.currentRedis();
 
-    try {
-      return await this.redis!.incr(key);
-    } catch (error) {
-      console.error('Cache incr error:', error);
-      return 0;
+    if (redis) {
+      try {
+        return await redis.incr(key);
+      } catch (error) {
+        console.error("Cache incr error:", error);
+      }
     }
+
+    const current = this.getFallbackEntry<number>(key) ?? 0;
+    const next = current + 1;
+    this.setFallbackValue(key, next, this.defaultTTL);
+    return next;
   }
 
-  /**
-   * Decrement counter
-   */
   async decr(key: string): Promise<number> {
-    if (!this.isAvailable()) return 0;
+    const redis = this.currentRedis();
 
-    try {
-      return await this.redis!.decr(key);
-    } catch (error) {
-      console.error('Cache decr error:', error);
-      return 0;
+    if (redis) {
+      try {
+        return await redis.decr(key);
+      } catch (error) {
+        console.error("Cache decr error:", error);
+      }
     }
+
+    const current = this.getFallbackEntry<number>(key) ?? 0;
+    const next = current - 1;
+    this.setFallbackValue(key, next, this.defaultTTL);
+    return next;
   }
 
-  /**
-   * Set expiration time
-   */
   async expire(key: string, seconds: number): Promise<void> {
-    if (!this.isAvailable()) return;
+    const redis = this.currentRedis();
 
-    try {
-      await this.redis!.expire(key, seconds);
-    } catch (error) {
-      console.error('Cache expire error:', error);
+    if (redis) {
+      try {
+        await redis.expire(key, seconds);
+      } catch (error) {
+        console.error("Cache expire error:", error);
+      }
+    }
+
+    const entry = this.fallbackStore.get(key);
+    if (entry) {
+      entry.expiresAt = Date.now() + seconds * 1000;
     }
   }
 
-  /**
-   * Flush all cache
-   */
   async flushAll(): Promise<void> {
-    if (!this.isAvailable()) return;
+    const redis = this.currentRedis();
 
-    try {
-      await this.redis!.flushdb();
-      console.log('✅ Cache flushed');
-    } catch (error) {
-      console.error('Cache flush error:', error);
+    if (redis) {
+      try {
+        await redis.flushdb();
+        console.log("Cache flushed from Redis");
+      } catch (error) {
+        console.error("Cache flush error:", error);
+      }
     }
+
+    this.fallbackStore.clear();
   }
 }
 
-// Export singleton
 export const cacheService = new CacheService();
-
-// Export Redis client for advanced usage
-export { redis };

@@ -1,36 +1,22 @@
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import Redis from 'ioredis';
+import { getRedisClient } from "../config/redis";
 
 const REDIS_URL = process.env.REDIS_URL;
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 /** Use Redis store when REDIS_URL or REDIS_HOST is set in production */
 const useRedis = process.env.NODE_ENV === 'production' && !!(REDIS_URL || process.env.REDIS_HOST);
 
-let redisClient: Redis | undefined;
-if (useRedis) {
-  try {
-    redisClient = REDIS_URL
-      ? new Redis(REDIS_URL)
-      : new Redis({
-          host: REDIS_HOST,
-          port: REDIS_PORT,
-          password: process.env.REDIS_PASSWORD || undefined,
-          db: parseInt(process.env.REDIS_DB || '0', 10),
-          maxRetriesPerRequest: 3,
-        });
-  } catch {
-    redisClient = undefined;
-  }
-}
-
 function createRedisStore(prefix: string): RedisStore | undefined {
-  if (!redisClient) return undefined;
+  if (!useRedis) return undefined;
 
   return new RedisStore({
-    sendCommand: (command: string, ...args: string[]) =>
-      redisClient!.call(command, ...args) as Promise<number>,
+    sendCommand: async (command: string, ...args: string[]) => {
+      const redis = getRedisClient();
+      if (!redis) {
+        throw new Error("Redis unavailable for rate limiter");
+      }
+      return redis.call(command, ...args) as Promise<number>;
+    },
     prefix,
   });
 }
@@ -40,6 +26,7 @@ function createLimiter(name: string, baseOptions: Parameters<typeof rateLimit>[0
   return rateLimit({
     ...baseOptions,
     ...(store && { store }),
+    passOnStoreError: true,
   });
 }
 
