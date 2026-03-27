@@ -50,6 +50,9 @@ export function useHomeData() {
     queryFn: fetchProducts,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch promotions
@@ -61,6 +64,9 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["promotions"],
     queryFn: fetchPromotions,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch categories
@@ -72,6 +78,9 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Error messages

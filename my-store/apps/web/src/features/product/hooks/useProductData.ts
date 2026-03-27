@@ -127,7 +127,10 @@ export function useProductData(
       productData
         ? {
             id: String(productData.id),
-            category_id: null,
+            category_id:
+              productData.category_id != null
+                ? String(productData.category_id)
+                : null,
             name: productData.name,
             slug: productData.slug,
             description: productData.description,

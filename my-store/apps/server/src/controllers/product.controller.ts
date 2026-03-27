@@ -23,6 +23,13 @@ const CACHE_KEYS = {
   packages: (name: string) => `packages:${name.toLowerCase()}`,
 } as const;
 
+function setPublicCacheHeaders(res: Response, maxAgeSeconds: number, staleSeconds: number) {
+  res.setHeader(
+    "Cache-Control",
+    `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${staleSeconds}`
+  );
+}
+
 async function cachedQuery<T>(
   key: string,
   label: string,
@@ -52,6 +59,7 @@ export async function getProducts(_req: Request, res: Response): Promise<void> {
     const products = await cachedQuery(
       CACHE_KEYS.products, "products", PRODUCTS_TTL, getProductsList,
     );
+    setPublicCacheHeaders(res, 60, PRODUCTS_TTL);
     res.json({ data: products });
   } catch (err) {
     console.error("Fetch products error:", err);
@@ -64,6 +72,7 @@ export async function getPromotions(_req: Request, res: Response): Promise<void>
     const promotions = await cachedQuery(
       CACHE_KEYS.promotions, "promotions", PROMOTIONS_TTL, getPromotionsList,
     );
+    setPublicCacheHeaders(res, 60, PROMOTIONS_TTL);
     res.json({ data: promotions });
   } catch (err) {
     console.error("Fetch promotions error:", err);
@@ -76,6 +85,7 @@ export async function getCategories(_req: Request, res: Response): Promise<void>
     const rows = await cachedQuery(
       CACHE_KEYS.categories, "categories", CATEGORIES_TTL, getCategoriesList,
     );
+    setPublicCacheHeaders(res, 120, CATEGORIES_TTL);
     res.json({ data: rows });
   } catch (err) {
     console.error("Fetch categories error:", err);
@@ -99,6 +109,7 @@ export async function getProductPackagesHandler(req: Request, res: Response): Pr
       PACKAGES_TTL,
       () => getProductPackages(packageName),
     );
+    setPublicCacheHeaders(res, 60, PACKAGES_TTL);
     res.json({ data });
   } catch (err) {
     console.error("Fetch product-packages error:", err);

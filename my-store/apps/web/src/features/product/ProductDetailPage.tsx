@@ -12,7 +12,7 @@ import { useAuth } from "@/features/auth/hooks";
 import { useScroll } from "@/hooks/useScroll";
 import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
-import { generateProductSchema } from "@/lib/seo";
+import { generateBreadcrumbSchema, generateProductSchema } from "@/lib/seo";
 import { slugify } from "@/lib/utils";
 
 import { useProductData, useProductDetailState } from "./hooks";
@@ -70,7 +70,6 @@ export default function ProductDetailPage({
     durationOptions,
     reviews,
     relatedProducts,
-    productInfo,
     selectedPackageImageUrl,
     selectedPackageInfo,
     allProducts,
@@ -146,6 +145,24 @@ export default function ProductDetailPage({
     product?.name ||
     "Chi tiết sản phẩm";
 
+  const currentCategory = useMemo(() => {
+    if (!product?.category_id) return null;
+    return (
+      categories.find(
+        (category: CategoryDto) => String(category.id) === String(product.category_id)
+      ) || null
+    );
+  }, [categories, product?.category_id]);
+
+  const normalizedReviews = useMemo(
+    () =>
+      reviews.map((review) => ({
+        ...review,
+        comment: review.comment ?? "",
+      })),
+    [reviews]
+  );
+
   const detailDescriptionHtml = hasSelectedVariant
     ? selectedPackageInfo.description || null
     : null;
@@ -173,6 +190,23 @@ export default function ProductDetailPage({
     ? getCustomerFacingDescription(productSummarySource)
     : "Thông tin ngắn về sản phẩm đang được cập nhật.";
 
+  const enhancedProductSummary =
+    hasSelectedVariant &&
+    !productSummary
+      .toLocaleLowerCase("vi-VN")
+      .includes(seoHeading.toLocaleLowerCase("vi-VN"))
+      ? `${seoHeading}. ${productSummary}`
+      : productSummary;
+
+  const detailTextDescription =
+    hasSelectedVariant && product?.description
+      ? product.description
+          .toLocaleLowerCase("vi-VN")
+          .includes(seoHeading.toLocaleLowerCase("vi-VN"))
+        ? product.description
+        : `${seoHeading}\n\n${product.description}`
+      : null;
+
   const productSchema = useMemo(() => {
     if (!product) return null;
 
@@ -184,6 +218,71 @@ export default function ProductDetailPage({
       brand: APP_CONFIG.name,
     });
   }, [activeImageUrl, product, selectedDurationData]);
+
+  const breadcrumbItems = useMemo(() => {
+    if (!product) return [];
+
+    const items = [
+      { name: "Trang chu", url: `${APP_CONFIG.url}${ROUTES.home}` },
+      { name: "San pham", url: `${APP_CONFIG.url}${ROUTES.allProducts}` },
+    ];
+
+    if (currentCategory) {
+      items.push({
+        name: currentCategory.name,
+        url: `${APP_CONFIG.url}${ROUTES.category(slugify(currentCategory.name))}`,
+      });
+    }
+
+    items.push({
+      name: seoHeading,
+      url: `${APP_CONFIG.url}/${encodeURIComponent(product.slug)}`,
+    });
+
+    return items;
+  }, [currentCategory, product, seoHeading]);
+
+  const structuredData = useMemo(() => {
+    const items = [];
+
+    if (productSchema) {
+      items.push(productSchema);
+    }
+
+    if (breadcrumbItems.length > 0) {
+      items.push(generateBreadcrumbSchema(breadcrumbItems));
+    }
+
+    return items.length > 0 ? items : null;
+  }, [breadcrumbItems, productSchema]);
+
+  const internalLinks = useMemo(() => {
+    const links: Array<{ label: string; href: string }> = [
+      { label: "T\u1ea5t c\u1ea3 s\u1ea3n ph\u1ea9m", href: ROUTES.allProducts },
+      { label: "S\u1ea3n ph\u1ea9m m\u1edbi", href: ROUTES.newProducts },
+      { label: "Khuy\u1ebfn m\u00e3i", href: ROUTES.promotions },
+      { label: "Gi\u1edbi thi\u1ec7u", href: ROUTES.about },
+    ];
+
+    if (currentCategory) {
+      links.unshift({
+        label: `Danh m\u1ee5c ${currentCategory.name}`,
+        href: ROUTES.category(slugify(currentCategory.name)),
+      });
+    }
+
+    relatedProducts.slice(0, 3).forEach((item) => {
+      links.push({
+        label: item.name,
+        href: `/${encodeURIComponent(item.slug)}`,
+      });
+    });
+
+    return links.filter(
+      (link, index, array) =>
+        array.findIndex((entry) => entry.href === link.href) === index
+    );
+  }, [currentCategory, relatedProducts]);
 
   if (loading) {
     return <ProductLoadingSkeleton />;
@@ -202,7 +301,7 @@ export default function ProductDetailPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <MetaTags metadata={seoMetadata} />
-      {productSchema ? <StructuredData data={productSchema} /> : null}
+      {structuredData ? <StructuredData data={structuredData} /> : null}
 
       <div
         className={`sticky top-0 z-50 transition-all duration-500 ${
@@ -264,6 +363,34 @@ export default function ProductDetailPage({
           </button>
         </div>
 
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-6 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm text-gray-600 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/70 dark:text-slate-300"
+        >
+          <ol className="flex flex-wrap items-center gap-2">
+            {breadcrumbItems.map((item, index) => {
+              const isLast = index === breadcrumbItems.length - 1;
+              return (
+                <li key={`${item.url}-${index}`} className="flex items-center gap-2">
+                  {isLast ? (
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {item.name}
+                    </span>
+                  ) : (
+                    <a
+                      href={item.url.replace(APP_CONFIG.url, "") || "/"}
+                      className="transition-colors hover:text-blue-600 dark:hover:text-blue-300"
+                    >
+                      {item.name}
+                    </a>
+                  )}
+                  {!isLast ? <span className="text-gray-400">/</span> : null}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
         {productsError ? (
           <ErrorMessage
             title="Lỗi tải sản phẩm"
@@ -301,9 +428,9 @@ export default function ProductDetailPage({
             />
             <ProductInfo
               heading={seoHeading}
-              summary={productSummary}
+              summary={enhancedProductSummary}
               averageRating={product.average_rating}
-              reviewCount={reviews.length}
+              reviewCount={normalizedReviews.length}
               salesCount={product.sales_count}
             />
           </div>
@@ -358,11 +485,33 @@ export default function ProductDetailPage({
           <div className="space-y-8 lg:col-span-2">
             <ProductDescription
               htmlDescription={detailDescriptionHtml}
-              textDescription={hasSelectedVariant ? product.description : null}
+              textDescription={detailTextDescription}
               pendingMessage={hasSelectedVariant ? null : variantSelectionPrompt}
             />
+            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700/50 dark:bg-slate-800 sm:rounded-2xl sm:shadow-xl">
+              <div className="border-b border-gray-100 bg-gray-50/80 px-5 py-3 dark:border-slate-700 dark:bg-slate-800/50 sm:px-6 sm:py-4">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white sm:text-lg">
+                  Liên kết nội bộ
+                </h2>
+              </div>
+              <div className="px-5 pt-5 text-sm leading-relaxed text-gray-600 dark:text-slate-300 sm:px-6">
+                Khám phá thêm các trang liên quan đến {seoHeading} để xem đầy đủ danh mục,
+                sản phẩm mới, chương trình khuyến mãi và các gói tương tự đang có sẵn.
+              </div>
+              <div className="flex flex-wrap gap-3 p-5 pt-4 sm:p-6 sm:pt-4">
+                {internalLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-100 dark:hover:bg-blue-500/20"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            </section>
             <ReviewSection
-              reviews={reviews}
+              reviews={normalizedReviews}
               averageRating={product.average_rating}
             />
           </div>
