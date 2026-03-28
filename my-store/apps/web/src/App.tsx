@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import FloatingLogo from "@/components/FloatingLogo";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
+import HomePage from "@/features/home/HomePage";
 import { useRouter } from "@/hooks/useRouter";
 
 /** Retry lazy import khi chunk load lỗi (mạng, cache, base URL). */
@@ -23,10 +24,10 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   }) as React.LazyExoticComponent<T>;
 }
 
-const HomePage = lazyWithRetry(() => import("@/features/home/HomePage"));
 const ProductDetailPage = lazyWithRetry(() => import("@/features/product/ProductDetailPage"));
 const CategoryPage = lazyWithRetry(() => import("@/features/catalog/CategoryPage"));
 const NewProductsPage = lazyWithRetry(() => import("@/features/catalog/NewProductsPage"));
+const BestSellingPage = lazyWithRetry(() => import("@/features/catalog/BestSellingPage"));
 const PromotionsPage = lazyWithRetry(() => import("@/features/catalog/PromotionsPage"));
 const AllProductsPage = lazyWithRetry(() => import("@/features/catalog/AllProductsPage"));
 const LoginPage = lazyWithRetry(() => import("@/features/auth/LoginPage"));
@@ -52,8 +53,18 @@ export default function App() {
     handleBack,
   } = useRouter();
 
-  if (view === "product" && !selectedSlug) {
-    return <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />;
+  if (view === "home" || (view === "product" && !selectedSlug)) {
+    return (
+      <ErrorBoundary key={view}>
+        <SkipLinks />
+        <HomePage
+          onProductClick={handleProductClick}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+        <FloatingLogo />
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -67,7 +78,6 @@ export default function App() {
           </div>
         </div>
       }>
-        {view === "home" && <HomePage onProductClick={handleProductClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
         {view === "category" && selectedSlug && (
           <CategoryPage
             categorySlug={selectedSlug}
@@ -79,6 +89,14 @@ export default function App() {
         )}
         {view === "new-products" && (
           <NewProductsPage
+            onBack={handleBack}
+            onProductClick={handleProductClick}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        )}
+        {view === "best-selling" && (
+          <BestSellingPage
             onBack={handleBack}
             onProductClick={handleProductClick}
             searchQuery={searchQuery}

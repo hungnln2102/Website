@@ -39,6 +39,7 @@ export const ROUTES = {
   paymentCancel: "/payment/cancel",
   about: "/about",
   newProducts: "/new-products",
+  bestSelling: "/best-selling",
   promotions: "/promotions",
   allProducts: "/all-products",
   /** Đường dẫn danh mục: ROUTES.category(slug) */

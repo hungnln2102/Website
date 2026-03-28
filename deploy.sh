@@ -26,7 +26,7 @@ echo "Checking Git repository..."
 if [ -d ".git" ]; then
     # Step 1: Handle local changes to avoid conflicts
     echo "Stashing local changes to avoid pull conflicts..."
-    git stash push -m "deploy-auto-stash" || true
+    git stash push -u -m "deploy-auto-stash" || true
     
     # Step 2: Pull latest code
     echo "Pulling latest code from Git..."

@@ -57,6 +57,10 @@ export default function ProductCard({
         : `${description.slice(0, 117).trim()}...`
       : null;
 
+  const hasVisibleDescription =
+    !hidePriceAndDescription &&
+    Boolean(shortDescription && shortDescription.trim() && shortDescription !== "Chưa có mô tả");
+
   const sold30d = sold_count_30d ?? 0;
   const isBestSeller = sold30d > 10 && !isOutOfStock;
   const isHot = sold30d >= 5 && sold30d <= 10 && !isOutOfStock;
@@ -86,7 +90,8 @@ export default function ProductCard({
           <h3 className="product-card__title product-card__title--minimal mb-1 text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
             {name}
           </h3>
-          {!hidePriceAndDescription && shortDescription && (
+
+          {hasVisibleDescription && (
             <p className="mb-2 line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-slate-400">
               {shortDescription}
             </p>
@@ -135,10 +140,7 @@ export default function ProductCard({
     <div onClick={onClick} className={cardWrapper}>
       <div className={gradientHover} />
       <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(0.75rem-2px)] bg-white dark:bg-slate-950">
-        <div
-          className="relative w-full overflow-hidden"
-          style={{ aspectRatio: isDeal ? "4/3" : "1/1" }}
-        >
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: isDeal ? "4/3" : "1/1" }}>
           <LazyImage
             src={image_url || "https://placehold.co/400x400?text=No+Image"}
             alt={`Hình ảnh sản phẩm ${name}${description ? ` - ${description.substring(0, 100)}` : ""}`}
@@ -177,7 +179,11 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
-          <div className="mb-1.5 flex min-h-[44px] items-start justify-between gap-1 md:mb-2">
+          <div
+            className={`flex items-start justify-between gap-1 ${
+              hasVisibleDescription ? "mb-1.5 min-h-[44px] md:mb-2" : "mb-1 min-h-[34px]"
+            }`}
+          >
             <h3
               className={`product-card__title product-card__title--default flex-1 text-gray-800 transition-colors ${titleHover} dark:text-slate-200`}
             >
@@ -185,36 +191,34 @@ export default function ProductCard({
             </h3>
           </div>
 
-          {!hidePriceAndDescription && (
-            <div className="mb-2 flex min-h-[34px] items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
-              {shortDescription && shortDescription !== "Chưa có mô tả" ? (
-                <p className="line-clamp-2">{shortDescription}</p>
-              ) : null}
+          {hasVisibleDescription && (
+            <div className="mb-2 flex min-h-[30px] items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
+              <p className="line-clamp-2">{shortDescription}</p>
             </div>
           )}
 
           {!hidePriceAndDescription && (
-            <div className="mb-2 flex items-center justify-between gap-1 text-[10px] font-semibold sm:mb-3 md:text-xs">
-              <div
-                className="flex items-center gap-1"
-                aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}
-              >
+            <div
+              className={`flex items-center justify-between gap-1 text-[10px] font-semibold md:text-xs ${
+                hasVisibleDescription ? "mb-2 sm:mb-3" : "mb-1.5 sm:mb-2"
+              }`}
+            >
+              <div className="flex items-center gap-1" aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}>
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-                <span className="text-yellow-700 dark:text-yellow-500">
-                  {average_rating.toFixed(1)}
-                </span>
+                <span className="text-yellow-700 dark:text-yellow-500">{average_rating.toFixed(1)}</span>
               </div>
               <div className="ml-auto flex items-center gap-1 text-gray-500 dark:text-slate-400">
-                <span>
-                  {sales_count >= 1000 ? `${(sales_count / 1000).toFixed(1)}k` : sales_count} đã
-                  bán
-                </span>
+                <span>{sales_count >= 1000 ? `${(sales_count / 1000).toFixed(1)}k` : sales_count} đã bán</span>
               </div>
             </div>
           )}
 
           {!hidePriceAndDescription && (
-            <div className="mt-auto flex min-h-[64px] items-end border-t border-gray-50 pt-2 dark:border-slate-800/50">
+            <div
+              className={`mt-auto flex items-end border-t border-gray-50 dark:border-slate-800/50 ${
+                hasVisibleDescription ? "min-h-[64px] pt-2" : "min-h-[52px] pt-1.5"
+              }`}
+            >
               <div className="flex flex-col justify-end">
                 {!showContact && !hasMultipleCodes && hasDiscount && (
                   <span className="mb-0.5 text-[11px] font-medium text-gray-500 line-through decoration-red-400/50">

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCategories, fetchProducts, fetchPromotions, type CategoryDto, type PromotionDto } from "@/lib/api";
 import { categoriesMock } from "@/lib/mockData";
@@ -39,6 +39,28 @@ export interface CategoryUI {
 
 export function useHomeData() {
   const queryClient = useQueryClient();
+  const [catalogReady, setCatalogReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setCatalogReady(true);
+      return;
+    }
+
+    const activateQueries = () => setCatalogReady(true);
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(activateQueries, { timeout: 1200 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(activateQueries, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   // Fetch products (timeout 20s, retry 2 lần khi lỗi)
   const {
@@ -48,6 +70,7 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
+    enabled: catalogReady,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     staleTime: 5 * 60 * 1000,
@@ -64,6 +87,7 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["promotions"],
     queryFn: fetchPromotions,
+    enabled: catalogReady,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -78,6 +102,7 @@ export function useHomeData() {
   } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+    enabled: catalogReady,
     staleTime: 10 * 60 * 1000,
     gcTime: 20 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -176,7 +201,13 @@ export function useHomeData() {
     [products]
   );
 
+  const loadingProducts = !catalogReady || loading;
+  const loadingPromotionList = !catalogReady || loadingPromotions;
+  const loadingCategoryList = !catalogReady || loadingCategories;
+
   return {
+    isCatalogReady: catalogReady,
+
     // Raw data
     products: normalizedProducts,
     promotions,
@@ -184,9 +215,9 @@ export function useHomeData() {
     categoryProductsMap,
 
     // Loading states
-    loading,
-    loadingPromotions,
-    loadingCategories,
+    loading: loadingProducts,
+    loadingPromotions: loadingPromotionList,
+    loadingCategories: loadingCategoryList,
 
     // Errors
     productsError,

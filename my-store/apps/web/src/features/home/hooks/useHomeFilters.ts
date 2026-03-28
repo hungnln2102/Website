@@ -57,9 +57,25 @@ export function useHomeFilters({
       .slice(0, 10);
   }, [products]);
 
+  const bestSellingProducts = useMemo(() => {
+    return [...products]
+      .filter((p) => (p.sold_count_30d ?? 0) > 10)
+      .sort((a, b) => {
+        const sold30dA = a.sold_count_30d ?? 0;
+        const sold30dB = b.sold_count_30d ?? 0;
+
+        if (sold30dA !== sold30dB) {
+          return sold30dB - sold30dA;
+        }
+
+        return (b.sales_count ?? 0) - (a.sales_count ?? 0);
+      })
+      .slice(0, 10);
+  }, [products]);
+
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let result = products;
+    let result = [...products];
 
     // Filter by category
     if (selectedCategory !== null) {
@@ -146,6 +162,7 @@ export function useHomeFilters({
 
     // Computed
     newProducts,
+    bestSellingProducts,
     filteredProducts,
     displayedProducts,
     totalPages,

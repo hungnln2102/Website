@@ -1,8 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
+
+const BANNER_IMAGE_SIZES =
+  "(max-width: 640px) 100vw, (max-width: 1024px) min(92vw, 960px), 1200px";
+
+const buildUnsplashUrl = (photoId: string, width: number) =>
+  `https://images.unsplash.com/${photoId}?w=${width}&q=58&fit=crop&crop=entropy&fm=webp`;
+
+const buildResponsiveImage = (photoId: string) => {
+  const widths = [640, 960, 1280];
+  return {
+    src: buildUnsplashUrl(photoId, 960),
+    srcSet: widths.map((width) => `${buildUnsplashUrl(photoId, width)} ${width}w`).join(", "),
+  };
+};
 
 const slides = [
   {
@@ -11,34 +25,31 @@ const slides = [
       "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
     cta: "Tìm hiểu thêm",
     href: ROUTES.about,
-    image:
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&q=65&auto=format&fit=crop",
+    image: buildResponsiveImage("photo-1519389950473-47ba0277781c"),
   },
   {
     title: "Giảm 20% bộ Office bản quyền",
     description: "Kích hoạt trong 5 phút, hỗ trợ cài đặt từ xa.",
     cta: "Nhận ưu đãi",
-    image:
-      "https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=1200&q=65&auto=format&fit=crop",
+    image: buildResponsiveImage("photo-1526498460520-4c246339dccb"),
   },
   {
     title: "Bảo mật đa lớp cho doanh nghiệp",
     description: "Diệt virus, chống ransomware, quản trị tập trung.",
     cta: "Xem gói bảo mật",
-    image:
-      "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=1200&q=65&auto=format&fit=crop",
+    image: buildResponsiveImage("photo-1515879218367-8466d910aaa4"),
   },
   {
     title: "Hỗ trợ 24/7 - Uy tín, tận tâm",
     description: "Đội ngũ kỹ thuật sẵn sàng hỗ trợ mọi thời điểm.",
     cta: "Liên hệ ngay",
-    image:
-      "https://images.unsplash.com/photo-1483478550801-ceba5fe50e8e?w=1200&q=65&auto=format&fit=crop",
+    image: buildResponsiveImage("photo-1483478550801-ceba5fe50e8e"),
   },
 ];
 
 export default function BannerSlider() {
   const [current, setCurrent] = useState(0);
+  const active = slides[current];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -46,6 +57,38 @@ export default function BannerSlider() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const preloadNextImage = () => {
+      const nextSlide = slides[(current + 1) % slides.length];
+      const image = new Image();
+      image.src = nextSlide.image.src;
+      image.srcset = nextSlide.image.srcSet;
+      image.sizes = BANNER_IMAGE_SIZES;
+    };
+
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(preloadNextImage, { timeout: 1800 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(preloadNextImage, 700);
+    return () => window.clearTimeout(timeoutId);
+  }, [current]);
+
+  const heroBadge = useMemo(
+    () => (current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"),
+    [current]
+  );
 
   const handlePrev = () => {
     setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
@@ -55,8 +98,6 @@ export default function BannerSlider() {
     setCurrent((prev) => (prev + 1) % slides.length);
   };
 
-  const active = slides[current];
-
   return (
     <section
       className="group/banner relative flex h-[240px] w-full flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-xl sm:h-[280px] md:h-[320px]"
@@ -64,28 +105,22 @@ export default function BannerSlider() {
       role="region"
     >
       <div className="absolute inset-0 z-0">
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === current ? "opacity-100" : "opacity-0"
-            }`}
-            aria-hidden={index !== current}
-          >
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className="h-full w-full object-cover"
-              width={1200}
-              height={675}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding={index === 0 ? "sync" : "async"}
-              fetchPriority={index === 0 ? "high" : "auto"}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
-          </div>
-        ))}
+        <div key={current} className="absolute inset-0 animate-in fade-in duration-700">
+          <img
+            src={active.image.src}
+            srcSet={active.image.srcSet}
+            sizes={BANNER_IMAGE_SIZES}
+            alt={active.title}
+            className="h-full w-full object-cover"
+            width={1200}
+            height={675}
+            loading={current === 0 ? "eager" : "lazy"}
+            decoding={current === 0 ? "sync" : "async"}
+            fetchPriority={current === 0 ? "high" : "auto"}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
+        </div>
       </div>
 
       <button
@@ -106,7 +141,7 @@ export default function BannerSlider() {
       <div className="relative z-10 flex h-full flex-col justify-center p-5 pt-8 sm:p-8 md:p-10 lg:p-12">
         <div className="max-w-2xl translate-y-0 transform opacity-100 transition-all duration-700">
           <div className="mb-2 inline-flex items-center rounded-full bg-blue-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md sm:mb-3 sm:text-xs">
-            {current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"}
+            {heroBadge}
           </div>
           <h2 className="mb-2 text-2xl font-black leading-tight text-white drop-shadow-md sm:text-3xl md:text-3xl lg:text-4xl">
             {active.title}
@@ -132,16 +167,16 @@ export default function BannerSlider() {
       </div>
 
       <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-6">
-        {slides.map((_, i) => (
+        {slides.map((_, index) => (
           <button
-            key={i}
-            onClick={() => setCurrent(i)}
+            key={index}
+            onClick={() => setCurrent(index)}
             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            aria-label={`Chuyển slide ${i + 1}`}
+            aria-label={`Chuyển slide ${index + 1}`}
           >
             <span
               className={`block rounded-full transition-all duration-300 ${
-                i === current
+                index === current
                   ? "h-2 w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] sm:w-10"
                   : "h-2 w-2 bg-white/50 group-hover/banner:bg-white/70"
               }`}

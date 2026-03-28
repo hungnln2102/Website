@@ -52,7 +52,6 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
-      'lucide-react',
       '@tanstack/react-query',
       'next-themes',
     ],
@@ -67,10 +66,22 @@ export default defineConfig({
     reportCompressedSize: false, // Faster builds
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'ui-vendor': ['lucide-react', 'sonner', 'next-themes'],
-          'query-vendor': ['@tanstack/react-query'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
+
+          if (id.includes('@tanstack/react-query')) {
+            return 'query-vendor';
+          }
+
+          if (id.includes('next-themes')) {
+            return 'theme-vendor';
+          }
+
+          if (id.includes('/sonner/')) {
+            return 'sonner-vendor';
+          }
         },
       },
     },

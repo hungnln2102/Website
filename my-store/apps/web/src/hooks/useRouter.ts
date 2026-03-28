@@ -9,6 +9,7 @@ export type View =
   | "product"
   | "category"
   | "new-products"
+  | "best-selling"
   | "promotions"
   | "all-products"
   | "otp"
@@ -91,6 +92,14 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
     return { view: "product", slug: productSlug, parentPath: ROUTES.newProducts };
   }
 
+  const bestSellingPath = ROUTES.bestSelling.replace(/^\/+|\/+$/g, "");
+  if (path === bestSellingPath)
+    return { view: "best-selling", slug: null, parentPath: ROUTES.home };
+  if (path.startsWith(`${bestSellingPath}/`)) {
+    const productSlug = decodeURIComponent(path.replace(`${bestSellingPath}/`, ""));
+    return { view: "product", slug: productSlug, parentPath: ROUTES.bestSelling };
+  }
+
   const promotionsPath = ROUTES.promotions.replace(/^\/+|\/+$/g, "");
   if (path === promotionsPath)
     return { view: "promotions", slug: null, parentPath: ROUTES.home };
@@ -167,6 +176,7 @@ export function useRouter() {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
     if (path === ROUTES.allProducts.replace(/^\/+|\/+$/g, "")) return ROUTES.allProducts;
     if (path === ROUTES.newProducts.replace(/^\/+|\/+$/g, "")) return ROUTES.newProducts;
+    if (path === ROUTES.bestSelling.replace(/^\/+|\/+$/g, "")) return ROUTES.bestSelling;
     if (path === ROUTES.promotions.replace(/^\/+|\/+$/g, "")) return ROUTES.promotions;
     if (path.startsWith("danh-muc/")) {
       const parts = path.split("/");

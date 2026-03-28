@@ -1,9 +1,8 @@
-import { useRef, useState, useEffect } from "react";
+import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
-import SearchDropdown, {
-  type SearchProduct,
-  type SearchCategory,
-} from "@/components/SearchDropdown";
+import type { SearchProduct, SearchCategory } from "@/components/SearchDropdown";
+
+const SearchDropdown = lazy(() => import("@/components/SearchDropdown"));
 
 interface SearchBarProps {
   searchQuery: string;
@@ -55,6 +54,11 @@ export function SearchBar({
     onCategoryClick?.(slug);
   };
 
+  const handleFocus = () => {
+    setIsDropdownVisible(true);
+    void import("@/components/SearchDropdown");
+  };
+
   return (
     <div
       ref={searchContainerRef}
@@ -80,7 +84,7 @@ export function SearchBar({
           placeholder={searchPlaceholder}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          onFocus={() => setIsDropdownVisible(true)}
+          onFocus={handleFocus}
           className={`relative w-full pl-10 pr-10 transition-all duration-500 rounded-xl text-sm font-medium focus:outline-none placeholder:text-gray-500 ${
             isScrolled ? "h-9" : "h-10"
           } ${
@@ -102,15 +106,26 @@ export function SearchBar({
           </button>
         )}
 
-        {/* Search Dropdown */}
-        <SearchDropdown
-          searchQuery={searchQuery}
-          products={products}
-          categories={categories}
-          onProductClick={handleProductClick}
-          onCategoryClick={handleCategoryClick}
-          isVisible={isDropdownVisible}
-        />
+        {isDropdownVisible && (
+          <Suspense
+            fallback={
+              <div className="absolute left-0 right-0 top-full z-[9999] mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="p-4 text-center text-sm text-gray-500 dark:text-slate-400">
+                  Đang chuẩn bị gợi ý tìm kiếm...
+                </div>
+              </div>
+            }
+          >
+            <SearchDropdown
+              searchQuery={searchQuery}
+              products={products}
+              categories={categories}
+              onProductClick={handleProductClick}
+              onCategoryClick={handleCategoryClick}
+              isVisible={isDropdownVisible}
+            />
+          </Suspense>
+        )}
       </div>
     </div>
   );

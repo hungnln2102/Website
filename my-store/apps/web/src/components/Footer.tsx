@@ -1,5 +1,5 @@
 import { Facebook, Mail, MessageCircle, Youtube } from "lucide-react";
-import logo from "@/asset/logo.jpg";
+import logo from "@/asset/logo-transparent.png";
 import { ROUTES } from "@/lib/constants";
 
 const socialLinks = [
@@ -11,7 +11,7 @@ const socialLinks = [
 export default function Footer() {
   return (
     <footer className="mt-12 border-t border-slate-800/80 bg-slate-900 text-white">
-      <div className="mx-auto max-w-7xl px-4 pt-1 pb-1 sm:px-4 lg:px-4">
+      <div className="mx-auto max-w-[90rem] px-4 pt-1 pb-1 sm:px-4 lg:px-4">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto] sm:items-start">
           <div className="min-w-0 max-w-xl">
             <a
@@ -33,7 +33,7 @@ export default function Footer() {
                 loading="lazy"
                 width={28}
                 height={28}
-                className="h-7 w-7 rounded-lg bg-white object-contain p-1"
+                className="h-7 w-7 object-contain"
               />
               <span className="text-base font-bold text-white">
                 Mavryk Premium <span className="text-blue-400">Store</span>

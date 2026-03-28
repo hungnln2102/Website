@@ -1,5 +1,5 @@
 "use client";
-import logo from "@/asset/logo.jpg";
+import logo from "@/asset/logo-transparent.png";
 import { SearchBar } from "@/components/header/SearchBar";
 import { UserMenu } from "@/components/header/UserMenu";
 import type { SearchProduct, SearchCategory } from "@/components/SearchDropdown";
