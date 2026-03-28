@@ -1,10 +1,10 @@
-import { lazy, Suspense } from "react";
+﻿import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
 import HomePage from "@/features/home/HomePage";
 import { useRouter } from "@/hooks/useRouter";
 
-/** Retry lazy import khi chunk load lỗi (mạng, cache, base URL). */
+/** Retry lazy import khi chunk load lá»—i (máº¡ng, cache, base URL). */
 function lazyWithRetry<T extends React.ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   retries = 2
@@ -72,14 +72,18 @@ export default function App() {
   return (
     <ErrorBoundary key={view}>
       <SkipLinks />
-      <Suspense fallback={
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950" aria-live="polite" aria-busy="true">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" />
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Đang tải trang...</p>
+      <Suspense
+        fallback={
+          <div
+            className="pointer-events-none fixed right-4 top-4 z-[160] inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/92 px-3 py-2 text-sm font-medium text-slate-600 shadow-lg shadow-slate-950/5 backdrop-blur-md dark:border-slate-700/70 dark:bg-slate-900/88 dark:text-slate-300"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" />
+            <span>Đang tải trang...</span>
           </div>
-        </div>
-      }>
+        }
+      >
         {view === "category" && selectedSlug && (
           <CategoryPage
             categorySlug={selectedSlug}
@@ -194,3 +198,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
