@@ -1,5 +1,5 @@
 "use client";
-import logo from "@/asset/logo.png";
+import logo from "@/asset/logo.jpg";
 import { SearchBar } from "@/components/header/SearchBar";
 import { UserMenu } from "@/components/header/UserMenu";
 import type { SearchProduct, SearchCategory } from "@/components/SearchDropdown";
@@ -63,6 +63,8 @@ export default function SiteHeader({
             src={logo}
             alt="Mavryk Logo"
             title="Mavryk Premium Store"
+            width={44}
+            height={44}
             className={`object-contain transition-all duration-500 ${
               isScrolled
                 ? "h-6 w-6 sm:h-7 sm:w-7 md:h-9 md:w-9"
@@ -80,7 +82,7 @@ export default function SiteHeader({
               Mavryk Premium <span className="text-blue-600 dark:text-blue-500">Store</span>
             </div>
             {!isScrolled && (
-              <p className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 lg:block">
+              <p className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-slate-400 lg:block">
                 Phần mềm bản quyền chính hãng
               </p>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import logo from "@/asset/logo.png";
+import logo from "@/asset/logo.jpg";
 
 interface AuthLogoProps {
   onBack: () => void;
@@ -17,6 +17,8 @@ export function AuthLogo({ onBack }: AuthLogoProps) {
         <img
           src={logo}
           alt="Mavryk Logo"
+          width={40}
+          height={40}
           className="h-10 w-10 rounded-xl object-contain transition-all duration-300"
         />
         <div className="hidden sm:block text-left">

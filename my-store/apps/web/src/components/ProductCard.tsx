@@ -1,11 +1,11 @@
 "use client";
 
-import { Star, TrendingUp, Sparkles } from "lucide-react";
+import { Star } from "lucide-react";
 
+import ProductTag from "@/components/ProductTag";
+import LazyImage from "@/components/ui/LazyImage";
 import type { Database } from "@/lib/database.types";
 import { roundToNearestThousand } from "@/lib/pricing";
-import LazyImage from "@/components/ui/LazyImage";
-import ProductTag from "@/components/ProductTag";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -13,11 +13,9 @@ type ProductCardProps = Product & {
   package?: string | null;
   package_product?: string | null;
   package_count?: number;
-  /** Giá hiển thị "Từ X đ": bỏ qua 0đ, lấy giá tiếp theo. Nếu 0 thì hiển thị "Liên Hệ". */
   from_price?: number;
   onClick: () => void;
   variant?: "default" | "minimal" | "deal";
-  /** Trong danh mục: ẩn giá và mô tả, chỉ hiển thị ảnh + tên. */
   hidePriceAndDescription?: boolean;
   isNew?: boolean;
   sold_count_30d?: number;
@@ -52,7 +50,6 @@ export default function ProductCard({
   const isDeal = variant === "deal";
   const isOutOfStock = !is_active;
 
-  // Short description: 1–2 dòng, từ description nếu có
   const shortDescription =
     description && description.trim().length > 0
       ? description.length <= 120
@@ -60,8 +57,6 @@ export default function ProductCard({
         : `${description.slice(0, 117).trim()}...`
       : null;
 
-  // Xác định tag dựa trên sold_count_30d
-  // Ưu tiên: OUT OF STOCK > BESTSELLER > HOT > NEW
   const sold30d = sold_count_30d ?? 0;
   const isBestSeller = sold30d > 10 && !isOutOfStock;
   const isHot = sold30d >= 5 && sold30d <= 10 && !isOutOfStock;
@@ -76,6 +71,8 @@ export default function ProductCard({
           <LazyImage
             src={image_url || "https://placehold.co/400x400?text=No+Image"}
             alt={`Hình ảnh sản phẩm ${name}`}
+            width={400}
+            height={400}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {hasDiscount && (
@@ -96,25 +93,25 @@ export default function ProductCard({
           )}
 
           {!hidePriceAndDescription && (
-          <div className="flex flex-col">
-            {!showContact && !hasMultipleCodes && hasDiscount && (
-              <span className="text-[10px] font-medium text-gray-400 line-through">
-                {formatCurrency(displayPrice)}
-              </span>
-            )}
-            <div className="text-base font-bold text-blue-600 dark:text-blue-400">
-              {showContact ? (
-                "Liên Hệ"
-              ) : hasMultipleCodes ? (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[10px] font-medium text-gray-400">Từ</span>
-                  <span>{formatCurrency(discountedPrice)}</span>
-                </div>
-              ) : (
-                formatCurrency(discountedPrice)
+            <div className="flex flex-col">
+              {!showContact && !hasMultipleCodes && hasDiscount && (
+                <span className="text-[10px] font-medium text-gray-500 line-through">
+                  {formatCurrency(displayPrice)}
+                </span>
               )}
+              <div className="text-base font-bold text-blue-600 dark:text-blue-400">
+                {showContact ? (
+                  "Liên hệ"
+                ) : hasMultipleCodes ? (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[10px] font-medium text-gray-500">Từ</span>
+                    <span>{formatCurrency(discountedPrice)}</span>
+                  </div>
+                ) : (
+                  formatCurrency(discountedPrice)
+                )}
+              </div>
             </div>
-          </div>
           )}
         </div>
       </div>
@@ -130,38 +127,35 @@ export default function ProductCard({
     : "absolute inset-0 z-0 bg-gradient-to-br from-blue-500 via-cyan-400 to-indigo-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100";
 
   const priceColor = isDeal ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400";
-
-  const titleHover = isDeal ? "group-hover:text-orange-600 dark:group-hover:text-orange-400" : "group-hover:text-blue-600 dark:group-hover:text-blue-400";
+  const titleHover = isDeal
+    ? "group-hover:text-orange-600 dark:group-hover:text-orange-400"
+    : "group-hover:text-blue-600 dark:group-hover:text-blue-400";
 
   return (
     <div onClick={onClick} className={cardWrapper}>
       <div className={gradientHover} />
       <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(0.75rem-2px)] bg-white dark:bg-slate-950">
-        {/* Deal: 4:3 | Sản Phẩm Mới & Tất Cả Sản Phẩm: 1:1 */}
         <div
           className="relative w-full overflow-hidden"
           style={{ aspectRatio: isDeal ? "4/3" : "1/1" }}
         >
           <LazyImage
             src={image_url || "https://placehold.co/400x400?text=No+Image"}
-            alt={`Hình ảnh sản phẩm ${name}${description ? ` - ${description.substring(0, 100)}` : ''}`}
+            alt={`Hình ảnh sản phẩm ${name}${description ? ` - ${description.substring(0, 100)}` : ""}`}
+            width={400}
+            height={400}
             className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/5 transition-opacity group-hover:opacity-0" />
-          
-          {/* Tags: OUT OF STOCK > BESTSELLER > HOT > NEW > Deal - Góc trên bên trái của hình ảnh */}
+
           <div className="absolute left-2 top-2 z-30">
             {isOutOfStock && (
               <div className="rounded-md bg-gradient-to-r from-gray-600 to-gray-700 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
                 Hết hàng
               </div>
             )}
-            {isBestSeller && !isOutOfStock && (
-              <ProductTag type="best-selling" />
-            )}
-            {isHot && !isBestSeller && !isOutOfStock && (
-              <ProductTag type="hot" />
-            )}
+            {isBestSeller && !isOutOfStock && <ProductTag type="best-selling" />}
+            {isHot && !isBestSeller && !isOutOfStock && <ProductTag type="hot" />}
             {isNew && !isHot && !isBestSeller && !isDeal && !isOutOfStock && (
               <ProductTag type="new" />
             )}
@@ -171,12 +165,9 @@ export default function ProductCard({
               </div>
             )}
           </div>
-          
-          {/* Overlay khi hết hàng */}
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-black/40 z-20" />
-          )}
-          
+
+          {isOutOfStock && <div className="absolute inset-0 z-20 bg-black/40" />}
+
           {hasDiscount && (
             <div className="absolute right-3 top-3 z-30 overflow-hidden rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
               <span className="relative z-10">-{discount_percentage}%</span>
@@ -187,52 +178,63 @@ export default function ProductCard({
 
         <div className="flex flex-1 flex-col p-2 md:p-3">
           <div className="mb-1.5 flex min-h-[44px] items-start justify-between gap-1 md:mb-2">
-            <h3 className={`product-card__title product-card__title--default flex-1 text-gray-800 transition-colors ${titleHover} dark:text-slate-200`}>
+            <h3
+              className={`product-card__title product-card__title--default flex-1 text-gray-800 transition-colors ${titleHover} dark:text-slate-200`}
+            >
               {name}
             </h3>
           </div>
+
           {!hidePriceAndDescription && (
-          <div className="mb-2 min-h-[34px] flex items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
-            {shortDescription && shortDescription !== "Chưa có mô tả" ? (
-              <p className="line-clamp-2">{shortDescription}</p>
-            ) : null}
-          </div>
+            <div className="mb-2 flex min-h-[34px] items-start text-[11px] leading-snug text-gray-500 dark:text-slate-400 md:text-xs">
+              {shortDescription && shortDescription !== "Chưa có mô tả" ? (
+                <p className="line-clamp-2">{shortDescription}</p>
+              ) : null}
+            </div>
           )}
 
           {!hidePriceAndDescription && (
-          <div className="mb-2 flex items-center justify-between gap-1 text-[10px] sm:mb-3 md:text-xs font-semibold">
-            <div className="flex items-center gap-1" aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}>
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-              <span className="text-yellow-700 dark:text-yellow-500">{average_rating.toFixed(1)}</span>
-            </div>
-            <div className="ml-auto flex items-center gap-1 text-gray-400">
-              <span className="dark:text-slate-500">{sales_count >= 1000 ? `${(sales_count / 1000).toFixed(1)}k` : sales_count} đã bán</span>
-            </div>
-          </div>
-          )}
-
-          {!hidePriceAndDescription && (
-          <div className="mt-auto flex min-h-[64px] items-end border-t border-gray-50 pt-2 dark:border-slate-800/50">
-            <div className="flex flex-col justify-end">
-              {!showContact && !hasMultipleCodes && hasDiscount && (
-                <span className="mb-0.5 text-[11px] font-medium text-gray-400 line-through decoration-red-400/50">
-                  {formatCurrency(displayPrice)}
+            <div className="mb-2 flex items-center justify-between gap-1 text-[10px] font-semibold sm:mb-3 md:text-xs">
+              <div
+                className="flex items-center gap-1"
+                aria-label={`Đánh giá ${average_rating.toFixed(1)} sao`}
+              >
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                <span className="text-yellow-700 dark:text-yellow-500">
+                  {average_rating.toFixed(1)}
                 </span>
-              )}
-              <div className={`text-lg font-black tracking-tight sm:text-xl md:text-2xl ${priceColor}`}>
-                {showContact ? (
-                  "Liên Hệ"
-                ) : hasMultipleCodes ? (
-                  <div className="flex items-baseline gap-0.5 sm:gap-1">
-                    <span className="text-[10px] font-medium text-gray-400 sm:text-xs">Từ</span>
-                    <span>{formatCurrency(discountedPrice)}</span>
-                  </div>
-                ) : (
-                  formatCurrency(discountedPrice)
-                )}
+              </div>
+              <div className="ml-auto flex items-center gap-1 text-gray-500 dark:text-slate-400">
+                <span>
+                  {sales_count >= 1000 ? `${(sales_count / 1000).toFixed(1)}k` : sales_count} đã
+                  bán
+                </span>
               </div>
             </div>
-          </div>
+          )}
+
+          {!hidePriceAndDescription && (
+            <div className="mt-auto flex min-h-[64px] items-end border-t border-gray-50 pt-2 dark:border-slate-800/50">
+              <div className="flex flex-col justify-end">
+                {!showContact && !hasMultipleCodes && hasDiscount && (
+                  <span className="mb-0.5 text-[11px] font-medium text-gray-500 line-through decoration-red-400/50">
+                    {formatCurrency(displayPrice)}
+                  </span>
+                )}
+                <div className={`text-lg font-black tracking-tight sm:text-xl md:text-2xl ${priceColor}`}>
+                  {showContact ? (
+                    "Liên hệ"
+                  ) : hasMultipleCodes ? (
+                    <div className="flex items-baseline gap-0.5 sm:gap-1">
+                      <span className="text-[10px] font-medium text-gray-500 sm:text-xs">Từ</span>
+                      <span>{formatCurrency(discountedPrice)}</span>
+                    </div>
+                  ) : (
+                    formatCurrency(discountedPrice)
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

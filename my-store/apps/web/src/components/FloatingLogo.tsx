@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 
 import ContactMessageBlock from "@/components/ContactMessageBlock";
-import logo from "@/asset/logo1.png";
+import logo from "@/asset/logo1.jpg";
 
 const actions = [
   {
@@ -85,6 +85,8 @@ export default function FloatingLogo() {
             src={logo}
             alt="Logo"
             title="Mavryk Premium Store"
+            width={48}
+            height={48}
             className="h-9 w-9 rounded-full object-contain sm:h-12 sm:w-12"
           />
         )}

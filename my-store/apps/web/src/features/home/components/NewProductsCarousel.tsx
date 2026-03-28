@@ -31,6 +31,8 @@ function NewProductCard({ product, onClick }: { product: Product & { from_price?
           <LazyImage
             src={product.image_url || "https://placehold.co/600x400?text=No+Image"}
             alt={product.name}
+            width={400}
+            height={400}
             className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
           />
           
@@ -57,7 +59,7 @@ function NewProductCard({ product, onClick }: { product: Product & { from_price?
                   {showContact ? "Liên Hệ" : formatCurrency(discountedPrice)}
                 </span>
                 {!showContact && product.discount_percentage > 0 && (
-                   <span className="text-[10px] font-bold text-gray-400 line-through">
+                   <span className="text-[10px] font-bold text-gray-500 line-through">
                     {formatCurrency(displayPrice)}
                   </span>
                 )}
@@ -146,7 +148,7 @@ export default function NewProductsCarousel({ products, onProductClick, onViewAl
             <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
               SẢN PHẨM <span className="text-blue-600">MỚI</span>
             </h2>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 sm:text-xs">
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 sm:text-xs">
               Những sản phẩm mới nhất
             </p>
           </div>

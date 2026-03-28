@@ -63,7 +63,6 @@ export default function BannerSlider() {
       aria-label="Banner quảng cáo"
       role="region"
     >
-      {/* Background Image wrapper */}
       <div className="absolute inset-0 z-0">
         {slides.map((slide, index) => (
           <div
@@ -71,53 +70,56 @@ export default function BannerSlider() {
             className={`absolute inset-0 transition-opacity duration-1000 ${
               index === current ? "opacity-100" : "opacity-0"
             }`}
+            aria-hidden={index !== current}
           >
-            <div
-              className="h-full w-full bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${slide.image})` }}
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="h-full w-full object-cover"
+              width={1200}
+              height={675}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding={index === 0 ? "sync" : "async"}
+              fetchPriority={index === 0 ? "high" : "auto"}
             />
-            {/* Dark/Gradient Overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
             <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
           </div>
         ))}
       </div>
 
-      {/* Navigation Arrows */}
       <button
         onClick={handlePrev}
-        className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 opacity-0 group-hover/banner:opacity-100 sm:left-6 md:h-12 md:w-12 shadow-2xl border border-white/20"
+        className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 shadow-2xl backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 group-hover/banner:opacity-100 sm:left-6 md:h-12 md:w-12"
         aria-label="Slide trước"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
       <button
         onClick={handleNext}
-        className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 opacity-0 group-hover/banner:opacity-100 sm:right-6 md:h-12 md:w-12 shadow-2xl border border-white/20"
+        className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 shadow-2xl backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 group-hover/banner:opacity-100 sm:right-6 md:h-12 md:w-12"
         aria-label="Slide tiếp theo"
       >
         <ChevronRight className="h-6 w-6" />
       </button>
 
-      {/* Content wrapper */}
       <div className="relative z-10 flex h-full flex-col justify-center p-5 pt-8 sm:p-8 md:p-10 lg:p-12">
-        <div className="max-w-2xl transform transition-all duration-700 translate-y-0 opacity-100">
-          <div className="mb-2 inline-flex items-center rounded-full bg-blue-600/90 px-2.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-md ring-1 ring-white/20 sm:mb-3">
+        <div className="max-w-2xl translate-y-0 transform opacity-100 transition-all duration-700">
+          <div className="mb-2 inline-flex items-center rounded-full bg-blue-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md sm:mb-3 sm:text-xs">
             {current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"}
           </div>
           <h2 className="mb-2 text-2xl font-black leading-tight text-white drop-shadow-md sm:text-3xl md:text-3xl lg:text-4xl">
             {active.title}
           </h2>
-          <p className="mb-4 sm:mb-5 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-200 drop-shadow md:text-base line-clamp-2 sm:line-clamp-3">
+          <p className="mb-4 max-w-xl line-clamp-2 text-xs leading-relaxed text-slate-200 drop-shadow sm:mb-5 sm:line-clamp-3 sm:text-sm md:text-base">
             {active.description}
           </p>
           <button
-            className="group relative flex w-fit cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(37,99,235,1)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_-15px_rgba(37,99,235,1)] md:px-8 md:py-3.5"
+            className="group relative flex w-fit cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(37,99,235,1)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_-15px_rgba(37,99,235,1)] sm:px-6 sm:py-3 sm:text-base md:px-8 md:py-3.5"
             aria-label={`${active.cta} - ${active.title}`}
             onClick={() => {
-              if (typeof window !== "undefined" && (active as any).href) {
-                const href = (active as any).href as string;
-                window.history.pushState({}, "", href);
+              if (typeof window !== "undefined" && active.href) {
+                window.history.pushState({}, "", active.href);
                 window.dispatchEvent(new PopStateEvent("popstate"));
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }
@@ -129,19 +131,23 @@ export default function BannerSlider() {
         </div>
       </div>
 
-      {/* Indicators */}
       <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-6">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`h-1.5 sm:h-2 cursor-pointer rounded-full transition-all duration-300 ${
-              i === current
-                ? "w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] sm:w-10"
-                : "w-2 bg-white/40 hover:bg-white/70 sm:w-2"
-            }`}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             aria-label={`Chuyển slide ${i + 1}`}
-          />
+          >
+            <span
+              className={`block rounded-full transition-all duration-300 ${
+                i === current
+                  ? "h-2 w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] sm:w-10"
+                  : "h-2 w-2 bg-white/50 group-hover/banner:bg-white/70"
+              }`}
+              aria-hidden="true"
+            />
+          </button>
         ))}
       </div>
     </section>

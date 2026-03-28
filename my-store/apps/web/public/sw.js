@@ -1,14 +1,12 @@
 // Service Worker for Mavryk Premium Store
 // Version 1.0.0
 
-const CACHE_NAME = 'mavryk-store-v3';
-const RUNTIME_CACHE = 'mavryk-runtime-v3';
+const CACHE_NAME = 'mavryk-store-v5';
+const RUNTIME_CACHE = 'mavryk-runtime-v5';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/logo1.png',
+  '/logo1-192.jpg?v=4',
 ];
 
 // Install event - cache static assets
@@ -95,6 +93,31 @@ self.addEventListener('fetch', (event) => {
                 }
               );
             });
+        })
+    );
+    return;
+  }
+
+  // Always try the network first for navigations so new deploys are visible immediately.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            return caches.match('/index.html');
+          });
         })
     );
     return;

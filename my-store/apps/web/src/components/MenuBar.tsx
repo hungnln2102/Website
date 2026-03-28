@@ -272,18 +272,21 @@ const handleMobileMenuClose = () => {
           />
 
           {/* Drawer */}
-          <aside
+          <div
             className={`fixed top-0 right-0 z-[9999] h-full w-full max-w-sm bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
               isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
-            aria-label="Mobile navigation menu"
             role="dialog"
             aria-modal="true"
+            aria-labelledby="mobile-menu-title"
           >
             <div className="flex h-full flex-col">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-gray-200/80 dark:border-slate-700/80 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 px-5 py-5">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300">
+                <h2
+                  id="mobile-menu-title"
+                  className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300"
+                >
                   Menu
                 </h2>
                 <button
@@ -375,7 +378,7 @@ const handleMobileMenuClose = () => {
                 </a>
               </div>
             </div>
-          </aside>
+          </div>
         </>,
         document.body
       )}
