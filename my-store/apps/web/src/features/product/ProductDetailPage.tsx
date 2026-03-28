@@ -11,6 +11,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { useAuth } from "@/features/auth/hooks";
 import { useScroll } from "@/hooks/useScroll";
 import { fetchFormFields, type CategoryDto } from "@/lib/api";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
 import { generateBreadcrumbSchema, generateProductSchema } from "@/lib/seo";
 import { slugify } from "@/lib/utils";
@@ -21,6 +22,8 @@ import {
   getCustomerFacingDescription,
   isInternalProductPlaceholder,
 } from "./utils/contentPresentation";
+
+const DEFAULT_PRODUCT_FALLBACK_IMAGE = `${APP_CONFIG.url}${BRANDING_ASSETS.logo512}`;
 import {
   AdditionalInfoSection,
   BuyButton,
@@ -148,7 +151,7 @@ export default function ProductDetailPage({
           ? product.description
           : META_DESCRIPTION_FALLBACK,
       url: `${APP_CONFIG.url}/${encodeURIComponent(product.slug)}`,
-      image: product.image_url || `${APP_CONFIG.url}/favicon.png`,
+      image: product.image_url || DEFAULT_PRODUCT_FALLBACK_IMAGE,
       type: "product" as const,
     };
   }, [hasSelectedVariant, product, selectedDurationData?.label, seoHeading]);

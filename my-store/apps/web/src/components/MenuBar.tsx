@@ -81,20 +81,33 @@ useEffect(() => {
 }, [isMobileMenuOpen]);
 
 const navigateAppRoute = (href: string) => {
+  const scrollToHash = (hash: string) => {
+    if (!hash) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 60);
+  };
+
   // Nội bộ app: dùng history API để không reload trang
   if (href.startsWith("/")) {
     window.history.pushState({}, "", href);
     window.dispatchEvent(new PopStateEvent("popstate"));
+    const hash = href.split("#")[1];
+    if (hash) {
+      scrollToHash(hash);
+    }
     return;
   }
 
   // Anchor trong cùng trang
   if (href.startsWith("#")) {
-    const targetId = href.slice(1);
-    const el = document.getElementById(targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    scrollToHash(href.slice(1));
     return;
   }
 

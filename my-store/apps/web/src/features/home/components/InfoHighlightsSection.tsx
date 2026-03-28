@@ -56,7 +56,10 @@ const highlightCards: HighlightCard[] = [
 
 export function InfoHighlightsSection() {
   return (
-    <section className="relative mx-auto mt-3 max-w-[78rem] overflow-hidden rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.92))] px-4 py-7 shadow-[0_18px_48px_rgba(15,23,42,0.07)] sm:mt-4 sm:px-6 sm:py-8 lg:px-8 dark:border-slate-800/70 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.96))] dark:shadow-[0_24px_60px_rgba(2,6,23,0.34)]">
+    <section
+      className="relative mx-auto mt-3 max-w-[78rem] overflow-hidden rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.92))] px-4 py-7 shadow-[0_18px_48px_rgba(15,23,42,0.07)] sm:mt-4 sm:px-6 sm:py-8 lg:px-8 dark:border-slate-800/70 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.96))] dark:shadow-[0_24px_60px_rgba(2,6,23,0.34)]"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}
+    >
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_64%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_60%)]"
         aria-hidden="true"

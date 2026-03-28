@@ -1,8 +1,10 @@
 export { BackgroundEffects } from "./BackgroundEffects";
 export { DealsSection } from "./DealsSection";
+export { HomeSectionSkeleton } from "./HomeSectionSkeleton";
 export { NewProductsSection } from "./NewProductsSection";
 export { BestSellingSection } from "./BestSellingSection";
 export { AllProductsSection } from "./AllProductsSection";
 export { ErrorStates } from "./ErrorStates";
+export { HomeSupportShareSection } from "./HomeSupportShareSection";
 export { InfoHighlightsSection } from "./InfoHighlightsSection";
 export { StoreStatsSection } from "./StoreStatsSection";

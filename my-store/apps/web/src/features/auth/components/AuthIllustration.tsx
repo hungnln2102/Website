@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, Shield, Zap } from "lucide-react";
-import logo from "@/asset/logo1.jpg";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 
 interface AuthIllustrationProps {
   isLogin: boolean;
@@ -36,7 +36,7 @@ export function AuthIllustration({ isLogin, onToggle }: AuthIllustrationProps) {
       <div className="relative">
         <div className="h-56 w-56 rounded-full bg-white/10 backdrop-blur-sm shadow-2xl overflow-hidden">
           <img
-            src={logo}
+            src={BRANDING_ASSETS.logo512}
             alt="Mavryk Logo"
             width={224}
             height={224}

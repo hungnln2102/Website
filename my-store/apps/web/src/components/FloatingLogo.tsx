@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 
 import ContactMessageBlock from "@/components/ContactMessageBlock";
-import logo from "@/asset/logo1.jpg";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 
 const actions = [
   {
@@ -41,7 +41,7 @@ export default function FloatingLogo() {
     <>
       {/* Bong bóng chat: hiển thị 5s rồi animation ẩn, logo giữ nguyên bên dưới */}
       <div
-        className={`fixed bottom-20 right-4 z-50 flex justify-end pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)] sm:bottom-24 sm:right-6 transition-all duration-500 ease-out ${
+        className={`fixed bottom-20 right-4 z-50 hidden justify-end pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)] transition-all duration-500 ease-out sm:bottom-24 sm:right-6 sm:flex ${
           bannerVisible
             ? "opacity-100 translate-y-0"
             : "pointer-events-none opacity-0 translate-y-4"
@@ -82,12 +82,12 @@ export default function FloatingLogo() {
           <X className="h-6 w-6 text-gray-800" />
         ) : (
           <img
-            src={logo}
+            src={BRANDING_ASSETS.logoTransparent}
             alt="Logo"
             title="Mavryk Premium Store"
             width={48}
             height={48}
-            className="h-9 w-9 rounded-full object-contain sm:h-12 sm:w-12"
+            className="h-9 w-9 rounded-full object-cover sm:h-12 sm:w-12"
           />
         )}
         </button>

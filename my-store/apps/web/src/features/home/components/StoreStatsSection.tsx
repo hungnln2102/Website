@@ -49,7 +49,11 @@ export function StoreStatsSection({
   ];
 
   return (
-    <section className="mt-5 mb-4 sm:mt-6 sm:mb-6" aria-label="Tổng quan nhanh cửa hàng">
+    <section
+      className="mt-5 mb-4 sm:mt-6 sm:mb-6"
+      aria-label="Tổng quan nhanh cửa hàng"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "240px" }}
+    >
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/82 px-2 py-2 shadow-[0_10px_26px_rgba(15,23,42,0.04)] dark:border-slate-800/70 dark:bg-slate-900/66 dark:shadow-[0_16px_34px_rgba(2,6,23,0.18)] sm:px-3 sm:py-3">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0">
           {stats.map((stat, index) => {

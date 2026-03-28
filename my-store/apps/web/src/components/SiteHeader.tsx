@@ -1,5 +1,5 @@
 "use client";
-import logo from "@/asset/logo-transparent.png";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { SearchBar } from "@/components/header/SearchBar";
 import { UserMenu } from "@/components/header/UserMenu";
 import type { SearchProduct, SearchCategory } from "@/components/SearchDropdown";
@@ -60,7 +60,7 @@ export default function SiteHeader({
           aria-label="Quay về trang chủ"
         >
           <img
-            src={logo}
+            src={BRANDING_ASSETS.logoTransparent}
             alt="Mavryk Logo"
             title="Mavryk Premium Store"
             width={44}

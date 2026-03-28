@@ -1,5 +1,5 @@
 import { Facebook, Mail, MessageCircle, Youtube } from "lucide-react";
-import logo from "@/asset/logo-transparent.png";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { ROUTES } from "@/lib/constants";
 
 const socialLinks = [
@@ -26,7 +26,7 @@ export default function Footer() {
               aria-label="Về trang chủ Mavryk Premium Store"
             >
               <img
-                src={logo}
+                src={BRANDING_ASSETS.logoTransparent}
                 alt=""
                 aria-hidden="true"
                 title="Mavryk Premium Store"

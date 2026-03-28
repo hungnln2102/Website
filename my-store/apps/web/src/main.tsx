@@ -113,7 +113,6 @@ window.addEventListener('unhandledrejection', (event) => {
 
 const removeSeoFallbackContent = () => {
   document.getElementById('seo-fallback-content')?.remove();
-  document.getElementById('seo-fallback-links')?.remove();
 };
 
 createRoot(document.getElementById('root')!).render(

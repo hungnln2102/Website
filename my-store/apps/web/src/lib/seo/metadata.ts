@@ -1,4 +1,8 @@
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { APP_CONFIG } from "@/lib/constants";
+
+const DEFAULT_BRANDING_IMAGE_PATH = BRANDING_ASSETS.logo512;
+const DEFAULT_BRANDING_IMAGE_URL = `${APP_CONFIG.url}${DEFAULT_BRANDING_IMAGE_PATH}`;
 
 export interface PageMetadata {
   title: string;
@@ -14,7 +18,7 @@ export interface PageMetadata {
  */
 export const generateOpenGraphTags = (metadata: PageMetadata) => {
   const url = metadata.url || APP_CONFIG.url;
-  const image = metadata.image || `${APP_CONFIG.url}/favicon.png`;
+  const image = metadata.image || DEFAULT_BRANDING_IMAGE_URL;
 
   return {
     "og:title": metadata.title,
@@ -31,7 +35,7 @@ export const generateOpenGraphTags = (metadata: PageMetadata) => {
  * Generates Twitter Card metadata
  */
 export const generateTwitterCardTags = (metadata: PageMetadata) => {
-  const image = metadata.image || `${APP_CONFIG.url}/favicon.png`;
+  const image = metadata.image || DEFAULT_BRANDING_IMAGE_URL;
 
   return {
     "twitter:card": "summary_large_image",
@@ -51,7 +55,7 @@ export const generateOrganizationSchema = () => {
     name: APP_CONFIG.name,
     description: APP_CONFIG.description,
     url: APP_CONFIG.url,
-    logo: `${APP_CONFIG.url}/favicon.png`,
+    logo: DEFAULT_BRANDING_IMAGE_URL,
   };
 };
 
@@ -92,7 +96,7 @@ export const generateProductSchema = (product: {
     "@type": "Product",
     name: product.name,
     description: product.description || "",
-    image: product.image || `${APP_CONFIG.url}/favicon.png`,
+    image: product.image || DEFAULT_BRANDING_IMAGE_URL,
     offers: {
       "@type": "Offer",
       price: product.price,

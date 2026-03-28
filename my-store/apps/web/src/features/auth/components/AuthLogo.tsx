@@ -1,6 +1,6 @@
 "use client";
 
-import logo from "@/asset/logo.jpg";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 
 interface AuthLogoProps {
   onBack: () => void;
@@ -15,7 +15,7 @@ export function AuthLogo({ onBack }: AuthLogoProps) {
         aria-label="Quay về trang chủ"
       >
         <img
-          src={logo}
+          src={BRANDING_ASSETS.logoTransparent}
           alt="Mavryk Logo"
           width={40}
           height={40}

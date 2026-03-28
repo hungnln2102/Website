@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { Suspense, lazy, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import BannerSlider from "@/components/BannerSlider";
@@ -22,13 +22,25 @@ import { useHomeData, useHomeFilters, useSyncUserBalance } from "./hooks";
 import {
   BackgroundEffects,
   DealsSection,
+  HomeSectionSkeleton,
   NewProductsSection,
   BestSellingSection,
   AllProductsSection,
   ErrorStates,
-  InfoHighlightsSection,
   StoreStatsSection,
 } from "./components";
+
+const HomeSupportShareSection = lazy(() =>
+  import("./components/HomeSupportShareSection").then((module) => ({
+    default: module.HomeSupportShareSection,
+  }))
+);
+
+const InfoHighlightsSection = lazy(() =>
+  import("./components/InfoHighlightsSection").then((module) => ({
+    default: module.InfoHighlightsSection,
+  }))
+);
 
 interface HomePageProps {
   onProductClick: (slug: string) => void;
@@ -205,65 +217,64 @@ export default function HomePage({
           <BannerSlider />
         </section>
 
-        {isCatalogReady ? (
+        {!searchQuery && (
           <>
-            {!loadingPromotions && promotions.length > 0 && !searchQuery && (
-              <DealsSection
-                promotions={promotions}
-                onProductClick={onProductClick}
-                onPromotionClick={handlePromotionClick}
-              />
+            {loadingPromotions ? (
+              <HomeSectionSkeleton tone="orange" />
+            ) : (
+              promotions.length > 0 && (
+                <DealsSection
+                  promotions={promotions}
+                  onProductClick={onProductClick}
+                  onPromotionClick={handlePromotionClick}
+                />
+              )
             )}
 
-            {!loading && newProducts.length > 0 && !searchQuery && (
-              <NewProductsSection products={newProducts} onProductClick={onProductClick} />
+            {loading ? (
+              <HomeSectionSkeleton tone="blue" />
+            ) : (
+              newProducts.length > 0 && (
+                <NewProductsSection products={newProducts} onProductClick={onProductClick} />
+              )
             )}
 
-            {!loading && bestSellingProducts.length > 0 && !searchQuery && (
-              <BestSellingSection
-                products={bestSellingProducts}
-                onProductClick={onProductClick}
-              />
+            {loading ? (
+              <HomeSectionSkeleton tone="amber" />
+            ) : (
+              bestSellingProducts.length > 0 && (
+                <BestSellingSection
+                  products={bestSellingProducts}
+                  onProductClick={onProductClick}
+                />
+              )
             )}
-
-            <ErrorStates
-              productsError={productsError}
-              categoriesError={categoriesError}
-              promotionsError={promotionsError}
-              onRetryProducts={handleRetryProducts}
-              onRetryCategories={handleRetryCategories}
-              onRetryPromotions={handleRetryPromotions}
-            />
-
-            <AllProductsSection
-              products={displayedProducts}
-              categories={categories}
-              loading={loading}
-              searchQuery={searchQuery}
-              selectedCategory={selectedCategory}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              isPreviewMode={isPreviewMode}
-              onProductClick={onProductClick}
-              onPageChange={setCurrentPage}
-            />
           </>
-        ) : (
-          <section
-            className="mb-6 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-4 shadow-sm shadow-slate-900/5 dark:border-slate-800/70 dark:bg-slate-900/80 sm:mb-8 sm:px-5"
-            aria-live="polite"
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-600/90 dark:text-blue-300">
-              Đang chuẩn bị dữ liệu
-            </p>
-            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Danh sách sản phẩm, khuyến mãi và danh mục sẽ được tải ngay sau khi khung nhìn
-              đầu tiên xuất hiện xong để ưu tiên tốc độ hiển thị trang chủ.
-            </p>
-          </section>
         )}
 
-        {isCatalogReady && !loading && (
+        <ErrorStates
+          productsError={productsError}
+          categoriesError={categoriesError}
+          promotionsError={promotionsError}
+          onRetryProducts={handleRetryProducts}
+          onRetryCategories={handleRetryCategories}
+          onRetryPromotions={handleRetryPromotions}
+        />
+
+        <AllProductsSection
+          products={displayedProducts}
+          categories={categories}
+          loading={loading}
+          searchQuery={searchQuery}
+          selectedCategory={selectedCategory}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          isPreviewMode={isPreviewMode}
+          onProductClick={onProductClick}
+          onPageChange={setCurrentPage}
+        />
+
+        {!loading && products.length > 0 && (
           <StoreStatsSection
             productCount={products.length}
             categoryCount={categories.length}
@@ -271,7 +282,12 @@ export default function HomePage({
           />
         )}
 
-        <InfoHighlightsSection />
+        <Suspense fallback={<div className="mt-5 mb-4 min-h-[32rem] sm:min-h-[24rem]" aria-hidden="true" />}>
+          <HomeSupportShareSection />
+        </Suspense>
+        <Suspense fallback={<div className="mt-3 min-h-[26rem] sm:min-h-[22rem]" aria-hidden="true" />}>
+          <InfoHighlightsSection />
+        </Suspense>
       </main>
 
       <Footer />

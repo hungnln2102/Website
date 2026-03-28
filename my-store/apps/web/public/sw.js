@@ -1,12 +1,12 @@
 // Service Worker for Mavryk Premium Store
 // Version 1.0.0
 
-const CACHE_NAME = 'mavryk-store-v5';
-const RUNTIME_CACHE = 'mavryk-runtime-v5';
+const CACHE_NAME = 'mavryk-store-v7';
+const RUNTIME_CACHE = 'mavryk-runtime-v7';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
-  '/logo1-192.jpg?v=4',
+  '/assets/images/logo-192',
 ];
 
 // Install event - cache static assets

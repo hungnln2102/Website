@@ -1,8 +1,12 @@
+import fs from 'fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
 const BACKEND_URL = 'http://127.0.0.1:4000';
+const BRANDING_ASSET_PUBLIC_DIR = path.resolve(__dirname, './public/assets/images');
+const BRANDING_ASSET_EXTENSIONS = ['.webp', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.avif'];
+const FAVICON_EXTENSIONS = ['.ico', '.png', '.svg', '.webp', '.jpg', '.jpeg', '.avif'];
 
 /** Khi backend chưa chạy (ECONNREFUSED): log rõ, tránh spam stack trace. */
 function proxyToBackend() {
@@ -25,9 +29,63 @@ function proxyToBackend() {
   };
 }
 
+function resolveBrandingAssetRequest(url: string) {
+  const [pathname, search = ''] = url.split('?');
+
+  if (!pathname.startsWith('/assets/images/')) {
+    return null;
+  }
+
+  if (path.posix.extname(pathname)) {
+    return null;
+  }
+
+  const assetName = pathname.slice('/assets/images/'.length);
+  if (!assetName || assetName.includes('..')) {
+    return null;
+  }
+
+  const extensions = assetName === 'favicon' ? FAVICON_EXTENSIONS : BRANDING_ASSET_EXTENSIONS;
+
+  for (const extension of extensions) {
+    const candidatePath = path.join(BRANDING_ASSET_PUBLIC_DIR, `${assetName}${extension}`);
+    if (fs.existsSync(candidatePath)) {
+      return `${pathname}${extension}${search ? `?${search}` : ''}`;
+    }
+  }
+
+  return null;
+}
+
+function extensionlessBrandingAssets() {
+  const rewriteBrandingRequest = (requestUrl?: string | null) => {
+    if (!requestUrl) {
+      return requestUrl;
+    }
+
+    return resolveBrandingAssetRequest(requestUrl) ?? requestUrl;
+  };
+
+  return {
+    name: 'extensionless-branding-assets',
+    configureServer(server: any) {
+      server.middlewares.use((req: any, _res: any, next: () => void) => {
+        req.url = rewriteBrandingRequest(req.url);
+        next();
+      });
+    },
+    configurePreviewServer(server: any) {
+      server.middlewares.use((req: any, _res: any, next: () => void) => {
+        req.url = rewriteBrandingRequest(req.url);
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: '/',
-  plugins: [react()],
+  plugins: [react(), extensionlessBrandingAssets()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { ROUTES } from "@/lib/constants";
 
 const BANNER_IMAGE_SIZES =
-  "(max-width: 640px) 100vw, (max-width: 1024px) min(92vw, 960px), 1200px";
+  "(max-width: 1024px) min(92vw, 960px), 1200px";
 
 const buildUnsplashUrl = (photoId: string, width: number) =>
-  `https://images.unsplash.com/${photoId}?w=${width}&q=58&fit=crop&crop=entropy&fm=webp`;
+  `https://images.unsplash.com/${photoId}?w=${width}&q=45&fit=crop&crop=entropy&fm=webp`;
 
 const buildResponsiveImage = (photoId: string) => {
-  const widths = [640, 960, 1280];
+  const widths = [768, 960, 1280];
   return {
     src: buildUnsplashUrl(photoId, 960),
     srcSet: widths.map((width) => `${buildUnsplashUrl(photoId, width)} ${width}w`).join(", "),
@@ -49,6 +50,9 @@ const slides = [
 
 export default function BannerSlider() {
   const [current, setCurrent] = useState(0);
+  const [showDesktopImages, setShowDesktopImages] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+  );
   const active = slides[current];
 
   useEffect(() => {
@@ -60,6 +64,31 @@ export default function BannerSlider() {
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
+    const updateImageMode = (event?: MediaQueryListEvent) => {
+      setShowDesktopImages(event?.matches ?? mediaQuery.matches);
+    };
+
+    updateImageMode();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateImageMode);
+      return () => mediaQuery.removeEventListener("change", updateImageMode);
+    }
+
+    mediaQuery.addListener(updateImageMode);
+    return () => mediaQuery.removeListener(updateImageMode);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!showDesktopImages) {
       return;
     }
 
@@ -83,7 +112,7 @@ export default function BannerSlider() {
 
     const timeoutId = window.setTimeout(preloadNextImage, 700);
     return () => window.clearTimeout(timeoutId);
-  }, [current]);
+  }, [current, showDesktopImages]);
 
   const heroBadge = useMemo(
     () => (current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"),
@@ -105,22 +134,41 @@ export default function BannerSlider() {
       role="region"
     >
       <div className="absolute inset-0 z-0">
-        <div key={current} className="absolute inset-0 animate-in fade-in duration-700">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.25),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.28),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.95),rgba(15,23,42,0.94),rgba(30,41,59,0.92))]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-900/54 to-slate-900/12" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
+
+        <div className="absolute inset-y-0 right-0 flex w-[52%] items-center justify-center sm:hidden">
           <img
-            src={active.image.src}
-            srcSet={active.image.srcSet}
-            sizes={BANNER_IMAGE_SIZES}
-            alt={active.title}
-            className="h-full w-full object-cover"
-            width={1200}
-            height={675}
-            loading={current === 0 ? "eager" : "lazy"}
-            decoding={current === 0 ? "sync" : "async"}
-            fetchPriority={current === 0 ? "high" : "auto"}
+            src={BRANDING_ASSETS.logoTransparent}
+            alt=""
+            aria-hidden="true"
+            width={180}
+            height={180}
+            fetchPriority="high"
+            decoding="async"
+            className="h-36 w-36 rounded-[2rem] object-cover opacity-20 shadow-[0_30px_90px_rgba(15,23,42,0.45)]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
         </div>
+
+        {showDesktopImages && (
+          <div key={current} className="absolute inset-0 hidden animate-in fade-in duration-500 sm:block">
+            <img
+              src={active.image.src}
+              srcSet={active.image.srcSet}
+              sizes={BANNER_IMAGE_SIZES}
+              alt={active.title}
+              className="h-full w-full object-cover"
+              width={1200}
+              height={675}
+              loading={current === 0 ? "eager" : "lazy"}
+              decoding={current === 0 ? "async" : "async"}
+              fetchPriority={current === 0 ? "high" : "auto"}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
+          </div>
+        )}
       </div>
 
       <button

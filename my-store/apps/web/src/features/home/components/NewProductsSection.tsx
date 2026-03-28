@@ -67,7 +67,7 @@ export function NewProductsSection({ products, onProductClick }: NewProductsSect
               onClick={handleViewAll}
               className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300 sm:self-center"
             >
-              <span>Xem tất cả sản phẩm</span>
+              <span>Xem danh sách sản phẩm mới</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
           </div>

@@ -67,7 +67,7 @@ export function BestSellingSection({ products, onProductClick }: BestSellingSect
               onClick={handleViewAll}
               className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30 dark:hover:text-amber-300 sm:self-center"
             >
-              <span>Xem tất cả sản phẩm</span>
+              <span>Xem các gói bán chạy</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
           </div>

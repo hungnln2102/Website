@@ -1,5 +1,4 @@
 import { lazy, Suspense } from "react";
-import FloatingLogo from "@/components/FloatingLogo";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
 import HomePage from "@/features/home/HomePage";
@@ -42,6 +41,7 @@ const AboutPage = lazyWithRetry(() => import("@/features/about/AboutPage"));
 const PaymentSuccessPage = lazyWithRetry(() => import("@/features/payment/PaymentSuccessPage"));
 const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentErrorPage"));
 const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
+const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
 
 export default function App() {
   const {
@@ -62,7 +62,9 @@ export default function App() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
-        <FloatingLogo />
+        <Suspense fallback={null}>
+          <FloatingLogo />
+        </Suspense>
       </ErrorBoundary>
     );
   }
@@ -184,7 +186,11 @@ export default function App() {
           />
         )}
       </Suspense>
-      {view !== "login" && <FloatingLogo />}
+      {view !== "login" && (
+        <Suspense fallback={null}>
+          <FloatingLogo />
+        </Suspense>
+      )}
     </ErrorBoundary>
   );
 }
