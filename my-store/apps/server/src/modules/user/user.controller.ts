@@ -2,15 +2,15 @@
  * User (protected) request handlers – logic extracted from user.route.
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import logger from "../utils/logger";
-import { DB_SCHEMA } from "../config/db.config";
-import { auditService } from "../services/audit.service";
-import { authService } from "../services/auth.service";
-import { refreshTokenService } from "../services/refresh-token.service";
-import { passwordHistoryService } from "../services/password-history.service";
-import { walletService } from "../services/wallet.service";
-import { getCurrentTierCycle } from "../config/tier-cycle.config";
+import pool from "../../config/database";
+import logger from "../../shared/utils/logger";
+import { DB_SCHEMA } from "../../config/db.config";
+import { auditService } from "./audit.service";
+import { authService } from "../auth/auth.service";
+import { refreshTokenService } from "../auth/refresh-token.service";
+import { passwordHistoryService } from "../auth/password-history.service";
+import { walletService } from "../wallet/wallet.service";
+import { getCurrentTierCycle } from "../../config/tier-cycle.config";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;

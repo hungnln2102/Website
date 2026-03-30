@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { fetchPromotions } from "@/lib/api";
 import type { PromotionDto } from "@/lib/types";
 import { QUERY_KEYS } from "@/lib/constants";
-import type { NormalizedProduct } from "./useProducts";
+import type { NormalizedProduct } from "@/features/product/hooks/useProducts";
 
 /**
  * Custom hook to fetch and normalize promotions

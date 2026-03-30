@@ -2,14 +2,14 @@
  * API barrel – re-exports all API modules and types so `import { ... } from "@/lib/api"` works.
  */
 
-export { getAuthToken, AUTH_EXPIRED_EVENT, authFetch } from "./auth";
+export { getAuthToken, AUTH_EXPIRED_EVENT, authFetch } from "@/features/auth/api/auth";
 export { getApiBase, handleApiError } from "./client";
 
-export { fetchProducts } from "./products.api";
-export { fetchPromotions } from "./promotions.api";
-export { fetchCategories } from "./categories.api";
-export { fetchProductPackages } from "./product-packages.api";
-export { fetchVariantDetail, fetchVariantFullData, fetchProductInfo } from "./variant.api";
+export { fetchProducts } from "@/features/product/api/products.api";
+export { fetchPromotions } from "@/features/catalog/api/promotions.api";
+export { fetchCategories } from "@/features/catalog/api/categories.api";
+export { fetchProductPackages } from "@/features/product/api/product-packages.api";
+export { fetchVariantDetail, fetchVariantFullData, fetchProductInfo } from "@/features/product/api/variant.api";
 export {
   checkPaymentHealth,
   createPayment,
@@ -18,7 +18,7 @@ export {
   createPaymentCodes,
   confirmBalancePayment,
   confirmTransfer,
-} from "./payment.api";
+} from "@/features/payment/api/payment.api";
 export {
   fetchUserProfile,
   fetchUserOrders,
@@ -30,9 +30,9 @@ export {
   getSessions,
   revokeSession,
   getActivity,
-} from "./user.api";
+} from "@/features/profile/api/user.api";
 export { fetchFormFields } from "./forms.api";
-export { fetchTopupPackages, fetchTopupTransferCode } from "./topup.api";
+export { fetchTopupPackages, fetchTopupTransferCode } from "@/features/wallet/api/topup.api";
 export {
   fetchCart,
   addToCart,
@@ -41,7 +41,7 @@ export {
   clearCartApi,
   syncCart,
   getCartCount,
-} from "./cart.api";
+} from "@/features/cart/api/cart.api";
 
 export type {
   ProductDto,
@@ -68,5 +68,5 @@ export type {
   CartAddResponse,
   CartCountResponse,
 } from "../types";
-export type { VariantFullDataDto } from "./variant.api";
-export type { UserReviewDto } from "./user.api";
+export type { VariantFullDataDto } from "@/features/product/api/variant.api";
+export type { UserReviewDto } from "@/features/profile/api/user.api";

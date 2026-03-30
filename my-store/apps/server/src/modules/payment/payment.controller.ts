@@ -2,14 +2,14 @@
  * Payment request handlers – logic extracted from payment.route
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import { sepayService } from "../services/sepay.service";
-import { confirmBalancePayment, createPaymentCodes, generateMavpTransactionId, generateUniqueIdOrder } from "../services/balance-payment.service";
-import { handlePaymentSuccess } from "../services/payment-success.service";
-import type { OrderListItemInput } from "../services/order-list.service";
-import { logPaymentEvent, logSecurityEvent } from "../utils/logger";
-import { ORDER_CUSTOMER_STATUS } from "../config/status.constants";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import { sepayService } from "./sepay.service";
+import { confirmBalancePayment, createPaymentCodes, generateMavpTransactionId, generateUniqueIdOrder } from "./balance-payment.service";
+import { handlePaymentSuccess } from "./payment-success.service";
+import type { OrderListItemInput } from "../order/order-list.service";
+import { logPaymentEvent, logSecurityEvent } from "../../shared/utils/logger";
+import { ORDER_CUSTOMER_STATUS } from "../../config/status.constants";
 
 interface ReqUser {
   userId?: string;

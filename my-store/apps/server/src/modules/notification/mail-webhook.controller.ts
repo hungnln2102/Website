@@ -5,7 +5,7 @@
 
 import type { Request, Response } from "express";
 import { Webhook } from "svix";
-import * as resendService from "../services/resend.service";
+import * as resendService from "./resend.service";
 
 const SIGNING_SECRET = () => process.env.SIGNING_SECRET;
 

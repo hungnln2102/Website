@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mailWebhook } from "./mail.webhook.controller";
+import { mailWebhook } from "./mail-webhook.controller";
 
 const SUPPORT_EMAIL = "support@mavrykpremium.store";
 

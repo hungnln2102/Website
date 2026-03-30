@@ -11,8 +11,8 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import { csrfService } from "../services/csrf.service";
-import { auditService } from "../services/audit.service";
+import { csrfService } from "../../modules/auth/csrf.service";
+import { auditService } from "../../modules/user/audit.service";
 
 // Cookie name for CSRF token
 const CSRF_COOKIE_NAME = "csrf-token";

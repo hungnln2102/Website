@@ -1,7 +1,7 @@
-import pool from "../config/database";
-import { TABLES } from "../config/db.config";
-import { ORDER_LIST_STATUS_EXCLUDE_FROM_STATS } from "../config/status.constants";
-import { cacheService } from "./cache.service";
+import pool from "../../config/database";
+import { TABLES } from "../../config/db.config";
+import { ORDER_LIST_STATUS_EXCLUDE_FROM_STATS } from "../../config/status.constants";
+import { cacheService } from "../../shared/services/cache.service";
 
 export interface ProductWithSoldCount {
   id: string;

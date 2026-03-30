@@ -3,8 +3,8 @@
  * Handles variant detail retrieval by ID, display name, and product grouping.
  */
 import type { Request, Response } from "express";
-import { variantDetailService } from "../services/variant-detail.service";
-import * as cartService from "../services/cart.service";
+import { variantDetailService } from "./variant-detail.service";
+import * as cartService from "../cart/cart.service";
 
 export async function getVariantDetail(req: Request, res: Response): Promise<void> {
   try {

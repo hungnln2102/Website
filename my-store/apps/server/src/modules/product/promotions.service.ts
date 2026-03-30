@@ -1,10 +1,10 @@
 /**
  * Promotions list: variants that have pct_promo (discount).
  */
-import pool from "../config/database";
-import { TABLES } from "../config/db.config";
-import { SUPPLY_MAX_CTE } from "../utils/product-sql.shared";
-import { resolveImageUrl, slugify, stripHtml, toNumber } from "../utils/product-helpers";
+import pool from "../../config/database";
+import { TABLES } from "../../config/db.config";
+import { SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { resolveImageUrl, slugify, stripHtml, toNumber } from "./product.helpers";
 
 export async function getPromotionsList() {
   const query = `

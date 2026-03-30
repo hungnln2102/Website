@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { authService } from '../services/auth.service';
+import { authService } from '../../modules/auth/auth.service';
 import { tokenBlacklistService } from '../services/token-blacklist.service';
 
 /**

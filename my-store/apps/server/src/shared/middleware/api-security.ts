@@ -4,10 +4,10 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import { captchaService } from "../services/captcha.service";
+import { captchaService } from "../../modules/auth/captcha.service";
 import { tokenBlacklistService } from "../services/token-blacklist.service";
-import { auditService } from "../services/audit.service";
-import { authService } from "../services/auth.service";
+import { auditService } from "../../modules/user/audit.service";
+import { authService } from "../../modules/auth/auth.service";
 import {
   getClientIP,
   addBannedIP,

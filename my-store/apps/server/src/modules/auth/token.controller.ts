@@ -3,13 +3,13 @@
  * Handles token refresh, CSRF token generation, and CAPTCHA requirements.
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import { authService } from "../services/auth.service";
-import { refreshTokenService } from "../services/refresh-token.service";
-import { captchaService } from "../services/captcha.service";
-import { auditService } from "../services/audit.service";
-import { setCsrfToken } from "../middleware/csrf";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import { authService } from "./auth.service";
+import { refreshTokenService } from "./refresh-token.service";
+import { captchaService } from "./captcha.service";
+import { auditService } from "../user/audit.service";
+import { setCsrfToken } from "../../shared/middleware/csrf";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;

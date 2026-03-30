@@ -6,8 +6,8 @@
 
 import { notifyNewOrder } from "./telegram.service";
 import type { TelegramOrderLine } from "./telegram.service";
-import { insertOrderListFromPayment } from "./order-list.service";
-import type { OrderListItemInput } from "./order-list.service";
+import { insertOrderListFromPayment } from "../order/order-list.service";
+import type { OrderListItemInput } from "../order/order-list.service";
 
 export type PaymentMethod = "Mcoin" | "QR";
 

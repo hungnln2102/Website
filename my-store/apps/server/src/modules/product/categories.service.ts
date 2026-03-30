@@ -1,8 +1,8 @@
 /**
  * Categories list with product_ids per category.
  */
-import pool from "../config/database";
-import { TABLES } from "../config/db.config";
+import pool from "../../config/database";
+import { TABLES } from "../../config/db.config";
 
 type CategoryRow = {
   id: number;

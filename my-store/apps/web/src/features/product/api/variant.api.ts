@@ -1,5 +1,5 @@
-import { getApiBase, handleApiError } from "./client";
-import type { VariantDetailDto, ProductInfoDto } from "../types";
+import { getApiBase, handleApiError } from "@/lib/api/client";
+import type { VariantDetailDto, ProductInfoDto } from "@/lib/types";
 
 const API_BASE = getApiBase();
 

@@ -3,8 +3,8 @@
  * Lấy gói nạp từ bảng product.productid_payment.
  * Dùng product_id làm id nạp; chỉ lấy bản ghi is_active = true.
  */
-import pool from "../config/database";
-import { TABLES, DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { TABLES, DB_SCHEMA } from "../../config/db.config";
 
 const TABLE = TABLES.PRODUCTID_PAYMENT;
 const COLS = DB_SCHEMA.PRODUCTID_PAYMENT!.COLS as Record<string, string>;

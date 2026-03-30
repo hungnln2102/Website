@@ -3,11 +3,11 @@
  * Handles product listing, promotions, categories, and cache operations.
  */
 import type { Request, Response } from "express";
-import { getProductsList } from "../services/products-list.service";
-import { getPromotionsList } from "../services/promotions.service";
-import { getCategoriesList } from "../services/categories.service";
-import { getProductPackages } from "../services/product-packages.service";
-import { cache } from "../utils/cache";
+import { getProductsList } from "./products-list.service";
+import { getPromotionsList } from "./promotions.service";
+import { getCategoriesList } from "./categories.service";
+import { getProductPackages } from "./product-packages.service";
+import { cache } from "../../shared/utils/cache";
 
 // ── Cache config ────────────────────────────────────────────────────
 // TTL dài hơn để giảm truy vấn DB khi Redis không dùng (cache in-memory)

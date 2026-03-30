@@ -1,8 +1,8 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import { body, param, validationResult } from "express-validator";
-import { authenticate } from "../middleware/auth";
-import * as cartController from "../controllers/cart.controller";
+import { authenticate } from "../../shared/middleware/auth";
+import * as cartController from "./cart.controller";
 
 const router = Router();
 

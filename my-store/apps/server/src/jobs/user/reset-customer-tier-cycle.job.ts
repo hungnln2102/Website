@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;

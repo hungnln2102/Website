@@ -32,7 +32,7 @@ const AllProductsPage = lazyWithRetry(() => import("@/features/catalog/AllProduc
 const LoginPage = lazyWithRetry(() => import("@/features/auth/LoginPage"));
 const CartPage = lazyWithRetry(() => import("@/features/cart/CartPage"));
 const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage"));
-const TopupPage = lazyWithRetry(() => import("@/features/topup/TopupPage"));
+const TopupPage = lazyWithRetry(() => import("@/features/wallet/TopupPage"));
 const CheckProfilePage = lazyWithRetry(() => import("@/features/CheckProfile/checkprofile"));
 const RenewAdobePage = lazyWithRetry(() => import("@/features/CheckProfile/RenewAdobePage"));
 const ServicePlaceholderPage = lazyWithRetry(() => import("@/features/CheckProfile/ServicePlaceholderPage"));

@@ -2,9 +2,9 @@
  * Order API handlers – notify-done (Hoàn thành) và cancel (Hủy Đơn) từ Bot Telegram.
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import { updateOrderDone, cancelOrder } from "../services/order-list.service";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import { updateOrderDone, cancelOrder } from "./order-list.service";
 
 function getApiKey(req: Request): string | undefined {
   const header = req.headers["x-api-key"];

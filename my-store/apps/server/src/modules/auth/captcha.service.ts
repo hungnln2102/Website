@@ -5,7 +5,7 @@
  * Uses Redis when available, falls back to in-memory storage.
  */
 
-import { captchaAttemptsMap } from "../config/redis";
+import { captchaAttemptsMap } from "../../config/redis";
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY;

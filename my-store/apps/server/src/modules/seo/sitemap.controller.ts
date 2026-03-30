@@ -2,9 +2,9 @@
  * Sitemap controller – serves /sitemap.xml with product and category URLs.
  */
 import type { Request, Response } from "express";
-import { getProductsList } from "../services/products-list.service";
-import { getCategoriesList } from "../services/categories.service";
-import { generateSitemapXML, buildSitemapUrls } from "../utils/sitemap";
+import { getProductsList } from "../product/products-list.service";
+import { getCategoriesList } from "../product/categories.service";
+import { generateSitemapXML, buildSitemapUrls } from "../../shared/utils/sitemap";
 import { env } from "@my-store/env/server";
 
 function getBaseUrl(): string {

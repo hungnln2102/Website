@@ -1,5 +1,5 @@
-import { getApiBase, handleApiError, apiFetch } from "./client";
-import type { PromotionDto } from "../types";
+import { getApiBase, handleApiError, apiFetch } from "@/lib/api/client";
+import type { PromotionDto } from "@/lib/types";
 
 const API_BASE = getApiBase();
 

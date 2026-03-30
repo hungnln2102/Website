@@ -3,8 +3,8 @@
  * Handles product sold counts, top selling, and cache management via Redis.
  */
 import type { Request, Response } from "express";
-import { productStatsService } from "../services/product-stats.service";
-import { cacheService } from "../services/cache.service";
+import { productStatsService } from "./product-stats.service";
+import { cacheService } from "../../shared/services/cache.service";
 
 export async function getSoldCount(req: Request, res: Response): Promise<void> {
   try {

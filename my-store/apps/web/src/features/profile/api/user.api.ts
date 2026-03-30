@@ -1,12 +1,12 @@
-import { getApiBase } from "./client";
-import { authFetch } from "./auth";
+import { getApiBase } from "@/lib/api/client";
+import { authFetch } from "@/features/auth/api/auth";
 import type {
   UserOrder,
   WalletTransactionDto,
   UserProfileDto,
   UserSessionDto,
   UserActivityLogDto,
-} from "../types";
+} from "@/lib/types";
 
 const API_BASE = getApiBase();
 

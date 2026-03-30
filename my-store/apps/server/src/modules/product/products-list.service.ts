@@ -1,11 +1,11 @@
 /**
  * Products list: one row per package (lowest price variant), with sales counts and promo info.
  */
-import pool from "../config/database";
-import { TABLES } from "../config/db.config";
-import { SUPPLY_MAX_CTE } from "../utils/product-sql.shared";
-import { resolveImageUrl, slugify, toNumber } from "../utils/product-helpers";
-import { deriveProductSeo } from "../utils/product-seo";
+import pool from "../../config/database";
+import { TABLES } from "../../config/db.config";
+import { SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { resolveImageUrl, slugify, toNumber } from "./product.helpers";
+import { deriveProductSeo } from "./product-seo";
 
 type RawProductRow = {
   id: number | bigint;

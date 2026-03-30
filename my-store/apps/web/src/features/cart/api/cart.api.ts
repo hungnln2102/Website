@@ -1,11 +1,11 @@
-import { getApiBase } from "./client";
-import { ensureCsrfToken, handleUnauthorized } from "./auth";
-import { fetchWithTimeoutAndRetry } from "../utils/fetchWithRetry";
+import { getApiBase } from "@/lib/api/client";
+import { ensureCsrfToken, handleUnauthorized } from "@/features/auth/api/auth";
+import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import type {
   CartResponse,
   CartAddResponse,
   CartCountResponse,
-} from "../types";
+} from "@/lib/types";
 
 /** Khi API trả 401: clear session và thông báo đăng nhập lại (không hiển thị lỗi server). */
 const SESSION_EXPIRED_MESSAGE = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";

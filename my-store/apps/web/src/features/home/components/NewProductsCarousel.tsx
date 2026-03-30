@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ShoppingCart, Sparkles, ArrowRight } from "l
 
 import type { Database } from "@/lib/database.types";
 import { roundToNearestThousand } from "@/lib/utils";
-import type { NormalizedProduct } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/features/product/hooks/useProducts";
 import LazyImage from "@/components/ui/LazyImage";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] | NormalizedProduct;

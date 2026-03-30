@@ -4,8 +4,8 @@
  */
 
 import express from "express";
-import { authenticate } from "../middleware/auth";
-import * as mailWebhookController from "../controllers/mail.webhook.controller";
+import { authenticate } from "../../shared/middleware/auth";
+import * as mailWebhookController from "./mail-webhook.controller";
 
 const router = express.Router();
 

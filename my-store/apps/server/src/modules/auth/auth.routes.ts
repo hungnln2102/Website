@@ -2,8 +2,8 @@
  * Auth routes – register handlers from auth.controller.
  */
 import { Router } from "express";
-import { authLimiter, checkUserLimiter } from "../middleware/rateLimiter";
-import * as authController from "../controllers/auth.controller";
+import { authLimiter, checkUserLimiter } from "../../shared/middleware/rate-limiter";
+import * as authController from "./auth.controller";
 
 const router = Router();
 

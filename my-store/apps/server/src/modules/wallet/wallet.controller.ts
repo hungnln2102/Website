@@ -3,9 +3,9 @@
  * Handles balance top-up, wallet balance, transaction history, and packages from productid_payment.
  */
 import type { Request, Response } from "express";
-import { auditService } from "../services/audit.service";
-import { walletService } from "../services/wallet.service";
-import * as topupService from "../services/topup.service";
+import { auditService } from "../user/audit.service";
+import { walletService } from "./wallet.service";
+import * as topupService from "./topup.service";
 
 /** GET /api/topup/transfer-code — tạo mã nội dung chuyển khoản MAVNAPXXXXX (không trùng wallet_transactions). */
 export async function getTransferCode(_req: Request, res: Response): Promise<void> {

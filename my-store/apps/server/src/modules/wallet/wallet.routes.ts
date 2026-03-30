@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth";
-import * as topupController from "../controllers/topup.controller";
+import { authenticate } from "../../shared/middleware/auth";
+import * as topupController from "./wallet.controller";
 
 const router = Router();
 

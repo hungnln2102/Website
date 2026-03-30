@@ -3,10 +3,10 @@
  * Mỗi sản phẩm = 1 id_order unique; payment_id = wallet_transaction.id (integer).
  */
 
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 import { handlePaymentSuccess } from "./payment-success.service";
-import { ORDER_CUSTOMER_STATUS } from "../config/status.constants";
+import { ORDER_CUSTOMER_STATUS } from "../../config/status.constants";
 
 const WALLET_TABLE = `${DB_SCHEMA.WALLET!.SCHEMA}.${DB_SCHEMA.WALLET!.TABLE}`;
 const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;

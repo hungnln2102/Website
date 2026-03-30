@@ -1,5 +1,5 @@
 import express from "express";
-import * as variantController from "../controllers/variant.controller";
+import * as variantController from "./variant.controller";
 
 const router = express.Router();
 

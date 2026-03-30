@@ -6,7 +6,7 @@
  */
 
 import crypto from "crypto";
-import { tokenBlacklistMap } from "../config/redis";
+import { tokenBlacklistMap } from "../../config/redis";
 
 class TokenBlacklistService {
   private cleanupInterval: NodeJS.Timeout | null = null;

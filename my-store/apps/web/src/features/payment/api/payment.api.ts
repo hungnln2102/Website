@@ -1,13 +1,13 @@
-import { getApiBase } from "./client";
-import { authFetch } from "./auth";
-import { fetchWithTimeoutAndRetry } from "../utils/fetchWithRetry";
+import { getApiBase } from "@/lib/api/client";
+import { authFetch } from "@/features/auth/api/auth";
+import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import type {
   PaymentHealthResponse,
   CreatePaymentRequest,
   CreatePaymentResponse,
   PaymentStatusResponse,
   ConfirmBalancePaymentItem,
-} from "../types";
+} from "@/lib/types";
 
 const API_BASE = getApiBase();
 const PAYMENT_FETCH_OPTIONS = { timeoutMs: 15000, retries: 2 };

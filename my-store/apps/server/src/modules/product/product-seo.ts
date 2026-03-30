@@ -1,4 +1,4 @@
-import { slugify, stripHtml } from "./product-helpers";
+import { slugify, stripHtml } from "./product.helpers";
 
 type DeriveProductSeoParams = {
   shortDesc?: string | null;

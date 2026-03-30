@@ -1,4 +1,4 @@
-import { getApiBase } from "./client";
+import { getApiBase } from "@/lib/api/client";
 
 export interface TopupPackageDto {
   id: string;

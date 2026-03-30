@@ -9,8 +9,8 @@
  * Frontend: ProductDetailPage lấy form_id từ durationOption → fetchFormFields(formId) → AdditionalInfoSection.
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 
 const FORM_NAME = `${DB_SCHEMA.FORM_NAME!.SCHEMA}.${DB_SCHEMA.FORM_NAME!.TABLE}`;
 const FORM_INPUT = `${DB_SCHEMA.FORM_INPUT!.SCHEMA}.${DB_SCHEMA.FORM_INPUT!.TABLE}`;

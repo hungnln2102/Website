@@ -12,6 +12,26 @@ Tài liệu gộp toàn bộ thông tin dự án: kiến trúc, luồng thanh to
 - **apps/web**: SPA React 19, Vite 6, Tailwind 4, TanStack Query
 - **packages/**: api, config, db, env (shared)
 
+### 1.2 Kiến trúc — Modular Monolith
+
+**Server** (`apps/server/src/`):
+```
+modules/         ← 14 business domain modules (auth, product, cart, order, payment, wallet, user, analytics, notification, health, form, seo, debug, fix-adobe)
+shared/          ← Cross-cutting: middleware/, services/, utils/
+jobs/            ← Cron jobs theo domain: analytics/, user/
+config/          ← Database, Redis, constants
+```
+
+**Web** (`apps/web/src/`):
+```
+features/        ← 11 features, mỗi feature có api/, hooks/, components/
+components/      ← Shared UI components
+hooks/           ← Shared hooks (useRouter, useScroll, useKeyboardNavigation)
+lib/             ← API barrel, types, utils, config
+```
+
+> Chi tiết: xem [docs/REFACTOR_MODULAR_MONOLITH.md](./REFACTOR_MODULAR_MONOLITH.md)
+
 ### 1.2 Luồng thanh toán chính
 
 - **Mcoin**: confirmBalancePayment → trừ ví → order_customer + wallet_transaction + order_list → Telegram

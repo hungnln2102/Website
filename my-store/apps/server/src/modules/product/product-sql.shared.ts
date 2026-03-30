@@ -2,7 +2,7 @@
  * Shared SQL fragments for product pricing queries.
  * Used by products-list.service and promotions.service.
  */
-import { TABLES } from "../config/db.config";
+import { TABLES } from "../../config/db.config";
 
 /** CTE: max supplier cost per variant. */
 export const SUPPLY_MAX_CTE = `

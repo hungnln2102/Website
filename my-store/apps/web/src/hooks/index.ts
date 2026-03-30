@@ -2,8 +2,8 @@
  * Custom hooks barrel export
  */
 
-export * from "./useProducts";
-export * from "./useCategories";
-export * from "./usePromotions";
+export * from "@/features/product/hooks/useProducts";
+export * from "@/features/catalog/hooks/useCategories";
+export * from "@/features/catalog/hooks/usePromotions";
 export * from "./useScroll";
-export * from "./useCart";
+export * from "@/features/cart/hooks/useCart";

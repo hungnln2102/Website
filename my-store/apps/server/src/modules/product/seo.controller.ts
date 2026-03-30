@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { auditProductSeo } from "../utils/product-seo-audit";
+import { auditProductSeo } from "./product-seo-audit";
 
 export async function auditProductSeoHandler(
   req: Request,

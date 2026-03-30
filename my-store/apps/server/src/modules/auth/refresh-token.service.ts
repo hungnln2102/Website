@@ -4,8 +4,8 @@
  */
 
 import crypto from "crypto";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 
 const REFRESH_TOKEN_TABLE = `${DB_SCHEMA.REFRESH_TOKEN!.SCHEMA}.${DB_SCHEMA.REFRESH_TOKEN!.TABLE}`;
 

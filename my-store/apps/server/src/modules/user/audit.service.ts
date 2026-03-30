@@ -3,8 +3,8 @@
  * Records all important actions for security and compliance
  */
 
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 
 const AUDIT_TABLE = `${DB_SCHEMA.AUDIT_LOG!.SCHEMA}.${DB_SCHEMA.AUDIT_LOG!.TABLE}`;
 

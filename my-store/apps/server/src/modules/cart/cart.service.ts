@@ -1,7 +1,7 @@
 import prisma from "@my-store/db";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import type { OrderListItemInput } from "./order-list.service";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import type { OrderListItemInput } from "../order/order-list.service";
 
 const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
 const CART_TABLE = DB_SCHEMA.CART_ITEMS!.TABLE;

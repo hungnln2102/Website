@@ -3,7 +3,7 @@
  * Handles materialized view-based sold count statistics.
  */
 import type { Request, Response } from "express";
-import { productSoldCountService } from "../services/product-sold-count.service";
+import { productSoldCountService } from "./product-sold-count.service";
 
 export async function getProductsWithSoldCount(req: Request, res: Response): Promise<void> {
   try {

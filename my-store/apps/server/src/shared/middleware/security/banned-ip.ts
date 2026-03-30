@@ -2,7 +2,7 @@
  * Banned IP handling: block list + check + honeypot (uses addBannedIP)
  */
 import type { Request, Response, NextFunction } from "express";
-import { auditService } from "../../services/audit.service";
+import { auditService } from "../../../modules/user/audit.service";
 
 const bannedIPs = new Set<string>();
 const banDuration = 24 * 60 * 60 * 1000; // 24 hours

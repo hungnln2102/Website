@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/features/cart/hooks/useCart";
 import { mapStorageItemsToCartItemData, computeCartTotals } from "../utils/cartItemMapper";
 import type { CartItemData } from "../components/CartItem";
 

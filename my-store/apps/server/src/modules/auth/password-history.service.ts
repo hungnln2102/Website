@@ -8,8 +8,8 @@
  * to prevent password cycling.
  */
 
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 import { authService } from "./auth.service";
 
 const PASSWORD_HISTORY_TABLE = `${DB_SCHEMA.PASSWORD_HISTORY!.SCHEMA}.${DB_SCHEMA.PASSWORD_HISTORY!.TABLE}`;

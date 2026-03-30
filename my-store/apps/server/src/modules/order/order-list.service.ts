@@ -4,9 +4,9 @@
  * Bot /done sau đó cập nhật slot, note, supply_id (id supplier), cost.
  */
 
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import { ORDER_LIST_STATUS } from "../config/status.constants";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import { ORDER_LIST_STATUS } from "../../config/status.constants";
 
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;

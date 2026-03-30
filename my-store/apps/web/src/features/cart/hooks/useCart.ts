@@ -8,9 +8,9 @@ import {
   getAuthToken,
 } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import type { CartItem } from "./cartStorage";
+import type { CartItem } from "../types";
 
-export type { CartItem } from "./cartStorage";
+export type { CartItem } from "../types";
 
 function useIsLoggedIn(): boolean {
   const token = getAuthToken();

@@ -6,7 +6,7 @@
  */
 
 import crypto from "crypto";
-import { csrfTokenMap } from "../config/redis";
+import { csrfTokenMap } from "../../config/redis";
 
 // Token expiry time (1 hour)
 const TOKEN_EXPIRY_SECONDS = 60 * 60;

@@ -1,5 +1,5 @@
-import { getApiBase, handleApiError, apiFetch } from "./client";
-import type { CategoryDto } from "../types";
+import { getApiBase, handleApiError, apiFetch } from "@/lib/api/client";
+import type { CategoryDto } from "@/lib/types";
 
 const API_BASE = getApiBase();
 

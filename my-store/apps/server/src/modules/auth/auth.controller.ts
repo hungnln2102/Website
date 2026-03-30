@@ -2,17 +2,17 @@
  * Auth request handlers – logic extracted from auth.route for clarity.
  */
 import type { Request, Response } from "express";
-import pool from "../config/database";
-import { DB_SCHEMA } from "../config/db.config";
-import { getRegistrationCycleBounds } from "../config/tier-cycle.config";
-import { loginAttemptsMap } from "../config/redis";
-import { setCsrfToken, clearCsrfToken } from "../middleware/csrf";
-import { authService } from "../services/auth.service";
-import { auditService } from "../services/audit.service";
-import { refreshTokenService } from "../services/refresh-token.service";
-import { tokenBlacklistService } from "../services/token-blacklist.service";
-import { captchaService } from "../services/captcha.service";
-import { passwordHistoryService } from "../services/password-history.service";
+import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
+import { getRegistrationCycleBounds } from "../../config/tier-cycle.config";
+import { loginAttemptsMap } from "../../config/redis";
+import { setCsrfToken, clearCsrfToken } from "../../shared/middleware/csrf";
+import { authService } from "./auth.service";
+import { auditService } from "../user/audit.service";
+import { refreshTokenService } from "./refresh-token.service";
+import { tokenBlacklistService } from "../../shared/services/token-blacklist.service";
+import { captchaService } from "./captcha.service";
+import { passwordHistoryService } from "./password-history.service";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;

@@ -2,9 +2,9 @@
  * Product package variants by package name (deduplicated by package_product + id_product + cost).
  */
 import prisma from "@my-store/db";
-import { TABLES } from "../config/db.config";
-import { toNumber } from "../utils/product-helpers";
-import { deriveProductSeo } from "../utils/product-seo";
+import { TABLES } from "../../config/db.config";
+import { toNumber } from "./product.helpers";
+import { deriveProductSeo } from "./product-seo";
 
 type PackageProductRow = {
   id: number | bigint;

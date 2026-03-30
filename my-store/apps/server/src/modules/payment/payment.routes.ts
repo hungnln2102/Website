@@ -1,9 +1,9 @@
 import express from "express";
 import type { Request, Response } from "express";
 import { body } from "express-validator";
-import { authenticate, optionalAuth } from "../middleware/auth";
-import { validationRules, handleValidationErrors } from "../utils/validation";
-import * as paymentController from "../controllers/payment.controller";
+import { authenticate, optionalAuth } from "../../shared/middleware/auth";
+import { validationRules, handleValidationErrors } from "../../shared/utils/validation";
+import * as paymentController from "./payment.controller";
 
 const router = express.Router();
 

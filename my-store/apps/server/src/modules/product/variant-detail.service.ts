@@ -1,6 +1,6 @@
 import prisma from "@my-store/db";
-import { TABLES } from "../config/db.config";
-import { deriveProductSeo } from "../utils/product-seo";
+import { TABLES } from "../../config/db.config";
+import { deriveProductSeo } from "./product-seo";
 
 export interface VariantDetailInfo {
   variant_id: number;

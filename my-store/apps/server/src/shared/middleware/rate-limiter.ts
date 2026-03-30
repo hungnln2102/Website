@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { getRedisClient } from "../config/redis";
+import { getRedisClient } from "../../config/redis";
 
 const REDIS_URL = process.env.REDIS_URL;
 /** Use Redis store when REDIS_URL or REDIS_HOST is set in production */

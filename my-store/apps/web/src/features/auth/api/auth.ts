@@ -2,8 +2,8 @@
  * Auth client: token storage and authenticated fetch wrapper.
  */
 
-import { fetchWithTimeoutAndRetry } from "../utils/fetchWithRetry";
-import { getApiBase } from "./client";
+import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
+import { getApiBase } from "@/lib/api/client";
 
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;

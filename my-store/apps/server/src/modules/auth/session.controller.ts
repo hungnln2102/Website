@@ -3,10 +3,10 @@
  * Handles session listing, revocation, and global logout.
  */
 import type { Request, Response } from "express";
-import { authService } from "../services/auth.service";
-import { refreshTokenService } from "../services/refresh-token.service";
-import { tokenBlacklistService } from "../services/token-blacklist.service";
-import { auditService } from "../services/audit.service";
+import { authService } from "./auth.service";
+import { refreshTokenService } from "./refresh-token.service";
+import { tokenBlacklistService } from "../../shared/services/token-blacklist.service";
+import { auditService } from "../user/audit.service";
 
 export async function getSessions(req: Request, res: Response): Promise<void> {
   try {

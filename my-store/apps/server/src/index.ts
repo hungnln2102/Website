@@ -9,29 +9,32 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
-import { errorHandler, asyncHandler } from "./middleware/errorHandler";
-import { requestLogger, responseTimeLogger } from "./middleware/logger";
-import { generalLimiter } from "./middleware/rateLimiter";
+// Shared middleware
+import { errorHandler, asyncHandler } from "./shared/middleware/error-handler";
+import { requestLogger, responseTimeLogger } from "./shared/middleware/logger";
+import { generalLimiter } from "./shared/middleware/rate-limiter";
 import {
   apiSecurityMiddleware,
   limitPayloadSize,
-} from "./middleware/api-security";
-import { csrfProtection } from "./middleware/csrf";
-import paymentRouter from "./routes/payment.route";
-import orderRouter from "./routes/order.route";
-import mailRouter from "./routes/mail.route";
-import * as mailWebhookController from "./controllers/mail.webhook.controller";
-import variantDetailRouter from "./routes/variant-detail.route";
-import authRouter from "./routes/auth.route";
-import userRouter from "./routes/user.route";
-import cartRouter from "./routes/cart.route";
-import topupRouter from "./routes/topup.route";
-import formRouter from "./routes/form.route";
-import fixAdobeRouter from "./routes/fix-adobe.route";
-import productsRouter from "./routes/products.route";
-import debugRouter from "./routes/debug.route";
-import * as sitemapController from "./controllers/sitemap.controller";
-import * as healthRoutes from "./routes/health";
+} from "./shared/middleware/api-security";
+import { csrfProtection } from "./shared/middleware/csrf";
+
+// Module routes
+import paymentRouter from "./modules/payment/payment.routes";
+import orderRouter from "./modules/order/order.routes";
+import mailRouter from "./modules/notification/notification.routes";
+import * as mailWebhookController from "./modules/notification/mail-webhook.controller";
+import variantDetailRouter from "./modules/product/variant.routes";
+import authRouter from "./modules/auth/auth.routes";
+import userRouter from "./modules/user/user.routes";
+import cartRouter from "./modules/cart/cart.routes";
+import topupRouter from "./modules/wallet/wallet.routes";
+import formRouter from "./modules/form/form.routes";
+import fixAdobeRouter from "./modules/fix-adobe/fix-adobe.routes";
+import productsRouter from "./modules/product/product.routes";
+import debugRouter from "./modules/debug/debug.routes";
+import * as sitemapController from "./modules/seo/sitemap.controller";
+import * as healthRoutes from "./modules/health/health.routes";
 
 // Cron jobs: load sau khi server listen (dynamic import trong start()) để tránh treo lúc khởi động
 
@@ -289,10 +292,10 @@ async function start() {
   const runWarmup = async () => {
     try {
       const [{ getProductsList }, { getPromotionsList }, { getCategoriesList }, { cache }] = await Promise.all([
-        import("./services/products-list.service"),
-        import("./services/promotions.service"),
-        import("./services/categories.service"),
-        import("./utils/cache"),
+        import("./modules/product/products-list.service"),
+        import("./modules/product/promotions.service"),
+        import("./modules/product/categories.service"),
+        import("./shared/utils/cache"),
       ]);
       await Promise.all([
         getProductsList().then((data) => { cache.set("products:list", data, 600); }),
@@ -322,9 +325,9 @@ async function start() {
 
   // Load cron jobs sau khi server đã listen (tránh treo khi import jobs + prisma/pool)
   Promise.all([
-    import("./jobs/refresh-variant-sold-count.job"),
-    import("./jobs/refresh-product-sold-30d.job"),
-    import("./jobs/reset-customer-tier-cycle.job"),
+    import("./jobs/analytics/refresh-variant-sold-count.job"),
+    import("./jobs/analytics/refresh-product-sold-30d.job"),
+    import("./jobs/user/reset-customer-tier-cycle.job"),
   ]).then(
     () => console.log("[Jobs] Cron jobs loaded"),
     (err) => console.warn("[Jobs] Failed to load some cron jobs:", err?.message ?? err)

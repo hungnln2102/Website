@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { productSoldCountService } from '../services/product-sold-count.service';
+import { productSoldCountService } from '../../modules/analytics/product-sold-count.service';
 
 /**
  * Refresh product sold count materialized view

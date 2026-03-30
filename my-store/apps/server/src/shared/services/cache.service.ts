@@ -1,4 +1,4 @@
-import { getRedisClient, isRedisAvailable } from "../config/redis";
+import { getRedisClient, isRedisAvailable } from "../../config/redis";
 
 interface FallbackCacheEntry<T> {
   value: T;

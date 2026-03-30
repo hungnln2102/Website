@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ShoppingCart, X, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { roundToNearestThousand } from "@/lib/pricing";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/features/cart/hooks/useCart";
 import { CONTACT_LINKS } from "../constants";
 import { ROUTES } from "@/lib/constants";
 import type { DurationOption } from "./DurationSelector";

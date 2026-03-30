@@ -1,7 +1,7 @@
 import express from "express";
-import { strictLimiter } from "../middleware/rateLimiter";
-import * as productController from "../controllers/product.controller";
-import * as seoController from "../controllers/seo.controller";
+import { strictLimiter } from "../../shared/middleware/rate-limiter";
+import * as productController from "./product.controller";
+import * as seoController from "./seo.controller";
 
 const router = express.Router();
 

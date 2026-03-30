@@ -2,7 +2,7 @@
  * Request payload size limiter
  */
 import type { Request, Response, NextFunction } from "express";
-import { auditService } from "../../services/audit.service";
+import { auditService } from "../../../modules/user/audit.service";
 
 export const limitPayloadSize = (maxSizeKB: number = 100) => {
   return (req: Request, res: Response, next: NextFunction) => {

@@ -1,5 +1,5 @@
 import type { CartItemData } from "../components/CartItem";
-import type { CartItem } from "@/hooks/useCart";
+import type { CartItem } from "@/features/cart/hooks/useCart";
 import { formatDuration } from "@/lib/utils";
 
 const DEFAULT_IMAGE = "https://placehold.co/200x200?text=Product";

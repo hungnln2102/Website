@@ -2,7 +2,7 @@
  * Cart request handlers – logic extracted from cart.route
  */
 import type { Request, Response } from "express";
-import * as cartService from "../services/cart.service";
+import * as cartService from "./cart.service";
 
 interface ReqUser {
   id?: number | string;
