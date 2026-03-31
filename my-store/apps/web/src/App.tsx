@@ -1,8 +1,10 @@
-﻿import { lazy, Suspense } from "react";
+﻿import { lazy, Suspense, useState, useEffect } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SkipLinks from "@/components/accessibility/SkipLinks";
+import MaintenancePage from "@/components/MaintenancePage";
 import HomePage from "@/features/home/HomePage";
 import { useRouter } from "@/hooks/useRouter";
+import { isMaintenanceMode, onMaintenanceChange } from "@/lib/api/client";
 
 /** Retry lazy import khi chunk load lá»—i (máº¡ng, cache, base URL). */
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -44,6 +46,9 @@ const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/Payment
 const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
 
 export default function App() {
+  const [maintenance, setMaintenance] = useState(isMaintenanceMode);
+  useEffect(() => onMaintenanceChange(setMaintenance), []);
+
   const {
     view,
     selectedSlug,
@@ -52,6 +57,10 @@ export default function App() {
     handleProductClick,
     handleBack,
   } = useRouter();
+
+  if (maintenance) {
+    return <MaintenancePage />;
+  }
 
   if (view === "home" || (view === "product" && !selectedSlug)) {
     return (

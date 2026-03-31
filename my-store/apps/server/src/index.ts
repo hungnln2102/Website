@@ -33,6 +33,8 @@ import formRouter from "./modules/form/form.routes";
 import fixAdobeRouter from "./modules/fix-adobe/fix-adobe.routes";
 import productsRouter from "./modules/product/product.routes";
 import debugRouter from "./modules/debug/debug.routes";
+import maintenanceRouter from "./modules/maintenance/maintenance.routes";
+import { maintenanceGuard } from "./shared/middleware/maintenance";
 import * as sitemapController from "./modules/seo/sitemap.controller";
 import * as healthRoutes from "./modules/health/health.routes";
 
@@ -190,6 +192,12 @@ app.use(generalLimiter);
 
 // Apply API security middleware (banned IP check, validation, security headers)
 app.use(...apiSecurityMiddleware);
+
+// Maintenance routes — phải đặt TRƯỚC maintenanceGuard để admin vẫn quản lý được
+app.use("/api/maintenance", maintenanceRouter);
+
+// Maintenance mode — block mọi request nếu maintenance ON (trừ IP whitelist)
+app.use(maintenanceGuard);
 
 // Fix Adobe / profile-check proxy (chỉ gọi dịch vụ ngoài)
 app.use("/api/fix-adobe", fixAdobeRouter);

@@ -33,8 +33,8 @@ export function StoreStatsSection({
       iconBgClass: "bg-emerald-100/90 dark:bg-emerald-500/15",
     },
     {
-      value: `${formatCount(discountedCount)}+`,
-      label: "Gói có ưu đãi",
+      value: "Bảo Hành",
+      label: "Minh bạch & Uy tín",
       icon: Sparkles,
       iconClass: "text-violet-600 dark:text-violet-300",
       iconBgClass: "bg-violet-100/90 dark:bg-violet-500/15",

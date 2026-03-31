@@ -58,7 +58,7 @@ export default function ProductTag({ type, className = "" }: ProductTagProps) {
 
   return (
     <div
-      className={`relative flex items-center gap-1.5 rounded-lg ${backgroundClass} px-2.5 py-1.5 shadow-lg backdrop-blur-sm border ${borderClass} ${className}`}
+      className={`relative flex items-center gap-1 rounded-md ${backgroundClass} px-2 py-1 shadow-lg backdrop-blur-sm border ${borderClass} ${className}`}
     >
       {/* Glow effect background - chỉ cho tag HOT */}
       {type === "hot" && (
@@ -73,18 +73,18 @@ export default function ProductTag({ type, className = "" }: ProductTagProps) {
         {/* Icon */}
         {type === "hot" ? (
           <TrendingUp 
-            className={`h-3.5 w-3.5 ${iconColorClass}`}
+            className={`h-3 w-3 ${iconColorClass}`}
             style={!isNewTag ? {
               filter: 'drop-shadow(0 0 3px rgba(96, 165, 250, 0.9)) drop-shadow(0 0 6px rgba(96, 165, 250, 0.6))',
             } : {}}
           />
         ) : type === "new" ? (
           <Sparkles 
-            className={`h-3.5 w-3.5 ${iconColorClass}`}
+            className={`h-3 w-3 ${iconColorClass}`}
           />
         ) : (
           <Zap 
-            className={`h-3.5 w-3.5 ${iconColorClass}`}
+            className={`h-3 w-3 ${iconColorClass}`}
             style={type === "hot" ? {
               filter: 'drop-shadow(0 0 3px rgba(96, 165, 250, 0.9)) drop-shadow(0 0 6px rgba(96, 165, 250, 0.6))',
             } : {}}
@@ -93,7 +93,7 @@ export default function ProductTag({ type, className = "" }: ProductTagProps) {
         
         {/* Text */}
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider ${textColorClass}`}
+          className={`text-[9px] font-bold uppercase tracking-[0.16em] ${textColorClass}`}
           style={type === "hot" ? {
             textShadow: '0 0 4px rgba(96, 165, 250, 0.9), 0 0 8px rgba(96, 165, 250, 0.6)',
           } : {}}

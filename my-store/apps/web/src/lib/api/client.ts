@@ -16,6 +16,23 @@ if (import.meta.env.PROD && API_BASE && !API_BASE.startsWith("https://")) {
   console.error("SECURITY WARNING: API must use HTTPS in production. Set VITE_API_URL.");
 }
 
+// ─── Maintenance mode detection ─────────────────────────────────────────────
+let _maintenanceMode = false;
+const _maintenanceListeners = new Set<(on: boolean) => void>();
+
+export function isMaintenanceMode() {
+  return _maintenanceMode;
+}
+export function onMaintenanceChange(cb: (on: boolean) => void) {
+  _maintenanceListeners.add(cb);
+  return () => { _maintenanceListeners.delete(cb); };
+}
+function setMaintenanceMode(on: boolean) {
+  if (_maintenanceMode === on) return;
+  _maintenanceMode = on;
+  _maintenanceListeners.forEach((cb) => cb(on));
+}
+
 /** Fetch with timeout to avoid hanging when backend is slow or down. */
 const DEFAULT_API_TIMEOUT_MS = 12_000;
 
@@ -29,6 +46,21 @@ export async function apiFetch(
   try {
     const res = await fetch(url, { ...init, signal: controller.signal });
     clearTimeout(timeoutId);
+
+    // Detect maintenance mode from 503 response
+    if (res.status === 503) {
+      try {
+        const cloned = res.clone();
+        const body = await cloned.json();
+        if (body?.maintenance === true) {
+          setMaintenanceMode(true);
+        }
+      } catch { /* ignore parse errors */ }
+    } else if (_maintenanceMode) {
+      // Backend responded normally → maintenance is off
+      setMaintenanceMode(false);
+    }
+
     return res;
   } catch (err) {
     clearTimeout(timeoutId);
@@ -47,6 +79,9 @@ export async function apiFetch(
  * Gọi sau khi đã đọc response body (res.json()/res.text()) để tránh "Failed to load response data" trong DevTools.
  */
 export function handleApiError(res: Response, defaultMessage: string): never {
+  if (res.status === 503 && _maintenanceMode) {
+    throw new Error("Website đang bảo trì. Vui lòng quay lại sau.");
+  }
   if (res.status >= 500) {
     throw new Error("Máy chủ đang gặp sự cố. Vui lòng thử lại sau.");
   }

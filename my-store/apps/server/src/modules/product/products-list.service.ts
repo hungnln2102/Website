@@ -3,6 +3,7 @@
  */
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
+import { sqlRetailPrice, sqlPromoPrice } from "../../shared/utils/pricing";
 import { SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
@@ -63,22 +64,18 @@ export async function getProductsList() {
     sale_calc AS (
       SELECT
         priced.*,
-        (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
+        ${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')}
           AS sale_price,
-        (COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0))
-          * (1 - COALESCE(priced.pct_promo::numeric, 0)) AS promo_price,
+        ${sqlPromoPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach', 'priced.pct_promo')}
+          AS promo_price,
         COALESCE(psc.total_sales_count, 0) AS package_sales_count,
         COALESCE(p30d.sold_count_30d, 0) AS sold_count_30d,
         COUNT(*) OVER (PARTITION BY priced.package) AS package_count,
         BOOL_OR(priced.is_active) OVER (PARTITION BY priced.package) AS has_active_variant,
         MIN(
           CASE
-            WHEN (
-              COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)
-            ) > 0
-            THEN (
-              COALESCE(priced.pct_ctv::numeric, 0) * priced.price_max * COALESCE(priced.pct_khach::numeric, 0)
-            )
+            WHEN (${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')}) > 0
+            THEN (${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')})
           END
         ) OVER (PARTITION BY priced.package) AS min_nonzero_sale_price
       FROM priced

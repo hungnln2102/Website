@@ -1,6 +1,7 @@
 import prisma from "@my-store/db";
 import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
+import { calculatePrices } from "../../shared/utils/pricing";
 import type { OrderListItemInput } from "../order/order-list.service";
 
 const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
@@ -291,13 +292,13 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
     const pctKhach = toNum(r.pct_khach);
     const pctPromo = toNum(r.pct_promo);
     const priceMax = toNum(r.price_max);
-    // retail = giá bình thường (pct_ctv * price_max * pct_khach)
-    const salePrice = Math.round((pctCtv * priceMax * pctKhach) / 1000) * 1000;
-    // promo = Deal Sốc: sale * (1 - pct_promo)
-    const promoPrice =
-      pctPromo > 0 ? Math.round((salePrice * (1 - (pctPromo > 1 ? pctPromo / 100 : pctPromo))) / 1000) * 1000 : salePrice;
-    // ctv = pct_ctv * price (base)
-    const ctvPrice = Math.round((pctCtv * priceMax) / 1000) * 1000;
+    // margin-based pricing (ported from admin_orderlist)
+    const { ctvPrice, retailPrice: salePrice, promoPrice } = calculatePrices({
+      priceMax,
+      pctCtv,
+      pctKhach,
+      pctPromo,
+    });
     const priceType = (r.price_type || "retail") as CartPriceType;
     const price =
       priceType === "promo" ? promoPrice : priceType === "ctv" ? ctvPrice : salePrice;

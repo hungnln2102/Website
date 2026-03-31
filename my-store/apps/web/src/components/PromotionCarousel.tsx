@@ -16,7 +16,7 @@ interface PromotionCarouselProps {
   markAsNew?: boolean;
 }
 
-const CARD_WIDTH = 320;
+const CARD_WIDTH = 272;
 const GAP = 16;
 
 export default function PromotionCarousel({ products, onProductClick, variant = "default", markAsNew = false }: PromotionCarouselProps) {
@@ -65,7 +65,7 @@ export default function PromotionCarousel({ products, onProductClick, variant = 
         {products.map((product) => (
           <div
             key={product.id}
-            className="w-[min(80vw,280px)] shrink-0 snap-start sm:w-[300px] lg:w-[320px]"
+            className="w-[min(76vw,248px)] shrink-0 snap-start sm:w-[260px] lg:w-[272px]"
           >
             <ProductCard
               {...product}

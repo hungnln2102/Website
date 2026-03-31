@@ -154,19 +154,19 @@
   }
 
   .product-card__title--minimal {
-    min-height: 2.5rem;
-    font-size: 0.975rem;
+    min-height: 2.2rem;
+    font-size: 0.94rem;
     font-weight: 750;
-    line-height: 1.28;
+    line-height: 1.24;
     letter-spacing: -0.02em;
   }
 
   .product-card__title--default {
-    min-height: 3.15rem;
-    font-size: 1.22rem;
+    min-height: 2.15rem;
+    font-size: 0.98rem;
     font-weight: 800;
-    line-height: 1.16;
-    letter-spacing: -0.03em;
+    line-height: 1.1;
+    letter-spacing: -0.024em;
     text-shadow: 0 1px 2px rgb(15 23 42 / 0.14);
   }
 
@@ -177,8 +177,8 @@
 
   @media (max-width: 1024px) {
     .product-card__title--default {
-      min-height: 2.95rem;
-      font-size: 1.12rem;
+      min-height: 2rem;
+      font-size: 0.94rem;
     }
   }
 

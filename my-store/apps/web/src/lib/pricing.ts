@@ -50,8 +50,13 @@ export function computeSalePrice({
   pctKhach: Numeric;
   priceMax: Numeric;
 }): number {
-  const sale = toNumber(pctCtv) * toNumber(priceMax) * toNumber(pctKhach);
-  return roundToNearestThousand(sale);
+  const price = toNumber(priceMax);
+  const ctv = toNumber(pctCtv);
+  const khach = toNumber(pctKhach);
+  if (price <= 0) return 0;
+  const ctvPrice = price / Math.max(1 - ctv, 0.0001);
+  const retailPrice = ctvPrice / Math.max(1 - khach, 0.0001);
+  return roundToNearestThousand(retailPrice);
 }
 
 export function computePromoPrice({ salePrice, pctPromo }: { salePrice: Numeric; pctPromo: Numeric }): number {
@@ -79,7 +84,7 @@ export function computePricing({
       ? toNumber(priceMaxOverride)
       : findMaxSupplyPrice(productPriceId, supplyPrices);
 
-  // Formula: sale = pct_ctv * priceMax * pct_khach; promo = sale * (1 - pct_promo)
+  // Formula (margin-based): sale = priceMax / (1 - pct_ctv) / (1 - pct_khach); promo = sale * (1 - pct_promo)
   const salePrice = computeSalePrice({ pctCtv: pct_ctv, pctKhach: pct_khach, priceMax });
   const promoPrice = computePromoPrice({ salePrice, pctPromo: pct_promo });
 

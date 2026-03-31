@@ -3,6 +3,7 @@
  */
 import prisma from "@my-store/db";
 import { TABLES } from "../../config/db.config";
+import { sqlRetailPrice } from "../../shared/utils/pricing";
 import { toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
 
@@ -48,7 +49,7 @@ export async function getProductPackages(packageName: string) {
     )
     SELECT
       *,
-      (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) AS cost
+      ${sqlRetailPrice('price_max', 'pct_ctv', 'pct_khach')} AS cost
     FROM priced
     WHERE package_product IS NOT NULL;
   `;

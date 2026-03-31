@@ -3,6 +3,7 @@
  */
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
+import { sqlRetailPrice, sqlPromoPrice } from "../../shared/utils/pricing";
 import { SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, stripHtml, toNumber } from "./product.helpers";
 
@@ -42,8 +43,8 @@ export async function getPromotionsList() {
       pct_ctv,
       pct_khach,
       pct_promo,
-      (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) AS sale_price,
-      (COALESCE(pct_ctv::numeric, 0) * price_max * COALESCE(pct_khach::numeric, 0)) * (1 - COALESCE(pct_promo::numeric, 0)) AS promo_price,
+      ${sqlRetailPrice('price_max', 'pct_ctv', 'pct_khach')} AS sale_price,
+      ${sqlPromoPrice('price_max', 'pct_ctv', 'pct_khach', 'pct_promo')} AS promo_price,
       sales_count,
       description,
       image_url

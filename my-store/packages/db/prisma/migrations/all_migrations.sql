@@ -176,6 +176,33 @@ END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS order_customer_id_order_key ON orders.order_customer (id_order);
 
 -- -----------------------------------------------------------------------------
+-- 9. IP Whitelist & Site Settings (maintenance mode)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS admin.ip_whitelist (
+  id          SERIAL PRIMARY KEY,
+  ip_address  VARCHAR(45) NOT NULL,
+  label       VARCHAR(100),
+  is_active   BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ip_whitelist_ip
+  ON admin.ip_whitelist (ip_address);
+CREATE INDEX IF NOT EXISTS idx_ip_whitelist_active
+  ON admin.ip_whitelist (is_active) WHERE is_active = true;
+
+CREATE TABLE IF NOT EXISTS admin.site_settings (
+  key         VARCHAR(50) PRIMARY KEY,
+  value       TEXT NOT NULL DEFAULT '',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO admin.site_settings (key, value)
+VALUES ('maintenance_mode', 'off')
+ON CONFLICT (key) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
 -- DONE
 -- -----------------------------------------------------------------------------
 -- Các migration khác (create tables, cart, fix_wallet_sequence, ...) có thể đã
