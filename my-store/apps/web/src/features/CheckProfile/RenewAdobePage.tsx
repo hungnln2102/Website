@@ -5,8 +5,13 @@ import { ServicesSidebar } from "./ServicesSidebar";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories, getApiBase } from "@/lib/api";
+import { fetchProducts, fetchCategories } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import {
+  activateRenewAdobeWebsiteProfile,
+  fetchRenewAdobeWebsiteStatus,
+} from "./renewAdobe.api";
+import type { RenewAdobeWebsiteStatusResponse } from "./renewAdobe.types";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -49,6 +54,7 @@ export default function RenewAdobePage() {
   >(null);
   const [message, setMessage] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [canActivate, setCanActivate] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -64,13 +70,30 @@ export default function RenewAdobePage() {
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
-  const resetResult = () => {
+  const resetResult = (options?: { preserveProfileName?: boolean }) => {
     setResultType(null);
     setMessage(null);
-    setProfileName(null);
+    setCanActivate(false);
+    if (!options?.preserveProfileName) {
+      setProfileName(null);
+    }
   };
 
-  /* ── Kiểm tra Profile: lookup + thời hạn sử dụng (user-orders) ── */
+  const applyStatusResult = (data: RenewAdobeWebsiteStatusResponse) => {
+    setProfileName(data.profileName);
+    setCanActivate(data.canActivate);
+
+    if (data.status === "active") {
+      setResultType("check-success");
+      setMessage(data.message);
+      return;
+    }
+
+    setResultType("expired");
+    setMessage(data.message);
+  };
+
+  /* ── Kiểm tra Profile từ public renew-adobe status API ── */
   const handleCheckSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
@@ -78,119 +101,52 @@ export default function RenewAdobePage() {
       setResultType("info");
       return;
     }
+
     setLoading(true);
     resetResult();
-    const trimmedEmail = email.trim().toLowerCase();
+
     try {
-      const API_BASE = getApiBase();
-
-      const [lookupRes, ordersRes] = await Promise.all([
-        fetch(
-          `${API_BASE}/api/renew-adobe/accounts/lookup?email=${encodeURIComponent(email.trim())}`,
-          { credentials: "include" },
-        ),
-        fetch(`${API_BASE}/api/renew-adobe/user-orders`, { credentials: "include" }),
-      ]);
-
-      const data = await lookupRes.json().catch(() => null);
-
-      if (lookupRes.status === 404 || !data?.account) {
-        setResultType("expired");
-        setMessage("Không tìm thấy tài khoản Adobe cho email này. Bấm nút bên dưới để kích hoạt.");
-        return;
-      }
-
-      if (!lookupRes.ok) {
-        setResultType("error");
-        setMessage(data?.error || "Không kiểm tra được profile. Vui lòng thử lại sau.");
-        return;
-      }
-
-      const account = data.account as Record<string, unknown>;
-      const orgName = (account.org_name as string) || null;
-      const licenseStatus = String(account.license_status ?? "").toLowerCase();
-      setProfileName(orgName);
-
-      if (licenseStatus === "expired" || licenseStatus === "unknown") {
-        setResultType("expired");
-        setMessage("Gói Adobe đã hết hạn. Bấm nút bên dưới để được cấp lại profile mới.");
-        return;
-      }
-
-      let expiryDateStr: string | null = null;
-      let orderExpired = false;
-      if (ordersRes.ok) {
-        const orders = (await ordersRes.json().catch(() => [])) as Array<{
-          information_order?: string;
-          expiry_date?: string;
-        }>;
-        const myOrders = orders.filter(
-          (o) => String(o.information_order ?? "").trim().toLowerCase() === trimmedEmail,
-        );
-        if (myOrders.length > 0) {
-          const latest = myOrders.reduce((a, b) => {
-            const da = a.expiry_date ? new Date(a.expiry_date).getTime() : 0;
-            const db = b.expiry_date ? new Date(b.expiry_date).getTime() : 0;
-            return db > da ? b : a;
-          });
-          expiryDateStr = latest.expiry_date || null;
-          if (expiryDateStr) {
-            const expiry = new Date(expiryDateStr);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            expiry.setHours(0, 0, 0, 0);
-            orderExpired = expiry < today;
-          }
-        }
-      }
-
-      if (orderExpired && expiryDateStr) {
-        const d = new Date(expiryDateStr);
-        const dmy = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-        setResultType("expired");
-        setMessage(`Đã hết hạn sử dụng (Hạn: ${dmy}). Bấm nút bên dưới để kích hoạt lại.`);
-        return;
-      }
-
-      setResultType("check-success");
-      setMessage("Profile đang hoạt động bình thường.");
+      const data = await fetchRenewAdobeWebsiteStatus(email.trim());
+      applyStatusResult(data);
     } catch (err) {
       console.error("Lookup error:", err);
       setResultType("error");
-      setMessage("Có lỗi kết nối tới máy chủ. Vui lòng thử lại sau.");
-    } finally { setLoading(false); }
+      setMessage(
+        err instanceof Error
+          ? err.message
+          : "Có lỗi kết nối tới máy chủ. Vui lòng thử lại sau.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /* ── Kích hoạt Profile (POST /api/renew-adobe/fix-user) ── */
+  /* ── Kích hoạt Profile (POST /api/renew-adobe/public/activate) ── */
   const handleActivate = async () => {
     if (!email.trim() || activating) return;
+
     setActivating(true);
-    resetResult();
+    resetResult({ preserveProfileName: true });
+
     try {
-      const API_BASE = getApiBase();
-      const res = await fetch(`${API_BASE}/api/renew-adobe/fix-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok || !data?.success) {
-        setResultType("error");
-        setMessage(data?.error || data?.message || "Không kích hoạt được profile. Vui lòng thử lại sau.");
-        return;
-      }
-
-      const name = (data.profile as string) || profileName;
-      setProfileName(name);
+      const data = await activateRenewAdobeWebsiteProfile(email.trim());
+      setProfileName(data.profileName);
+      setCanActivate(false);
       setResultType("activate-success");
-      setMessage(data.message || `Profile đã được kích hoạt thành công cho ${email.trim()}.`);
+      setMessage(
+        data.message || `Profile đã được kích hoạt thành công cho ${email.trim()}.`,
+      );
     } catch (err) {
       console.error("Fix-user error:", err);
       setResultType("error");
-      setMessage("Có lỗi kết nối tới dịch vụ kích hoạt. Vui lòng thử lại sau.");
-    } finally { setActivating(false); }
+      setMessage(
+        err instanceof Error
+          ? err.message
+          : "Có lỗi kết nối tới dịch vụ kích hoạt. Vui lòng thử lại sau.",
+      );
+    } finally {
+      setActivating(false);
+    }
   };
 
   return (
@@ -353,7 +309,7 @@ export default function RenewAdobePage() {
                     </div>
                   )}
 
-                  {resultType === "expired" ? (
+                  {resultType === "expired" && canActivate ? (
                     <button
                       type="button"
                       onClick={handleActivate}

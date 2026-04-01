@@ -127,7 +127,6 @@ export default function CategoryPage({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
-        hidePriceAndDescription
         emptyIcon={Package}
         emptyTitle="Chưa có sản phẩm"
         emptyMessage="Danh mục này hiện chưa có sản phẩm nào."

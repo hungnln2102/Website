@@ -99,10 +99,20 @@ echo "🚀 Building and starting application containers..."
 echo "   (This may take a few minutes...)"
 echo ""
 
+# Force rebuild without Docker cache to ensure fresh assets
 if [ -f "$ENV_FILE" ]; then
-    $DOCKER_COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --remove-orphans
 else
-    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d --build --remove-orphans
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" build --no-cache
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d --remove-orphans
+fi
+
+# Reload host Nginx to clear proxy cache (if applicable)
+if command -v nginx >/dev/null 2>&1 || [ -x /usr/sbin/nginx ]; then
+    echo ""
+    echo "Reloading Host Nginx to clear proxy cache..."
+    sudo nginx -s reload 2>/dev/null && echo "✅ Host Nginx reloaded." || echo "⚠️  Could not reload Host Nginx (requires sudo)."
 fi
 
 echo ""

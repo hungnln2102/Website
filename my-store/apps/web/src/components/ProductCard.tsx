@@ -184,21 +184,19 @@ export default function ProductCard({
   }
 
   const cardWrapper = isDeal
-    ? "group relative mx-auto w-full max-w-[15rem] cursor-pointer overflow-hidden rounded-[1rem] border border-orange-200/60 bg-white p-0.5 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/15 sm:max-w-[15.5rem] dark:border-orange-900/50 dark:bg-slate-900/50 dark:hover:shadow-orange-900/20"
-    : "group relative mx-auto w-full max-w-[15rem] cursor-pointer overflow-hidden rounded-[1rem] border border-gray-200/60 bg-white p-0.5 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 sm:max-w-[15.5rem] dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-blue-900/20";
+    ? "group relative mx-auto w-full max-w-[13.5rem] cursor-pointer overflow-hidden rounded-[1.1rem] border border-orange-500/20 bg-white p-[1.5px] shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-orange-500/25 dark:border-orange-800/30 dark:bg-slate-900/50 dark:hover:border-orange-600/50 dark:hover:shadow-orange-900/30"
+    : "group relative mx-auto w-full max-w-[13.5rem] cursor-pointer overflow-hidden rounded-[1.1rem] border border-white/5 bg-white p-[1.5px] shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-indigo-500/20 dark:border-slate-700/50 dark:bg-slate-900/50 dark:hover:border-indigo-500/40 dark:hover:shadow-indigo-900/30";
 
   const gradientHover = isDeal
-    ? "absolute inset-0 z-0 bg-gradient-to-br from-orange-500 via-red-500 to-rose-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-    : "absolute inset-0 z-0 bg-gradient-to-br from-blue-500 via-cyan-400 to-indigo-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100";
+    ? "absolute inset-0 z-0 bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+    : "absolute inset-0 z-0 bg-gradient-to-br from-indigo-500 via-blue-500 to-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100";
 
   const priceColor = isDeal ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400";
   const titleHover = isDeal
     ? "group-hover:text-orange-600 dark:group-hover:text-orange-400"
     : "group-hover:text-blue-600 dark:group-hover:text-blue-400";
-  const imageAspectRatio = isDeal ? "4 / 3" : "1 / 0.88";
-  const imageWrapperClass = isDeal
-    ? "product-image-wrapper relative w-full overflow-hidden"
-    : "product-image-wrapper relative mx-2.5 mt-2.5 mb-0.5 w-auto overflow-hidden rounded-[0.95rem]";
+  const imageAspectRatio = "1 / 1";
+  const imageWrapperClass = "product-image-wrapper relative w-full overflow-hidden";
 
   return (
     <article
@@ -210,7 +208,7 @@ export default function ProductCard({
       aria-label={`Chọn ${name}`}
     >
       <div className={gradientHover} />
-      <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(1rem-2px)] bg-[#0b1120] text-white dark:bg-slate-950">
+      <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[calc(1.1rem-1.5px)] bg-[#080e1c] text-white dark:bg-[#060c18]">
         <div className={imageWrapperClass} style={{ aspectRatio: imageAspectRatio }}>
           <LazyImage
             src={image_url || "https://placehold.co/400x400?text=No+Image"}
@@ -219,34 +217,32 @@ export default function ProductCard({
             height={400}
             className="product-img h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#020617]/30 via-transparent to-transparent transition-opacity group-hover:opacity-0" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080e1c] via-[#080e1c]/20 to-transparent" />
 
           <div className="absolute left-2 top-2 z-30">{renderStatusBadge()}</div>
 
           {isOutOfStock && <div className="absolute inset-0 z-20 bg-black/40" />}
         </div>
 
-        <div className="product-info flex flex-1 flex-col px-2.5 pb-2.5 pt-2.5 md:px-3 md:pb-3 md:pt-2.5">
-          <div className="min-h-[2.2rem]">
-            <h3
-              className={`product-card__title product-card__title--default text-white transition-colors ${titleHover} dark:text-slate-100`}
-            >
-              {name}
-            </h3>
-          </div>
+        <div className="product-info flex flex-1 flex-col px-3 pb-3 pt-2.5 md:px-3.5 md:pb-3.5 md:pt-3">
+          <h3
+            className={`product-card__title product-card__title--default text-white transition-colors ${titleHover} dark:text-slate-100`}
+          >
+            {name}
+          </h3>
 
           {!hidePriceAndDescription && (
             <>
-              <div className="product-stats mt-2.5 flex items-center gap-2.5 text-[10px] text-slate-400">
+              <div className="product-stats mt-2 flex items-center justify-between text-[11px]">
                 <div
-                  className="rating inline-flex items-center gap-1 font-semibold text-amber-300"
+                  className="rating inline-flex items-center gap-0.5 font-bold text-amber-400"
                   aria-label={`Đánh giá ${safeRating.toFixed(1)} sao`}
                 >
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
                   <span>{safeRating.toFixed(1)}</span>
                 </div>
                 <div className="sold-count inline-flex items-center gap-1 text-slate-400">
-                  <ShoppingCart className="h-3 w-3" aria-hidden="true" />
+                  <ShoppingCart className="h-3 w-3 text-slate-500" aria-hidden="true" />
                   <span>
                     {safeSalesCount >= 1000
                       ? `${(safeSalesCount / 1000).toFixed(1)}k`
@@ -256,47 +252,40 @@ export default function ProductCard({
                 </div>
               </div>
 
-              <hr className="divider mt-2.5 border-t border-slate-800/90" />
+              <div className="divider mt-2.5 h-px w-full bg-gradient-to-r from-transparent via-slate-700/60 to-transparent" />
 
-              <div className="product-pricing mt-2.5 space-y-1">
+              <div className="product-pricing mt-2.5">
                 {!showContact && !hasMultipleCodes && hasDiscount && (
-                  <div className="price-original text-[11px] text-slate-500">
-                    <del>{formatCurrency(displayPrice)}</del>
+                  <div className="mb-1 text-[10px] text-slate-600 line-through">
+                    {formatCurrency(displayPrice)}
                   </div>
                 )}
 
-                {hasDiscount && !showContact && (
-                  <div className="price-label text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Giá khuyến mãi
-                  </div>
-                )}
-
-                <div className="price-promo-row flex items-end justify-between gap-2.5">
+                <div className="price-promo-row flex items-end justify-between gap-2">
                   <div className="price-current min-w-0">
                     {showContact ? (
-                      <div className={`text-[1.3rem] font-black leading-none tracking-tight sm:text-[1.45rem] md:text-[1.6rem] ${priceColor}`}>
+                      <div className={`text-[1.35rem] font-black leading-none tracking-tight sm:text-[1.5rem] ${priceColor}`}>
                         Liên hệ
                       </div>
                     ) : hasMultipleCodes ? (
-                      <div className="flex items-end gap-1">
-                        <span className="text-small pb-0.5 text-[9px] font-medium uppercase tracking-[0.1em] text-slate-400">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.14em] text-slate-400">
                           Từ
                         </span>
-                        <span className={`text-large text-[1.3rem] font-black leading-none tracking-tight sm:text-[1.45rem] md:text-[1.6rem] ${priceColor}`}>
+                        <span className={`text-[1.35rem] font-black leading-none tracking-tight sm:text-[1.5rem] ${priceColor}`}>
                           {formatCurrency(discountedPrice)}
                         </span>
                       </div>
                     ) : (
-                      <div className={`text-large text-[1.3rem] font-black leading-none tracking-tight sm:text-[1.45rem] md:text-[1.6rem] ${priceColor}`}>
+                      <div className={`text-[1.35rem] font-black leading-none tracking-tight sm:text-[1.5rem] ${priceColor}`}>
                         {formatCurrency(discountedPrice)}
                       </div>
                     )}
                   </div>
 
                   {hasDiscount && !showContact && (
-                    <div className="badge-discount inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.75 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-lg">
-                      <Tag className="h-2.5 w-2.5" />
-                      Giảm {discountPercent}%
+                    <div className="badge-discount inline-flex shrink-0 items-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-md shadow-orange-600/30">
+                      -{discountPercent}%
                     </div>
                   )}
                 </div>
@@ -309,10 +298,10 @@ export default function ProductCard({
                   onClick();
                 }}
                 disabled={isOutOfStock}
-                className={`btn-action mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-white transition-all ${
+                className={`btn-action mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2.5 text-[12px] font-bold uppercase tracking-[0.15em] text-white transition-all duration-200 active:scale-[0.97] ${
                   isOutOfStock
-                    ? "cursor-not-allowed bg-slate-700/80 text-slate-300"
-                    : "bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/20 hover:from-orange-400 hover:to-red-500"
+                    ? "cursor-not-allowed bg-slate-700/80 text-slate-400"
+                    : "bg-gradient-to-r from-orange-500 via-red-500 to-red-600 shadow-lg shadow-orange-600/30 hover:brightness-110 hover:shadow-orange-500/50"
                 }`}
               >
                 {actionButtonLabel}

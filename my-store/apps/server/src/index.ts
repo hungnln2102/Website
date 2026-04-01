@@ -31,6 +31,7 @@ import cartRouter from "./modules/cart/cart.routes";
 import topupRouter from "./modules/wallet/wallet.routes";
 import formRouter from "./modules/form/form.routes";
 import fixAdobeRouter from "./modules/fix-adobe/fix-adobe.routes";
+import netflixRouter from "./modules/netflix/netflix.routes";
 import productsRouter from "./modules/product/product.routes";
 import debugRouter from "./modules/debug/debug.routes";
 import maintenanceRouter from "./modules/maintenance/maintenance.routes";
@@ -201,11 +202,12 @@ app.use(maintenanceGuard);
 
 // Fix Adobe / profile-check proxy (chỉ gọi dịch vụ ngoài)
 app.use("/api/fix-adobe", fixAdobeRouter);
+app.use("/api/netflix", netflixRouter);
 
 // CSRF protection for state-changing requests
-// BỎ QUA cho các route /api/fix-adobe/*
+// BỎ QUA cho các route /api/fix-adobe/* và /api/netflix/*
 app.use("/api", (req, res, next) => {
-  if (req.path.startsWith("/fix-adobe/")) {
+  if (req.path.startsWith("/fix-adobe/") || req.path.startsWith("/netflix/")) {
     return next();
   }
   return csrfProtection(req, res, next);

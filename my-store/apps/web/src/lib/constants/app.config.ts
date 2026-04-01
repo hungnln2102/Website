@@ -43,10 +43,10 @@ export const ROUTES = {
   promotions: "/promotions",
   allProducts: "/all-products",
   /** Đường dẫn danh mục: ROUTES.category(slug) */
-  category: (slug: string) => `/category/${encodeURIComponent(slug)}`,
+  category: (slug: string) => `/danh-muc/${encodeURIComponent(slug)}`,
   /** Đường dẫn sản phẩm trong danh mục: ROUTES.categoryProduct(catSlug, productSlug) */
   categoryProduct: (catSlug: string, productSlug: string) =>
-    `/category/${encodeURIComponent(catSlug)}/${encodeURIComponent(productSlug)}`,
+    `/danh-muc/${encodeURIComponent(catSlug)}/${encodeURIComponent(productSlug)}`,
 } as const;
 
 export const BREAKPOINTS = {

@@ -7,6 +7,8 @@ import { getClientIP } from "./security/banned-ip";
  * Khi maintenance ON → trả 503 cho mọi request, TRỪ IP nằm trong whitelist DB.
  * Đặt SAU rate-limiter, TRƯỚC các route handler.
  */
+const LOCALHOST_IPS = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+
 export const maintenanceGuard = async (
   req: Request,
   res: Response,
@@ -17,6 +19,10 @@ export const maintenanceGuard = async (
     if (!maintenance) return next();
 
     const ip = getClientIP(req);
+
+    // Localhost luôn bypass – local development không bao giờ bị chặn
+    if (LOCALHOST_IPS.has(ip)) return next();
+
     const allowed = await isWhitelisted(ip);
     if (allowed) return next();
 

@@ -62,7 +62,7 @@ export function generateSitemapUrls(
   categories.forEach((category) => {
     const categorySlug = category.name.toLowerCase().replace(/\s+/g, "-");
     urls.push({
-      loc: `${baseUrl}/category/${encodeURIComponent(categorySlug)}`,
+      loc: `${baseUrl}/danh-muc/${encodeURIComponent(categorySlug)}`,
       changefreq: "weekly",
       priority: 0.7,
     });
