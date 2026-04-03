@@ -33,6 +33,7 @@ export default function MetaTags({ metadata }: MetaTagsProps) {
     if (metadata.keywords) {
       updateMetaTag("keywords", metadata.keywords);
     }
+    updateMetaTag("robots", metadata.robots || "index, follow");
 
     // Open Graph tags
     const ogTags = generateOpenGraphTags(metadata);

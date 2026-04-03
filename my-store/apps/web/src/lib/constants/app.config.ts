@@ -38,10 +38,13 @@ export const ROUTES = {
   paymentError: "/payment/error",
   paymentCancel: "/payment/cancel",
   about: "/about",
+  news: "/tin-tuc",
   newProducts: "/new-products",
   bestSelling: "/best-selling",
   promotions: "/promotions",
   allProducts: "/all-products",
+  newsArticle: (slug: string) => `/tin-tuc/${encodeURIComponent(slug)}`,
+  newsCategory: (slug: string) => `/tin-tuc/danh-muc/${encodeURIComponent(slug)}`,
   /** Đường dẫn danh mục: ROUTES.category(slug) */
   category: (slug: string) => `/danh-muc/${encodeURIComponent(slug)}`,
   /** Đường dẫn sản phẩm trong danh mục: ROUTES.categoryProduct(catSlug, productSlug) */

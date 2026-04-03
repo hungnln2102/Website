@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Check, Copy, AlertCircle, Clock } from "lucide-react";
 
 interface PaymentQRDisplayProps {
@@ -30,6 +31,12 @@ export function PaymentQRDisplay({
   isTestLoading,
   handleTestTopup,
 }: PaymentQRDisplayProps) {
+  const qrSrc = generateQRUrl();
+  const [qrImageFailed, setQrImageFailed] = useState(false);
+  useEffect(() => {
+    setQrImageFailed(false);
+  }, [qrSrc]);
+
   return (
     <div className="space-y-6">
       {/* Two Column Layout: Bank Info (Left) + QR Code (Right) */}
@@ -123,15 +130,24 @@ export function PaymentQRDisplay({
           </h3>
 
           <div className="relative inline-block rounded-2xl bg-white p-4">
-            <img
-              src={generateQRUrl()}
-              alt="QR Code"
-              className="h-52 w-52"
-            />
-            {/* Scan line animation */}
-            <div className="pointer-events-none absolute inset-4 overflow-hidden rounded-lg">
-              <div className="animate-scan absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-75" />
-            </div>
+            {qrImageFailed || !qrSrc ? (
+              <div className="flex h-52 w-52 items-center justify-center px-3 text-center text-sm text-slate-600">
+                Không tải được mã VietQR. Thử tải lại trang hoặc chuyển khoản theo thông tin bên trái.
+              </div>
+            ) : (
+              <>
+                <img
+                  key={qrSrc}
+                  src={qrSrc}
+                  alt="QR VietQR thanh toán"
+                  className="h-52 w-52"
+                  onError={() => setQrImageFailed(true)}
+                />
+                <div className="pointer-events-none absolute inset-4 overflow-hidden rounded-lg">
+                  <div className="animate-scan absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-75" />
+                </div>
+              </>
+            )}
           </div>
 
           <p className="mt-4 text-sm text-slate-400">

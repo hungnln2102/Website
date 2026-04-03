@@ -274,6 +274,12 @@ export default function HomePage({
           onPageChange={setCurrentPage}
         />
 
+        <Suspense fallback={<div className="mt-5 mb-4 min-h-[32rem] sm:min-h-[24rem]" aria-hidden="true" />}>
+          <HomeSupportShareSection />
+        </Suspense>
+        <Suspense fallback={<div className="mt-3 min-h-[26rem] sm:min-h-[22rem]" aria-hidden="true" />}>
+          <InfoHighlightsSection />
+        </Suspense>
         {!loading && products.length > 0 && (
           <StoreStatsSection
             productCount={products.length}
@@ -281,13 +287,6 @@ export default function HomePage({
             discountedCount={discountedProductsCount}
           />
         )}
-
-        <Suspense fallback={<div className="mt-5 mb-4 min-h-[32rem] sm:min-h-[24rem]" aria-hidden="true" />}>
-          <HomeSupportShareSection />
-        </Suspense>
-        <Suspense fallback={<div className="mt-3 min-h-[26rem] sm:min-h-[22rem]" aria-hidden="true" />}>
-          <InfoHighlightsSection />
-        </Suspense>
       </main>
 
       <Footer />

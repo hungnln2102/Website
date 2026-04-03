@@ -3,25 +3,28 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-const BACKEND_URL = 'http://127.0.0.1:4000';
+/** my-store apps/server (sản phẩm, giỏ, thanh toán, …) */
+const STORE_API_URL = process.env.VITE_STORE_API_URL || 'http://127.0.0.1:4000';
+/** admin_orderlist backend — tin tức /api/public/content/* (schema content) */
+const ADMIN_API_URL = process.env.VITE_ADMIN_API_URL || 'http://127.0.0.1:3001';
 const BRANDING_ASSET_PUBLIC_DIR = path.resolve(__dirname, './public/assets/images');
 const BRANDING_ASSET_EXTENSIONS = ['.webp', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.avif'];
 const FAVICON_EXTENSIONS = ['.ico', '.png', '.svg', '.webp', '.jpg', '.jpeg', '.avif'];
 
 /** Khi backend chưa chạy (ECONNREFUSED): log rõ, tránh spam stack trace. */
-function proxyToBackend() {
+function proxyTo(target: string, label: string) {
   return {
-    target: BACKEND_URL,
+    target,
     changeOrigin: true,
     timeout: 30_000,
     proxyTimeout: 30_000,
     configure: (proxy: any) => {
       proxy.on('error', (err: NodeJS.ErrnoException, _req: any, res: any) => {
         if (err.code === 'ECONNREFUSED') {
-          console.warn(`[vite] Backend chưa chạy tại ${BACKEND_URL}. Chạy "npm run dev" từ thư mục my-store để khởi động cả server và web.`);
+          console.warn(`[vite] ${label} chưa chạy tại ${target}.`);
           if (res && !res.headersSent) {
             res.writeHead(503, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Backend chưa sẵn sàng. Khởi động server (port 4000) rồi thử lại.' }));
+            res.end(JSON.stringify({ error: `Backend chưa sẵn sàng (${label}). Khởi động rồi thử lại.` }));
           }
         }
       });
@@ -97,12 +100,29 @@ export default defineConfig({
     hmr: { overlay: true },
     fs: { strict: false },
     proxy: {
-      '/api': proxyToBackend(),
-      '/products': proxyToBackend(),
-      '/categories': proxyToBackend(),
-      '/promotions': proxyToBackend(),
-      '/product-packages': proxyToBackend(),
-      '/cache': proxyToBackend(),
+      /**
+       * Tin tức công khai từ admin_orderlist (DB content), không phải apps/server.
+       * Phải đứng trước `/api` để khớp prefix trước.
+       */
+      '/api/public/content': proxyTo(ADMIN_API_URL, 'admin_orderlist (tin tức)'),
+      /**
+       * Renew Adobe (Website Check Profile) — API thật nằm trên admin_orderlist backend,
+       * không phải my-store server (4000). Nếu proxy nhầm sang 4000 → 404 "Không tìm thấy dữ liệu".
+       */
+      '/api/renew-adobe/public': proxyTo(
+        ADMIN_API_URL,
+        'admin_orderlist (Renew Adobe public)',
+      ),
+      '/api': proxyTo(STORE_API_URL, 'my-store server'),
+      /** Ảnh upload bài viết (admin_orderlist/static …/image/articles/) — phải trước `/image` */
+      '/image/articles': proxyTo(ADMIN_API_URL, 'admin_orderlist (ảnh bài viết)'),
+      '/image': proxyTo(STORE_API_URL, 'my-store server'),
+      '/image_product': proxyTo(STORE_API_URL, 'my-store server'),
+      '/products': proxyTo(STORE_API_URL, 'my-store server'),
+      '/categories': proxyTo(STORE_API_URL, 'my-store server'),
+      '/promotions': proxyTo(STORE_API_URL, 'my-store server'),
+      '/product-packages': proxyTo(STORE_API_URL, 'my-store server'),
+      '/cache': proxyTo(STORE_API_URL, 'my-store server'),
     },
   },
   // Optimize dependencies pre-bundling

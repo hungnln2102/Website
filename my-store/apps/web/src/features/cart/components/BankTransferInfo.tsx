@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Check, Copy, Shield, Clock } from "lucide-react";
 
 interface BankTransferInfoProps {
@@ -38,6 +39,11 @@ export function BankTransferInfo({
   isConfirmingTransfer = false,
   onTestPaymentSuccess,
 }: BankTransferInfoProps) {
+  const [qrImageFailed, setQrImageFailed] = useState(false);
+  useEffect(() => {
+    setQrImageFailed(false);
+  }, [qrUrl]);
+
   // Render copy button
   const CopyButton = ({ text, field }: { text: string; field: string }) => (
     <button
@@ -155,24 +161,27 @@ export function BankTransferInfo({
           {/* QR Code with scan animation */}
           <div className="mx-auto mb-4 w-fit rounded-xl bg-white p-3">
            <div className="relative overflow-hidden">
-              <img
-                src={qrUrl}
-                alt="QR Code thanh toán"
-                className="h-52 w-52"
-                onError={(e) => {
-                  // Fallback if VietQR fails
-                  (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                    `Bank: ${bankConfig.bankName}\nSTK: ${bankConfig.accountNo}\nCTK: ${bankConfig.accountName}\nSố tiền: ${total}\nND: ${transferContent}`
-                  )}`;
-                }}
-              />
-              {/* Scan line animation */}
-              <div
-                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-80"
-                style={{
-                  animation: "scanLine 2s ease-in-out infinite",
-                }}
-              />
+              {qrImageFailed || !qrUrl ? (
+                <div className="flex h-52 w-52 items-center justify-center px-3 text-center text-sm text-slate-600">
+                  Không tải được mã VietQR. Vui lòng tải lại trang hoặc chuyển khoản theo thông tin bên trái.
+                </div>
+              ) : (
+                <>
+                  <img
+                    key={qrUrl}
+                    src={qrUrl}
+                    alt="QR Code thanh toán VietQR"
+                    className="h-52 w-52"
+                    onError={() => setQrImageFailed(true)}
+                  />
+                  <div
+                    className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-80"
+                    style={{
+                      animation: "scanLine 2s ease-in-out infinite",
+                    }}
+                  />
+                </>
+              )}
               <style>{`
                 @keyframes scanLine {
                   0%, 100% {

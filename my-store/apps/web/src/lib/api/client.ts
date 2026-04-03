@@ -1,6 +1,7 @@
 /**
  * Shared API base URL and error handling for all API modules.
- * Dev: luôn dùng '' (cùng origin) để request qua Vite proxy → backend 4000, giữ đúng hành vi như trước.
+ * Dev: luôn dùng '' (cùng origin) để request qua Vite proxy — store API (4000) và
+ * /api/public/content/* + /image/articles qua admin_orderlist (3001), xem vite.config.ts.
  * Prod: dùng VITE_API_URL / VITE_SERVER_URL hoặc mặc định.
  */
 export const getApiBase = (): string => {
@@ -66,7 +67,7 @@ export async function apiFetch(
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === "AbortError") {
       const hint = import.meta.env.DEV
-        ? " Kiểm tra backend đã chạy tại http://localhost:4000 (npm run dev từ thư mục my-store)."
+        ? " Kiểm tra my-store server (4000) và admin_orderlist (3001) nếu dùng tin tức."
         : "";
       throw new Error("Không kết nối được máy chủ. Kiểm tra mạng hoặc thử lại sau." + hint);
     }

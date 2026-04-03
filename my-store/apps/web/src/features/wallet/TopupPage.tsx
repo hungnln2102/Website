@@ -15,6 +15,7 @@ import { PackageSelector } from "./components/PackageSelector";
 import { PaymentStatusPanel } from "./components/PaymentStatusPanel";
 import { PaymentQRDisplay } from "./components/PaymentQRDisplay";
 import { ROUTES } from "@/lib/constants";
+import { buildVietQrImageUrl } from "@/lib/vietqr";
 
 export default function TopupPage() {
   const isScrolled = useScroll();
@@ -132,11 +133,14 @@ export default function TopupPage() {
     setShowCancelConfirm(false);
   };
 
-  const generateQRUrl = () => {
-    const total = getTotalAmount();
-    const description = encodeURIComponent(transactionCode);
-    return `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNo}-${BANK_CONFIG.template}.png?amount=${total}&addInfo=${description}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
-  };
+  const generateQRUrl = () =>
+    buildVietQrImageUrl({
+      bankCode: BANK_CONFIG.bankId,
+      accountNumber: BANK_CONFIG.accountNo,
+      amount: getTotalAmount(),
+      description: transactionCode,
+      accountName: BANK_CONFIG.accountName,
+    });
 
   const handleCustomAmountChange = (value: string) => setCustomAmount(formatCustomAmountInput(value));
 

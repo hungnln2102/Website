@@ -25,6 +25,7 @@ import { MCoinPaymentConfirm } from "./MCoinPaymentConfirm";
 import { PaymentOutcome } from "./PaymentOutcome";
 import { BankTransferInfo } from "./BankTransferInfo";
 import { ROUTES } from "@/lib/constants";
+import { buildVietQrImageUrl } from "@/lib/vietqr";
 
 interface PaymentStepProps {
   cartItems: CartItemData[];
@@ -65,7 +66,13 @@ export function PaymentStep({
   const [paymentCodes, setPaymentCodes] = useState<{ orderIds: string[]; transactionId: string } | null>(null);
 
   const transferContent = orderId.replace(/-/g, "").slice(-8).toUpperCase();
-  const qrUrl = `https://img.vietqr.io/image/${CART_BANK_CONFIG.bankId}-${CART_BANK_CONFIG.accountNo}-compact.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(CART_BANK_CONFIG.accountName)}`;
+  const qrUrl = buildVietQrImageUrl({
+    bankCode: CART_BANK_CONFIG.bankId,
+    accountNumber: CART_BANK_CONFIG.accountNo,
+    amount: total,
+    description: transferContent,
+    accountName: CART_BANK_CONFIG.accountName,
+  });
 
   // Initialize payment (QR): tạo mã trước, rồi gọi create với mã đó
   const initializePayment = useCallback(async () => {

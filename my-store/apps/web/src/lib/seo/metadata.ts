@@ -11,6 +11,7 @@ export interface PageMetadata {
   image?: string;
   url?: string;
   type?: "website" | "product";
+  robots?: string;
 }
 
 /**

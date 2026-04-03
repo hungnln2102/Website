@@ -1,6 +1,7 @@
 /** Cấu hình ngân hàng VietQR (chuyển khoản) */
 export const CART_BANK_CONFIG = {
-  bankId: "VBP",
+  /** Mã ngân hàng VietQR (VD: VPB, hoặc BIN 6 số tùy img.vietqr.io) */
+  bankId: "VPB",
   bankName: "Ngân hàng TMCP Việt Nam Thịnh Vượng (VP Bank)",
   bankLogo: "https://api.vietqr.io/img/VPB.png",
   accountNo: "9183400998",

@@ -22,6 +22,9 @@ export type View =
   | "profile"
   | "topup"
   | "about"
+  | "news"
+  | "news-category"
+  | "news-detail"
   | "payment-success"
   | "payment-error"
   | "payment-cancel";
@@ -40,6 +43,18 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   const aboutPath = ROUTES.about.replace(/^\/+|\/+$/g, "");
   if (path === aboutPath || path === "about")
     return { view: "about", slug: null, parentPath: ROUTES.home };
+
+  const newsPath = ROUTES.news.replace(/^\/+|\/+$/g, "");
+  if (path === newsPath || path === "tin-tuc")
+    return { view: "news", slug: null, parentPath: ROUTES.home };
+  if (path.startsWith(`${newsPath}/danh-muc/`)) {
+    const categorySlug = decodeURIComponent(path.replace(`${newsPath}/danh-muc/`, ""));
+    return { view: "news-category", slug: categorySlug, parentPath: ROUTES.news };
+  }
+  if (path.startsWith(`${newsPath}/`)) {
+    const articleSlug = decodeURIComponent(path.replace(`${newsPath}/`, ""));
+    return { view: "news-detail", slug: articleSlug, parentPath: ROUTES.news };
+  }
 
   const loginPath = ROUTES.login.replace(/^\/+|\/+$/g, "");
   if (path === loginPath)

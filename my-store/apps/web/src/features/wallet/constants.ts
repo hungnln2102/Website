@@ -6,7 +6,6 @@ export const BANK_CONFIG = {
   bankName: import.meta.env.VITE_BANK_NAME || "VPBank",
   accountNo: import.meta.env.VITE_BANK_ACCOUNT_NO || "9183400998",
   accountName: import.meta.env.VITE_BANK_ACCOUNT_NAME || "NGO HUNG",
-  template: "compact",
 } as const;
 
 export type TopupPackageItem = {
