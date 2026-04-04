@@ -1,8 +1,15 @@
 /**
  * Shared API base URL and error handling for all API modules.
- * Dev: luôn dùng '' (cùng origin) để request qua Vite proxy — store API (4000) và
- * /api/public/content/* + /image/articles qua admin_orderlist (3001), xem vite.config.ts.
- * Prod: dùng VITE_API_URL / VITE_SERVER_URL hoặc mặc định.
+ *
+ * Dev: `getApiBase()` = '' — Vite proxy (vite.config.ts) gửi:
+ *   - `/api/*` (chung) → my-store server :4000
+ *   - `/api/public/content/*`, `/api/renew-adobe/public/*`, `/image/articles/*` → admin_orderlist :3001
+ *
+ * Prod: `VITE_API_URL` trỏ tới my-store server (vd. https://api…). Cùng host đó phải có proxy
+ * tới admin_orderlist (`ADMIN_ORDERLIST_API_URL` trên apps/server) cho các prefix:
+ *   - `/api/public/content/*` (tin tức)
+ *   - `/api/renew-adobe/public/*` (Renew Adobe trên web)
+ *   - `/image/articles/*` (ảnh bìa bài viết)
  */
 export const getApiBase = (): string => {
   if (import.meta.env.DEV) return '';

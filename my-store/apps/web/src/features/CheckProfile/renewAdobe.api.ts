@@ -41,6 +41,7 @@ export async function fetchRenewAdobeWebsiteStatus(
     {
       credentials: "include",
     },
+    45_000,
   );
   const data = await readJsonSafe<RenewAdobeWebsiteStatusResponse & ApiErrorShape>(res);
 

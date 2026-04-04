@@ -33,6 +33,11 @@ import formRouter from "./modules/form/form.routes";
 import fixAdobeRouter from "./modules/fix-adobe/fix-adobe.routes";
 import netflixRouter from "./modules/netflix/netflix.routes";
 import { renewAdobePublicProxyRouter } from "./modules/renew-adobe/renew-adobe-public-proxy";
+import {
+  articleImagesProxyRouter,
+  publicContentProxyRouter,
+} from "./modules/admin-orderlist/admin-public-content-proxy";
+import { warnIfAdminOrderlistUrlMissingInProduction } from "./modules/admin-orderlist/create-admin-orderlist-proxy";
 import productsRouter from "./modules/product/product.routes";
 import debugRouter from "./modules/debug/debug.routes";
 import maintenanceRouter from "./modules/maintenance/maintenance.routes";
@@ -206,6 +211,10 @@ app.use("/api/fix-adobe", fixAdobeRouter);
 app.use("/api/netflix", netflixRouter);
 /** Renew Adobe Website — forward tới admin_orderlist (xem ADMIN_ORDERLIST_API_URL) */
 app.use("/api/renew-adobe/public", renewAdobePublicProxyRouter);
+/** Tin tức công khai + JSON — cùng backend admin_orderlist */
+app.use("/api/public/content", publicContentProxyRouter);
+/** Ảnh bài viết /image/articles/* — admin_orderlist static */
+app.use("/image/articles", articleImagesProxyRouter);
 
 // CSRF protection for state-changing requests
 // BỎ QUA cho các route /api/fix-adobe/* và /api/netflix/*
@@ -213,7 +222,8 @@ app.use("/api", (req, res, next) => {
   if (
     req.path.startsWith("/fix-adobe/") ||
     req.path.startsWith("/netflix/") ||
-    req.path.startsWith("/renew-adobe/public/")
+    req.path.startsWith("/renew-adobe/public/") ||
+    req.path.startsWith("/public/content/")
   ) {
     return next();
   }
@@ -296,6 +306,7 @@ async function start() {
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`[Server] Proxy/Vite có thể gọi http://127.0.0.1:${PORT}`);
+    warnIfAdminOrderlistUrlMissingInProduction();
   });
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {

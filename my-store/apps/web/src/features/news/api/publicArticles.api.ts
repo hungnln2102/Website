@@ -1,4 +1,4 @@
-import { getApiBase } from '@/lib/api/client';
+import { apiFetch, getApiBase } from '@/lib/api/client';
 import type { NewsArticle } from '@/features/news/data/newsArticles';
 
 /** Bài hiển thị trên trang chủ (thêm ảnh bìa từ API). */
@@ -143,7 +143,7 @@ export async function fetchPublishedArticleBySlug(slug: string): Promise<NewsArt
   if (!trimmed) return null;
   const base = getApiBase().replace(/\/+$/, '');
   const url = `${base}/api/public/content/articles/slug/${encodeURIComponent(trimmed)}`;
-  const res = await fetch(url);
+  const res = await apiFetch(url, undefined, 30_000);
   if (res.status === 404) return null;
   if (!res.ok) {
     throw new Error('Không tải được bài viết.');
@@ -155,7 +155,7 @@ export async function fetchPublishedArticleBySlug(slug: string): Promise<NewsArt
 export async function fetchPublishedArticles(limit = 6): Promise<PublicArticleRow[]> {
   const base = getApiBase().replace(/\/+$/, '');
   const url = `${base}/api/public/content/articles?limit=${limit}`;
-  const res = await fetch(url);
+  const res = await apiFetch(url, undefined, 30_000);
   if (!res.ok) {
     throw new Error('Không tải được danh sách bài viết.');
   }
