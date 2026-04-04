@@ -6,7 +6,14 @@ import MaintenancePage from "@/components/MaintenancePage";
 import HomePage from "@/features/home/HomePage";
 import { useRouter, type View } from "@/hooks/useRouter";
 import { isMaintenanceMode, onMaintenanceChange } from "@/lib/api/client";
-import { APP_CONFIG, ROUTES } from "@/lib/constants";
+import { APP_CONFIG, isSystemHubPath, ROUTES } from "@/lib/constants";
+
+const SYSTEM_HUB_VIEWS = new Set<View>([
+  "otp",
+  "renew-adobe",
+  "renew-zoom",
+  "netflix",
+]);
 
 /** Retry lazy import khi chunk load lá»—i (máº¡ng, cache, base URL). */
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -195,6 +202,14 @@ export default function App() {
           robots: "noindex, follow",
         };
       case "otp":
+        return {
+          title: `Trung tâm gói - ${APP_CONFIG.name}`,
+          description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
+          keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
+          url: getCurrentUrl(ROUTES.otp),
+          type: "website" as const,
+          robots: "noindex, follow",
+        };
       case "renew-adobe":
       case "renew-zoom":
       case "netflix":
@@ -202,7 +217,13 @@ export default function App() {
           title: `Hỗ trợ dịch vụ - ${APP_CONFIG.name}`,
           description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
           keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
-          url: getCurrentUrl(ROUTES.otp),
+          url: getCurrentUrl(
+            view === "renew-adobe"
+              ? ROUTES.renewAdobe
+              : view === "renew-zoom"
+                ? ROUTES.renewZoom
+                : ROUTES.netflix
+          ),
           type: "website" as const,
           robots: "noindex, follow",
         };
@@ -230,7 +251,11 @@ export default function App() {
 
   const shouldInjectDefaultSeo = !VIEWS_WITH_OWN_SEO.has(view);
 
-  if (maintenance) {
+  const allowSiteDuringMaintenance =
+    SYSTEM_HUB_VIEWS.has(view) ||
+    (typeof window !== "undefined" && isSystemHubPath(window.location.pathname));
+
+  if (maintenance && !allowSiteDuringMaintenance) {
     return <MaintenancePage />;
   }
 

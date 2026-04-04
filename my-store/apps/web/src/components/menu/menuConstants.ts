@@ -8,5 +8,5 @@ export const MENU_ITEMS: { label: string; icon: LucideIcon; href: string }[] = [
   { label: "Khuyến mãi", icon: Gift, href: ROUTES.promotions },
   { label: "Tin tức", icon: Newspaper, href: ROUTES.news },
   { label: "Hỗ trợ", icon: ShieldCheck, href: "/#lien-he" },
-  { label: "Fix Adobe", icon: KeyRound, href: ROUTES.otp },
+  { label: "Trung tâm gói", icon: KeyRound, href: ROUTES.otp },
 ];

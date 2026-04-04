@@ -11,7 +11,10 @@ import {
   activateRenewAdobeWebsiteProfile,
   fetchRenewAdobeWebsiteStatus,
 } from "./renewAdobe.api";
-import type { RenewAdobeWebsiteStatusResponse } from "./renewAdobe.types";
+import type {
+  RenewAdobeWebsiteStatusCode,
+  RenewAdobeWebsiteStatusResponse,
+} from "./renewAdobe.types";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -19,6 +22,8 @@ import {
   Loader2,
   RefreshCw,
   Search,
+  PackageX,
+  ExternalLink,
 } from "lucide-react";
 
 function AnimatedCheckmark() {
@@ -50,11 +55,25 @@ export default function RenewAdobePage() {
   const [loading, setLoading] = useState(false);
   const [activating, setActivating] = useState(false);
   const [resultType, setResultType] = useState<
-    "check-success" | "expired" | "activate-success" | "error" | "info" | null
+    | "check-success"
+    | "expired"
+    | "outside-order"
+    | "activate-success"
+    | "error"
+    | "info"
+    | null
   >(null);
   const [message, setMessage] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [canActivate, setCanActivate] = useState(false);
+  /** no_order | order_expired — chỉ dùng khi resultType === outside-order */
+  const [outsideOrderStatus, setOutsideOrderStatus] =
+    useState<Extract<RenewAdobeWebsiteStatusCode, "no_order" | "order_expired"> | null>(
+      null,
+    );
+  /** active nhưng chưa có product trên Adobe — hiện CTA mở url_access */
+  const [successNeedsProductLink, setSuccessNeedsProductLink] = useState(false);
+  const [urlAccess, setUrlAccess] = useState<string | null>(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -74,6 +93,9 @@ export default function RenewAdobePage() {
     setResultType(null);
     setMessage(null);
     setCanActivate(false);
+    setOutsideOrderStatus(null);
+    setSuccessNeedsProductLink(false);
+    setUrlAccess(null);
     if (!options?.preserveProfileName) {
       setProfileName(null);
     }
@@ -85,10 +107,28 @@ export default function RenewAdobePage() {
 
     if (data.status === "active") {
       setResultType("check-success");
+      setOutsideOrderStatus(null);
       setMessage(data.message);
+      const acc = data.account;
+      const pending = Boolean(acc && acc.userHasProduct !== true);
+      setSuccessNeedsProductLink(pending);
+      const rawUrl = acc?.urlAccess != null ? String(acc.urlAccess).trim() : "";
+      setUrlAccess(rawUrl || null);
       return;
     }
 
+    if (data.status === "no_order" || data.status === "order_expired") {
+      setResultType("outside-order");
+      setOutsideOrderStatus(data.status);
+      setSuccessNeedsProductLink(false);
+      setUrlAccess(null);
+      setMessage(null);
+      return;
+    }
+
+    setOutsideOrderStatus(null);
+    setSuccessNeedsProductLink(false);
+    setUrlAccess(null);
     setResultType("expired");
     setMessage(data.message);
   };
@@ -206,7 +246,10 @@ export default function RenewAdobePage() {
               <div className="relative p-8 sm:p-10">
                 <div className="mb-6">
                   <div className="flex items-center gap-2">
-                    <Search className="h-5 w-5 text-purple-400" />
+                    <Search
+                      className="h-5 w-5 shrink-0 text-purple-400 renew-adobe-search-titles"
+                      strokeWidth={2}
+                    />
                     <h2 className="text-xl font-bold text-slate-50">Kiểm tra & Kích hoạt</h2>
                   </div>
                   <p className="mt-1 text-sm text-slate-400">
@@ -243,32 +286,109 @@ export default function RenewAdobePage() {
                     </div>
                   )}
 
-                  {!loading && !activating && message && resultType && (
+                  {!loading &&
+                    !activating &&
+                    resultType &&
+                    (resultType === "outside-order" || message) && (
                     <div>
                       {resultType === "check-success" && (
                         <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-5 text-center text-sm text-emerald-50">
                           <div className="mb-3 flex flex-col items-center gap-3">
                             <AnimatedCheckmark />
-                            <span className="text-base font-bold text-emerald-300">Profile đang hoạt động bình thường!</span>
+                            <span className="text-base font-bold text-emerald-300">
+                              {successNeedsProductLink
+                                ? "Kích hoạt thành công — hoàn tất nhận gói"
+                                : "Profile đang hoạt động bình thường!"}
+                            </span>
                           </div>
                           {profileName && (
                             <p className="text-lg font-bold text-emerald-200 tracking-wide">{profileName}</p>
                           )}
+                          {successNeedsProductLink && message && (
+                            <p className="mt-3 max-w-md text-xs leading-relaxed text-emerald-100/85">
+                              {message}
+                            </p>
+                          )}
+                          {successNeedsProductLink && urlAccess && (
+                            <a
+                              href={urlAccess}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/35 transition hover:bg-sky-600"
+                            >
+                              <ExternalLink className="h-4 w-4 shrink-0" strokeWidth={2} />
+                              Mở liên kết nhận gói Adobe
+                            </a>
+                          )}
+                          {successNeedsProductLink && !urlAccess && (
+                            <p className="mt-3 text-xs text-amber-200/90">
+                              Chưa có liên kết trên hệ thống. Vui lòng liên hệ admin để nhận{" "}
+                              <span className="font-medium">url_access</span>.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {resultType === "outside-order" && (
+                        <div
+                          className="relative overflow-hidden rounded-2xl border border-rose-500/45 bg-rose-500/10 px-4 py-5 text-center text-sm text-rose-50 shadow-lg shadow-rose-500/25 ring-1 ring-rose-400/20"
+                          role="alert"
+                        >
+                          <div
+                            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(244,63,94,0.14),transparent_55%)]"
+                            aria-hidden
+                          />
+                          <div className="relative flex flex-col items-center gap-3">
+                            <div className="renew-adobe-status-glow-rose flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/30 ring-1 ring-rose-400/50 shadow-[0_0_24px_-4px_rgba(244,63,94,0.5)]">
+                              <span className="renew-adobe-status-icon-bounce inline-flex">
+                                <PackageX className="h-7 w-7 text-rose-200" strokeWidth={2} />
+                              </span>
+                            </div>
+                            <p className="text-base font-bold text-rose-100">
+                              Không có gói
+                            </p>
+                            <p className="text-sm font-semibold text-rose-300">
+                              {outsideOrderStatus === "order_expired"
+                                ? "Đơn hàng hết hạn"
+                                : "Không có đơn Renew Adobe còn hiệu lực"}
+                            </p>
+                            <p className="max-w-md border-t border-rose-500/30 pt-3 text-xs leading-relaxed text-rose-100/90">
+                              Vui lòng liên hệ admin để có thể kích hoạt lại gói
+                            </p>
+                          </div>
                         </div>
                       )}
 
                       {resultType === "expired" && (
-                        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-sm text-amber-50">
-                          <div className="mb-2 flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-400" />
-                            <span className="font-semibold">Profile hết hạn</span>
-                          </div>
-                          {profileName && (
-                            <p className="mb-1 text-xs font-medium text-amber-200">
-                              Profile: <span className="font-bold">{profileName}</span>
+                        <div
+                          className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-5 text-center text-sm text-amber-50 shadow-lg shadow-amber-500/20 ring-1 ring-amber-400/15"
+                          role="alert"
+                        >
+                          <div
+                            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(251,191,36,0.12),transparent_55%)]"
+                            aria-hidden
+                          />
+                          <div className="relative flex flex-col items-center gap-3">
+                            <div className="renew-adobe-status-glow-amber flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/25 ring-1 ring-amber-400/50 shadow-[0_0_24px_-4px_rgba(251,191,36,0.45)]">
+                              <span className="renew-adobe-status-icon-bounce inline-flex">
+                                <AlertTriangle className="h-7 w-7 text-amber-300" strokeWidth={2} />
+                              </span>
+                            </div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">
+                              Cần kích hoạt lại
                             </p>
-                          )}
-                          <p className="text-xs text-amber-100/90">{message}</p>
+                            <span className="text-base font-bold text-amber-200">
+                              Profile hết hạn
+                            </span>
+                            {profileName && (
+                              <p className="text-lg font-bold tracking-wide text-amber-100">
+                                {profileName}
+                              </p>
+                            )}
+                            <p className="max-w-md border-t border-amber-500/25 pt-3 text-xs leading-relaxed text-amber-100/90">
+                              {message}
+                            </p>
+                          </div>
                         </div>
                       )}
 
@@ -296,7 +416,7 @@ export default function RenewAdobePage() {
 
                       {resultType === "error" && (
                         <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-6 text-center text-sm text-rose-50">
-                          <XCircle className="mb-2 h-8 w-8 text-rose-400" />
+                          <XCircle className="renew-adobe-error-icon mb-2 h-8 w-8 text-rose-400" strokeWidth={2} />
                           <p className="text-sm font-medium text-rose-100">{message}</p>
                         </div>
                       )}
@@ -319,7 +439,7 @@ export default function RenewAdobePage() {
                       {activating ? (
                         <><Loader2 className="h-4 w-4 animate-spin" />Đang kích hoạt...</>
                       ) : (
-                        <><RefreshCw className="h-4 w-4" />Kích hoạt lại ngay</>
+                        <><RefreshCw className="h-4 w-4 renew-adobe-refresh-nudge" strokeWidth={2} />Kích hoạt lại ngay</>
                       )}
                     </button>
                   ) : (
@@ -333,7 +453,7 @@ export default function RenewAdobePage() {
                       ) : activating ? (
                         <><Loader2 className="h-4 w-4 animate-spin" />Đang kích hoạt...</>
                       ) : (
-                        <><Search className="h-4 w-4" />Kiểm tra Profile</>
+                        <><Search className="h-4 w-4 renew-adobe-search-btn" strokeWidth={2} />Kiểm tra Profile</>
                       )}
                     </button>
                   )}
@@ -385,6 +505,88 @@ export default function RenewAdobePage() {
         }
         .anim-check-ring {
           animation: anim-check-ring 2.8s ease-out infinite;
+        }
+
+        @keyframes renew-adobe-search-breathe {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.12); opacity: 0.92; }
+        }
+        .renew-adobe-search-titles {
+          animation: renew-adobe-search-breathe 3.2s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        @keyframes renew-adobe-search-btn-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+        .renew-adobe-search-btn {
+          animation: renew-adobe-search-btn-pulse 2.4s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        @keyframes renew-adobe-refresh-nudge {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          40% { transform: rotate(-14deg) scale(1.04); }
+          70% { transform: rotate(10deg) scale(1.04); }
+        }
+        .renew-adobe-refresh-nudge {
+          animation: renew-adobe-refresh-nudge 3.2s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        @keyframes renew-adobe-status-icon-bounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          35% { transform: translateY(-6px) rotate(-4deg); }
+          70% { transform: translateY(-2px) rotate(4deg); }
+        }
+        .renew-adobe-status-icon-bounce {
+          animation: renew-adobe-status-icon-bounce 2.6s ease-in-out infinite;
+        }
+
+        @keyframes renew-adobe-glow-pulse-rose {
+          0%, 100% {
+            box-shadow: 0 0 22px -4px rgba(244, 63, 94, 0.48), 0 0 0 0 rgba(244, 63, 94, 0);
+          }
+          50% {
+            box-shadow: 0 0 34px -2px rgba(244, 63, 94, 0.62), 0 0 20px -8px rgba(244, 63, 94, 0.35);
+          }
+        }
+        .renew-adobe-status-glow-rose {
+          animation: renew-adobe-glow-pulse-rose 2.2s ease-in-out infinite;
+        }
+
+        @keyframes renew-adobe-glow-pulse-amber {
+          0%, 100% {
+            box-shadow: 0 0 22px -4px rgba(251, 191, 36, 0.42), 0 0 0 0 rgba(251, 191, 36, 0);
+          }
+          50% {
+            box-shadow: 0 0 34px -2px rgba(251, 191, 36, 0.58), 0 0 20px -8px rgba(251, 191, 36, 0.3);
+          }
+        }
+        .renew-adobe-status-glow-amber {
+          animation: renew-adobe-glow-pulse-amber 2.2s ease-in-out infinite;
+        }
+
+        @keyframes renew-adobe-error-ring {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.06); opacity: 0.88; }
+        }
+        .renew-adobe-error-icon {
+          animation: renew-adobe-error-ring 2s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .renew-adobe-search-titles,
+          .renew-adobe-search-btn,
+          .renew-adobe-refresh-nudge,
+          .renew-adobe-status-icon-bounce,
+          .renew-adobe-status-glow-rose,
+          .renew-adobe-status-glow-amber,
+          .renew-adobe-error-icon {
+            animation: none !important;
+          }
         }
       `}</style>
     </div>

@@ -173,12 +173,12 @@ export default function AdobeGuidePage() {
             <p className="mb-3 text-sm text-slate-300">
               Truy cập{" "}
               <a
-                href="https://mavrykpremium.store/check-profile"
+                href="https://mavrykpremium.store/system"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-purple-400 underline underline-offset-2 hover:text-purple-300"
               >
-                mavrykpremium.store/check-profile
+                mavrykpremium.store/system
               </a>
               , nhập email Adobe được cấp vào ô Email Address rồi bấm{" "}
               <span className="font-semibold text-slate-100">Get Profile Active</span>.

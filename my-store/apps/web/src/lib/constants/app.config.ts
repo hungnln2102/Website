@@ -28,11 +28,12 @@ export const ROUTES = {
   register: "/register", // query ?register hoặc segment register tùy router
   profile: "/profile",
   topup: "/topup",
-  otp: "/check-profile",
-  fixAdobeEdu: "/check-profile",
-  renewAdobe: "/renew-adobe",
-  renewZoom: "/renew-zoom",
-  netflix: "/netflix",
+  /** Trung tâm gói — vào đây trước; các dịch vụ con: /system/... */
+  otp: "/system",
+  fixAdobeEdu: "/system",
+  renewAdobe: "/system/renew-adobe",
+  renewZoom: "/system/renew-zoom",
+  netflix: "/system/netflix",
   adobeGuide: "/huong-dan-adobe",
   paymentSuccess: "/payment/success",
   paymentError: "/payment/error",
@@ -51,6 +52,26 @@ export const ROUTES = {
   categoryProduct: (catSlug: string, productSlug: string) =>
     `/danh-muc/${encodeURIComponent(catSlug)}/${encodeURIComponent(productSlug)}`,
 } as const;
+
+/**
+ * Đường dẫn thuộc Trung tâm gói — không chặn bởi màn bảo trì toàn site (SPA + apiFetch).
+ * Bao gồm `/system/*` và alias cũ (`/check-profile`, …).
+ */
+export function isSystemHubPath(pathname: string): boolean {
+  const p = pathname.replace(/\/+/g, "/");
+  const noTrail = p.replace(/\/+$/, "") || "/";
+  if (noTrail === "/system" || p.startsWith("/system/")) return true;
+  if (
+    noTrail === "/check-profile" ||
+    noTrail === "/otp" ||
+    noTrail === "/renew-adobe" ||
+    noTrail === "/renew-zoom" ||
+    noTrail === "/netflix"
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export const BREAKPOINTS = {
   sm: 640,

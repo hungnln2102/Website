@@ -72,14 +72,17 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
     return { view: "profile", slug: null, parentPath: ROUTES.home };
 
   const otpPath = ROUTES.otp.replace(/^\/+|\/+$/g, "");
-  if (path === otpPath || path === "otp")
+  const renewAdobePath = ROUTES.renewAdobe.replace(/^\/+|\/+$/g, "");
+  const renewZoomPath = ROUTES.renewZoom.replace(/^\/+|\/+$/g, "");
+  const netflixPath = ROUTES.netflix.replace(/^\/+|\/+$/g, "");
+  if (path === otpPath || path === "check-profile" || path === "otp")
     return { view: "otp", slug: null, parentPath: ROUTES.home };
 
-  if (path === "renew-adobe")
+  if (path === renewAdobePath || path === "renew-adobe")
     return { view: "renew-adobe", slug: null, parentPath: ROUTES.fixAdobeEdu };
-  if (path === "renew-zoom")
+  if (path === renewZoomPath || path === "renew-zoom")
     return { view: "renew-zoom", slug: null, parentPath: ROUTES.fixAdobeEdu };
-  if (path === "netflix")
+  if (path === netflixPath || path === "netflix")
     return { view: "netflix", slug: null, parentPath: ROUTES.fixAdobeEdu };
 
   const adobeGuidePath = ROUTES.adobeGuide.replace(/^\/+|\/+$/g, "");

@@ -4,10 +4,26 @@ import { getClientIP } from "./security/banned-ip";
 
 /**
  * Maintenance mode middleware.
- * Khi maintenance ON → trả 503 cho mọi request, TRỪ IP nằm trong whitelist DB.
+ * Khi maintenance ON → trả 503 cho mọi request, TRỪ IP nằm trong whitelist DB
+ * và TRỪ API phục vụ Trung tâm gói (/system trên web).
  * Đặt SAU rate-limiter, TRƯỚC các route handler.
  */
 const LOCALHOST_IPS = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+
+/** Public GET dùng cho menu Trung tâm gói + các API fix profile / renew trên web */
+const MAINTENANCE_BYPASS_PREFIXES = [
+  "/api/fix-adobe",
+  "/api/netflix",
+  "/api/renew-adobe/public",
+  "/categories",
+  "/products",
+];
+
+function pathBypassesMaintenance(reqPath: string): boolean {
+  return MAINTENANCE_BYPASS_PREFIXES.some(
+    (p) => reqPath === p || reqPath.startsWith(`${p}/`)
+  );
+}
 
 export const maintenanceGuard = async (
   req: Request,
@@ -17,6 +33,10 @@ export const maintenanceGuard = async (
   try {
     const maintenance = await isMaintenanceMode();
     if (!maintenance) return next();
+
+    if (pathBypassesMaintenance(req.path)) {
+      return next();
+    }
 
     const ip = getClientIP(req);
 

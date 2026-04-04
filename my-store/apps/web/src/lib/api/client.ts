@@ -11,6 +11,8 @@
  *   - `/api/renew-adobe/public/*` (Renew Adobe trên web)
  *   - `/image/articles/*` (ảnh bìa bài viết)
  */
+import { isSystemHubPath } from "@/lib/constants";
+
 export const getApiBase = (): string => {
   if (import.meta.env.DEV) return '';
   const fromEnv =
@@ -61,7 +63,12 @@ export async function apiFetch(
         const cloned = res.clone();
         const body = await cloned.json();
         if (body?.maintenance === true) {
-          setMaintenanceMode(true);
+          const onSystemHub =
+            typeof window !== "undefined" &&
+            isSystemHubPath(window.location.pathname);
+          if (!onSystemHub) {
+            setMaintenanceMode(true);
+          }
         }
       } catch { /* ignore parse errors */ }
     } else if (_maintenanceMode) {

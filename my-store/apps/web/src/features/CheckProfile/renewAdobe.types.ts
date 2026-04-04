@@ -19,6 +19,8 @@ export type RenewAdobeWebsiteAccount = {
   userCount: number;
   isActive: boolean;
   userHasProduct: boolean | null;
+  /** Liên kết Adobe (auto-assign / invite) — dùng khi đã vào team nhưng chưa gán product */
+  urlAccess?: string | null;
 };
 
 export type RenewAdobeWebsiteStatusResponse = {

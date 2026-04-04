@@ -17,7 +17,7 @@ export const ASSET_URLS = {
 } as const;
 
 /** URL trang (đường dẫn app) — định nghĩa đầy đủ trong lib/constants/app.config.ts */
-export { ROUTES } from "./constants/app.config";
+export { ROUTES, isSystemHubPath } from "./constants/app.config";
 
 export const BREAKPOINTS = {
   sm: 640,

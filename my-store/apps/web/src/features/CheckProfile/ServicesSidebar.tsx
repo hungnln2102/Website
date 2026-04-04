@@ -2,7 +2,7 @@ import { ROUTES } from "@/lib/constants";
 import { GraduationCap, RefreshCw, Video, Tv } from "lucide-react";
 
 const MENU_ITEMS = [
-  { id: "fix-adobe-edu", label: "Fix Adobe Edu", href: ROUTES.fixAdobeEdu, icon: GraduationCap },
+  { id: "fix-adobe-edu", label: "Gói Adobe Edu", href: ROUTES.fixAdobeEdu, icon: GraduationCap },
   { id: "renew-adobe", label: "Renew Adobe", href: ROUTES.renewAdobe, icon: RefreshCw },
   { id: "renew-zoom", label: "Renew Zoom", href: ROUTES.renewZoom, icon: Video },
   { id: "netflix", label: "OTP Netflix", href: ROUTES.netflix, icon: Tv },
@@ -17,7 +17,11 @@ export function ServicesSidebar() {
 
   const isActive = (href: string) => {
     const normalized = href.replace(/^\/+|\/+$/g, "");
-    if (normalized === fixAdobePath) return path === fixAdobePath || path === "check-profile" || path === "otp";
+    if (normalized === fixAdobePath)
+      return path === fixAdobePath || path === "check-profile" || path === "otp";
+    if (normalized === renewAdobePath) return path === renewAdobePath || path === "renew-adobe";
+    if (normalized === renewZoomPath) return path === renewZoomPath || path === "renew-zoom";
+    if (normalized === netflixPath) return path === netflixPath || path === "netflix";
     return path === normalized;
   };
 

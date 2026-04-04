@@ -485,17 +485,33 @@ export default function CheckProfilePage() {
                         )}
 
                         {resultType === "expired" && (
-                          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-sm text-amber-50">
-                            <div className="mb-2 flex items-center gap-2">
-                              <AlertTriangle className="h-5 w-5 text-amber-400" />
-                              <span className="font-semibold">Profile hết hạn</span>
-                            </div>
-                            {profileName && (
-                              <p className="mb-1 text-xs font-medium text-amber-200">
-                                Profile: <span className="font-bold">{profileName}</span>
+                          <div
+                            className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-5 text-center text-sm text-amber-50 shadow-lg shadow-amber-500/20 ring-1 ring-amber-400/15"
+                            role="alert"
+                          >
+                            <div
+                              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(251,191,36,0.12),transparent_55%)]"
+                              aria-hidden
+                            />
+                            <div className="relative flex flex-col items-center gap-3">
+                              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/25 ring-1 ring-amber-400/50 shadow-[0_0_24px_-4px_rgba(251,191,36,0.45)]">
+                                <AlertTriangle className="h-7 w-7 text-amber-300" strokeWidth={2} />
+                              </div>
+                              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">
+                                Cần kích hoạt lại
                               </p>
-                            )}
-                            <p className="text-xs text-amber-100/90">{message}</p>
+                              <span className="text-base font-bold text-amber-200">
+                                Profile hết hạn
+                              </span>
+                              {profileName && (
+                                <p className="text-lg font-bold tracking-wide text-amber-100">
+                                  {profileName}
+                                </p>
+                              )}
+                              <p className="max-w-md border-t border-amber-500/25 pt-3 text-xs leading-relaxed text-amber-100/90">
+                                {message}
+                              </p>
+                            </div>
                           </div>
                         )}
 
@@ -706,7 +722,7 @@ export default function CheckProfilePage() {
           </div>
 
           <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-600">
-            <span>© 2026 Fix Adobe Tool by Mavryk Premium Store</span>
+            <span>© 2026 Trung tâm gói — Mavryk Premium Store</span>
             <span className="text-slate-700">·</span>
             <span className="flex items-center gap-1">
               <ShieldCheck className="h-3 w-3 text-emerald-600" />
