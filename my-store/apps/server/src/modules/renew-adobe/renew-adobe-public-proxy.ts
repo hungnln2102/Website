@@ -13,6 +13,8 @@ renewAdobePublicProxyRouter.use(
     connectionFailureBody: {
       success: false,
       error: "Dịch vụ Renew Adobe tạm thời không khả dụng.",
+      /** Để biết đây là lỗi proxy → kiểm tra ADMIN_ORDERLIST_API_URL & backend :3001 */
+      code: "RENEW_ADOBE_UPSTREAM_UNREACHABLE",
     },
   }),
 );

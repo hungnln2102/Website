@@ -91,6 +91,9 @@ export function createAdminOrderlistProxyHandler(
       console.error(`[${logLabel}] không gọi được admin_orderlist`, {
         upstream: `${base}${upstreamPath}${pathOnly}`,
         reason,
+        hint:
+          "ADMIN_ORDERLIST_API_URL = origin admin_orderlist (không /api). Production: https://admin.<domain> qua Nginx; " +
+          "dev host: http://127.0.0.1:3001; Docker không resolve domain: http://host.docker.internal:3001.",
       });
       if (!res.headersSent) {
         res.status(503).json(connectionFailureBody);
@@ -104,7 +107,7 @@ export function warnIfAdminOrderlistUrlMissingInProduction(): void {
   if (process.env.NODE_ENV !== "production") return;
   if (String(process.env.ADMIN_ORDERLIST_API_URL ?? "").trim()) return;
   console.error(
-    "[store] ADMIN_ORDERLIST_API_URL chưa đặt — Renew Adobe (/api/renew-adobe/public), tin tức (/api/public/content) và ảnh bài (/image/articles) sẽ lỗi (proxy gọi 127.0.0.1:3001). " +
-      "Đặt URL gốc admin_orderlist, ví dụ https://api-admin.example.com (không thêm /api).",
+    "[store] ADMIN_ORDERLIST_API_URL chưa đặt — Renew Adobe / tin tức / ảnh bài sẽ lỗi. " +
+      "Đặt trong apps/server/.env: production https://admin.<domain>; dev http://127.0.0.1:3001 (không thêm /api).",
   );
 }

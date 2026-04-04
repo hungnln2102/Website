@@ -8,8 +8,16 @@ services:
     container_name: website-api
     env_file:
       - ./my-store/apps/server/.env
+    # admin_orderlist publish :3001 ra HOST — trong container KHÔNG dùng 127.0.0.1:3001
+    # Linux VPS: IP mặc định là gateway bridge (thường 172.17.0.1). Nếu sai: DOCKER_HOST_GATEWAY trong .env cạnh file compose
+    #   docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}'
+    # Chỉ cần khi dùng ADMIN_ORDERLIST_API_URL kiểu http://host.docker.internal:3001 (IP bridge)
+    extra_hosts:
+      - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.17.0.1}"
     environment:
       NODE_ENV: production
+      # KHÔNG ghi ADMIN_ORDERLIST_API_URL ở đây — dùng my-store/apps/server/.env để đặt đúng domain production
+      # (vd. https://admin.mavrykpremium.store). Nếu ghi ở đây sẽ lại ghi đè env_file.
     ports:
       - "127.0.0.1:4000:4000"
     restart: unless-stopped
