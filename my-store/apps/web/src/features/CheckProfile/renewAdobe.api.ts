@@ -1,4 +1,3 @@
-import { authFetch } from "@/features/auth/api/auth";
 import {
   apiFetch,
   getApiBase,
@@ -56,14 +55,22 @@ export async function fetchRenewAdobeWebsiteStatus(
   return data;
 }
 
+/** Kích hoạt có thể chạy add user Playwright — timeout dài; API public không cần Bearer/CSRF store. */
+const ACTIVATE_TIMEOUT_MS = 600_000;
+
 export async function activateRenewAdobeWebsiteProfile(
   email: string,
 ): Promise<RenewAdobeWebsiteStatusResponse> {
-  const res = await authFetch(`${getApiBase()}/api/renew-adobe/public/activate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
+  const res = await apiFetch(
+    `${getApiBase()}/api/renew-adobe/public/activate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email }),
+    },
+    ACTIVATE_TIMEOUT_MS,
+  );
   const data = await readJsonSafe<RenewAdobeWebsiteStatusResponse & ApiErrorShape>(res);
 
   if (!res.ok || !data?.success) {

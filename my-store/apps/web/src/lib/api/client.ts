@@ -85,6 +85,16 @@ export async function apiFetch(
         : "";
       throw new Error("Không kết nối được máy chủ. Kiểm tra mạng hoặc thử lại sau." + hint);
     }
+    const msg = err instanceof Error ? err.message : "";
+    if (
+      err instanceof TypeError ||
+      /failed to fetch|networkerror|load failed/i.test(msg)
+    ) {
+      const hint = import.meta.env.DEV
+        ? " Trên dev, trình duyệt gọi Vite :4001 — proxy chuyển tiếp /api/renew-adobe/public tới admin_orderlist. Hãy bật `npm run dev` trong admin_orderlist/backend (cổng 3001) và chạy `npm run dev` ở Website/my-store (web+server). Có thể đặt `VITE_ADMIN_API_URL=http://127.0.0.1:3001` trong apps/web/.env."
+        : " Kiểm tra kết nối mạng hoặc thử lại sau.";
+      throw new Error("Không kết nối được máy chủ." + hint);
+    }
     throw err;
   }
 }
