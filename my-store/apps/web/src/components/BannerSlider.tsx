@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
-import { ROUTES } from "@/lib/constants";
+import { APP_CONFIG, ROUTES } from "@/lib/constants";
+import {
+  fetchActiveHomeBanners,
+  type BannerSlide,
+} from "@/lib/api/publicBanners.api";
 
 const BANNER_IMAGE_SIZES =
   "(max-width: 1024px) min(92vw, 960px), 1200px";
@@ -19,48 +23,109 @@ const buildResponsiveImage = (photoId: string) => {
   };
 };
 
-const slides = [
-  {
-    title: "Mavryk Premium Store - Cửa hàng phần mềm bản quyền chính hãng",
-    description:
-      "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
-    cta: "Tìm hiểu thêm",
-    href: ROUTES.about,
-    image: buildResponsiveImage("photo-1519389950473-47ba0277781c"),
-  },
-  {
-    title: "Giảm 20% bộ Office bản quyền",
-    description: "Kích hoạt trong 5 phút, hỗ trợ cài đặt từ xa.",
-    cta: "Nhận ưu đãi",
-    image: buildResponsiveImage("photo-1526498460520-4c246339dccb"),
-  },
-  {
-    title: "Bảo mật đa lớp cho doanh nghiệp",
-    description: "Diệt virus, chống ransomware, quản trị tập trung.",
-    cta: "Xem gói bảo mật",
-    image: buildResponsiveImage("photo-1515879218367-8466d910aaa4"),
-  },
-  {
-    title: "Hỗ trợ 24/7 - Uy tín, tận tâm",
-    description: "Đội ngũ kỹ thuật sẵn sàng hỗ trợ mọi thời điểm.",
-    cta: "Liên hệ ngay",
-    image: buildResponsiveImage("photo-1483478550801-ceba5fe50e8e"),
-  },
-];
+/** Khi API lỗi hoặc không có dòng active — giữ hành vi cũ. */
+function buildFallbackSlides(): BannerSlide[] {
+  const i1 = buildResponsiveImage("photo-1519389950473-47ba0277781c");
+  const i2 = buildResponsiveImage("photo-1526498460520-4c246339dccb");
+  const i3 = buildResponsiveImage("photo-1515879218367-8466d910aaa4");
+  const i4 = buildResponsiveImage("photo-1483478550801-ceba5fe50e8e");
+  return [
+    {
+      title: `${APP_CONFIG.name} - Phần mềm bản quyền chính hãng`,
+      description:
+        "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
+      tagText: "Giới thiệu",
+      cta: "Tìm hiểu thêm",
+      href: ROUTES.about,
+      imageSrc: i1.src,
+      imageAlt: `${APP_CONFIG.name} — không gian làm việc`,
+      imageSrcSet: i1.srcSet,
+    },
+    {
+      title: "Giảm 20% bộ Office bản quyền",
+      description: "Kích hoạt trong 5 phút, hỗ trợ cài đặt từ xa.",
+      tagText: "Ưu đãi đặc biệt",
+      cta: "Nhận ưu đãi",
+      href: "/promotions",
+      imageSrc: i2.src,
+      imageAlt: "Ưu đãi Office",
+      imageSrcSet: i2.srcSet,
+    },
+    {
+      title: "Bảo mật đa lớp cho doanh nghiệp",
+      description: "Diệt virus, chống ransomware, quản trị tập trung.",
+      tagText: "Ưu đãi đặc biệt",
+      cta: "Xem gói bảo mật",
+      href: "/all-products",
+      imageSrc: i3.src,
+      imageAlt: "Bảo mật doanh nghiệp",
+      imageSrcSet: i3.srcSet,
+    },
+    {
+      title: "Hỗ trợ 24/7 - Uy tín, tận tâm",
+      description: "Đội ngũ kỹ thuật sẵn sàng hỗ trợ mọi thời điểm.",
+      tagText: "Ưu đãi đặc biệt",
+      cta: "Liên hệ ngay",
+      href: ROUTES.about,
+      imageSrc: i4.src,
+      imageAlt: "Hỗ trợ khách hàng",
+      imageSrcSet: i4.srcSet,
+    },
+  ];
+}
+
+function navigateCta(href: string) {
+  if (!href.trim()) return;
+  if (/^https?:\/\//i.test(href)) {
+    window.open(href, "_blank", "noopener,noreferrer");
+    return;
+  }
+  const path = href.startsWith("/") ? href : `/${href}`;
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 export default function BannerSlider() {
+  const fallback = useMemo(() => buildFallbackSlides(), []);
+  const [slides, setSlides] = useState<BannerSlide[]>(fallback);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await fetchActiveHomeBanners();
+        if (cancelled || !remote.length) return;
+        setSlides(remote);
+      } catch {
+        /* giữ fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [current, setCurrent] = useState(0);
   const [showDesktopImages, setShowDesktopImages] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
   );
-  const active = slides[current];
+
+  const slideCount = slides.length;
+  const safeIndex = slideCount ? Math.min(current, slideCount - 1) : 0;
+  const active = slides[safeIndex] ?? slides[0];
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
+    if (current !== safeIndex) setCurrent(safeIndex);
+  }, [current, safeIndex]);
+
+  useEffect(() => {
+    if (slideCount <= 1) return;
+    const interval = window.setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slideCount);
     }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => window.clearInterval(interval);
+  }, [slideCount]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -84,20 +149,18 @@ export default function BannerSlider() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!showDesktopImages) {
+    if (typeof window === "undefined" || !showDesktopImages || slideCount === 0) {
       return;
     }
 
     const preloadNextImage = () => {
-      const nextSlide = slides[(current + 1) % slides.length];
+      const nextSlide = slides[(safeIndex + 1) % slideCount];
       const image = new Image();
-      image.src = nextSlide.image.src;
-      image.srcset = nextSlide.image.srcSet;
-      image.sizes = BANNER_IMAGE_SIZES;
+      image.src = nextSlide.imageSrc;
+      if (nextSlide.imageSrcSet) {
+        image.srcset = nextSlide.imageSrcSet;
+        image.sizes = BANNER_IMAGE_SIZES;
+      }
     };
 
     const idleWindow = window as Window & {
@@ -112,20 +175,19 @@ export default function BannerSlider() {
 
     const timeoutId = window.setTimeout(preloadNextImage, 700);
     return () => window.clearTimeout(timeoutId);
-  }, [current, showDesktopImages]);
+  }, [safeIndex, showDesktopImages, slideCount, slides]);
 
-  const heroBadge = useMemo(
-    () => (current === 0 ? "Giới thiệu" : "Ưu đãi đặc biệt"),
-    [current]
-  );
+  const handlePrev = useCallback(() => {
+    setCurrent((prev) => (prev - 1 + slideCount) % slideCount);
+  }, [slideCount]);
 
-  const handlePrev = () => {
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-  };
+  const handleNext = useCallback(() => {
+    setCurrent((prev) => (prev + 1) % slideCount);
+  }, [slideCount]);
 
-  const handleNext = () => {
-    setCurrent((prev) => (prev + 1) % slides.length);
-  };
+  if (!active) {
+    return null;
+  }
 
   return (
     <section
@@ -152,18 +214,18 @@ export default function BannerSlider() {
         </div>
 
         {showDesktopImages && (
-          <div key={current} className="absolute inset-0 hidden animate-in fade-in duration-500 sm:block">
+          <div key={safeIndex} className="absolute inset-0 hidden animate-in fade-in duration-500 sm:block">
             <img
-              src={active.image.src}
-              srcSet={active.image.srcSet}
-              sizes={BANNER_IMAGE_SIZES}
-              alt={active.title}
+              src={active.imageSrc}
+              srcSet={active.imageSrcSet}
+              sizes={active.imageSrcSet ? BANNER_IMAGE_SIZES : undefined}
+              alt={active.imageAlt}
               className="h-full w-full object-cover"
               width={1200}
               height={675}
-              loading={current === 0 ? "eager" : "lazy"}
-              decoding={current === 0 ? "async" : "async"}
-              fetchPriority={current === 0 ? "high" : "auto"}
+              loading={safeIndex === 0 ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={safeIndex === 0 ? "high" : "auto"}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
             <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
@@ -175,6 +237,7 @@ export default function BannerSlider() {
         onClick={handlePrev}
         className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 shadow-2xl backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 group-hover/banner:opacity-100 sm:left-6 md:h-12 md:w-12"
         aria-label="Slide trước"
+        type="button"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
@@ -182,6 +245,7 @@ export default function BannerSlider() {
         onClick={handleNext}
         className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 shadow-2xl backdrop-blur-md transition-all hover:bg-white hover:text-blue-600 group-hover/banner:opacity-100 sm:right-6 md:h-12 md:w-12"
         aria-label="Slide tiếp theo"
+        type="button"
       >
         <ChevronRight className="h-6 w-6" />
       </button>
@@ -189,28 +253,28 @@ export default function BannerSlider() {
       <div className="relative z-10 flex h-full flex-col justify-center p-5 pt-8 sm:p-8 md:p-10 lg:p-12">
         <div className="max-w-2xl translate-y-0 transform opacity-100 transition-all duration-700">
           <div className="mb-2 inline-flex items-center rounded-full bg-blue-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md sm:mb-3 sm:text-xs">
-            {heroBadge}
+            {active.tagText}
           </div>
-          <h2 className="mb-2 text-2xl font-black leading-tight text-white drop-shadow-md sm:text-3xl md:text-3xl lg:text-4xl">
+          <h1
+            id="home-main-heading"
+            className="mb-2 text-2xl font-black leading-tight text-white drop-shadow-md sm:text-3xl md:text-3xl lg:text-4xl"
+          >
             {active.title}
-          </h2>
+          </h1>
           <p className="mb-4 max-w-xl line-clamp-2 text-xs leading-relaxed text-slate-200 drop-shadow sm:mb-5 sm:line-clamp-3 sm:text-sm md:text-base">
             {active.description}
           </p>
-          <button
-            className="group relative flex w-fit cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(37,99,235,1)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_-15px_rgba(37,99,235,1)] sm:px-6 sm:py-3 sm:text-base md:px-8 md:py-3.5"
-            aria-label={`${active.cta} - ${active.title}`}
-            onClick={() => {
-              if (typeof window !== "undefined" && active.href) {
-                window.history.pushState({}, "", active.href);
-                window.dispatchEvent(new PopStateEvent("popstate"));
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }
-            }}
-          >
-            <span className="relative z-10">{active.cta}</span>
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-          </button>
+          {active.href && active.cta ? (
+            <button
+              type="button"
+              className="group relative flex w-fit cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(37,99,235,1)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_-15px_rgba(37,99,235,1)] sm:px-6 sm:py-3 sm:text-base md:px-8 md:py-3.5"
+              aria-label={`${active.cta} - ${active.title}`}
+              onClick={() => navigateCta(active.href!)}
+            >
+              <span className="relative z-10">{active.cta}</span>
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -218,13 +282,14 @@ export default function BannerSlider() {
         {slides.map((_, index) => (
           <button
             key={index}
+            type="button"
             onClick={() => setCurrent(index)}
             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             aria-label={`Chuyển slide ${index + 1}`}
           >
             <span
               className={`block rounded-full transition-all duration-300 ${
-                index === current
+                index === safeIndex
                   ? "h-2 w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] sm:w-10"
                   : "h-2 w-2 bg-white/50 group-hover/banner:bg-white/70"
               }`}

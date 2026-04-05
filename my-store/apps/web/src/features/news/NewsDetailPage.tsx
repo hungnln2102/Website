@@ -110,9 +110,10 @@ export default function NewsDetailPage({
         description:
           "Bài viết bạn đang tìm không tồn tại hoặc đã được cập nhật đường dẫn trong chuyên mục tin tức.",
         keywords: "tin tức, bài viết, Mavryk Premium Store",
-        url: `${APP_CONFIG.url}${ROUTES.news}`,
+        url: `${APP_CONFIG.url}${ROUTES.newsArticle(slug)}`,
         image: `${APP_CONFIG.url}${BRANDING_ASSETS.logo512}`,
         type: "website" as const,
+        robots: "noindex, follow" as const,
       };
     }
 

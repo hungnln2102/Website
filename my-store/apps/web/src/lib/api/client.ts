@@ -7,7 +7,7 @@
  *
  * Prod: `VITE_API_URL` trỏ tới my-store server (vd. https://api…). Cùng host đó phải có proxy
  * tới admin_orderlist (`ADMIN_ORDERLIST_API_URL` trên apps/server) cho các prefix:
- *   - `/api/public/content/*` (tin tức)
+ *   - `/api/public/content/*` (tin tức, banner trang chủ)
  *   - `/api/renew-adobe/public/*` (Renew Adobe trên web)
  *   - `/image/articles/*` (ảnh bìa bài viết)
  */

@@ -128,9 +128,12 @@ export default function ProductDetailPage({
   const seoMetadata = useMemo(() => {
     if (!product) {
       return {
-        title: `Sản phẩm - ${APP_CONFIG.name}`,
-        description: APP_CONFIG.description,
-        url: APP_CONFIG.url,
+        title: `Không tìm thấy sản phẩm - ${APP_CONFIG.name}`,
+        description:
+          "Trang sản phẩm không tồn tại, đã được gỡ hoặc đường dẫn không đúng. Bạn có thể quay lại danh mục hoặc tìm kiếm sản phẩm khác.",
+        keywords: `sản phẩm không tồn tại, ${APP_CONFIG.name}`,
+        url: `${APP_CONFIG.url}/${encodeURIComponent(slug)}`,
+        robots: "noindex, follow",
       };
     }
 
@@ -154,7 +157,7 @@ export default function ProductDetailPage({
       image: product.image_url || DEFAULT_PRODUCT_FALLBACK_IMAGE,
       type: "product" as const,
     };
-  }, [hasSelectedVariant, product, selectedDurationData?.label, seoHeading]);
+  }, [hasSelectedVariant, product, selectedDurationData?.label, seoHeading, slug]);
 
   const currentCategory = useMemo(() => {
     if (!product?.category_id) return null;
@@ -301,11 +304,14 @@ export default function ProductDetailPage({
 
   if (!product) {
     return (
-      <ProductNotFound
-        error={productsError}
-        onRetry={handleRetryProducts}
-        onBack={onBack}
-      />
+      <>
+        <MetaTags metadata={seoMetadata} />
+        <ProductNotFound
+          error={productsError}
+          onRetry={handleRetryProducts}
+          onBack={onBack}
+        />
+      </>
     );
   }
 

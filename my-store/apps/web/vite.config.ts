@@ -105,10 +105,10 @@ export default defineConfig({
     fs: { strict: false },
     proxy: {
       /**
-       * Tin tức công khai từ admin_orderlist (DB content), không phải apps/server.
+       * Tin tức + banner trang chủ công khai từ admin_orderlist (DB content), không phải apps/server.
        * Phải đứng trước `/api` để khớp prefix trước.
        */
-      '/api/public/content': proxyTo(ADMIN_API_URL, 'admin_orderlist (tin tức)'),
+      '/api/public/content': proxyTo(ADMIN_API_URL, 'admin_orderlist (tin tức / banner)'),
       /**
        * Renew Adobe (Website Check Profile) — API thật nằm trên admin_orderlist backend,
        * không phải my-store server (4000). Nếu proxy nhầm sang 4000 → 404 "Không tìm thấy dữ liệu".
