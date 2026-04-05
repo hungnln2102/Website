@@ -92,12 +92,14 @@ export class VariantDetailService {
         v.product_id,
         SPLIT_PART(v.display_name, '--', 1) AS base_name,
         SPLIT_PART(v.display_name, '--', 2) AS duration,
-        v.short_desc,
-        v.description,
-        v.rules AS purchase_rules,
-        v.image_url,
+        d.short_desc,
+        d.description,
+        d.rules AS purchase_rules,
+        COALESCE(v.image_url, p.image_url) AS image_url,
         COALESCE(vsc.sales_count, 0) AS sold_count
       FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+      LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.id = $1
@@ -122,12 +124,14 @@ export class VariantDetailService {
         v.product_id,
         SPLIT_PART(v.display_name, '--', 1) AS base_name,
         SPLIT_PART(v.display_name, '--', 2) AS duration,
-        v.short_desc,
-        v.description,
-        v.rules AS purchase_rules,
-        v.image_url,
+        d.short_desc,
+        d.description,
+        d.rules AS purchase_rules,
+        COALESCE(v.image_url, p.image_url) AS image_url,
         COALESCE(vsc.sales_count, 0) AS sold_count
       FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+      LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       WHERE v.display_name = $1
@@ -159,16 +163,18 @@ export class VariantDetailService {
         v.form_id,
         SPLIT_PART(v.display_name, '--', 1) AS base_name,
         SPLIT_PART(v.display_name, '--', 2) AS duration,
-        v.short_desc,
-        v.description,
-        v.image_url,
-        v.rules AS purchase_rules,
+        d.short_desc,
+        d.description,
+        COALESCE(v.image_url, p.image_url) AS image_url,
+        d.rules AS purchase_rules,
         COALESCE(vsc.sales_count, 0) AS sold_count,
         COALESCE(v.pct_ctv, 0) AS pct_ctv,
         COALESCE(v.pct_khach, 0) AS pct_khach,
         v.pct_promo,
         COALESCE(sm.price_max, 0) AS price_max
       FROM ${TABLES.VARIANT} v
+      LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
+      LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       LEFT JOIN supply_max sm ON sm.variant_id = v.id

@@ -272,11 +272,13 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
        c.id, c.variant_id, c.quantity, COALESCE(c.price_type, 'retail') AS price_type, c.extra_info, c.created_at, c.updated_at,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       v.image_url, v.description, v.rules AS purchase_rules,
+       COALESCE(v.image_url, p.image_url) AS image_url, d.description, d.rules AS purchase_rules,
        COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${CART_FULL} c
      LEFT JOIN ${schema}.variant v ON v.id::text = c.variant_id::text
+     LEFT JOIN ${schema}.product p ON p.id = v.product_id
+     LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = (v.id)::int
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max
@@ -397,10 +399,12 @@ export async function getVariantProductData(
        v.id AS variant_id,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       v.image_url, v.description, v.rules AS purchase_rules,
+       COALESCE(v.image_url, p.image_url) AS image_url, d.description, d.rules AS purchase_rules,
        COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${schema}.variant v
+     LEFT JOIN ${schema}.product p ON p.id = v.product_id
+     LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = v.id
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max

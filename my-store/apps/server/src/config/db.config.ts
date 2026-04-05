@@ -65,6 +65,19 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
+  DESC_VARIANT: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "desc_variant",
+    COLS: {
+      ID: "id",
+      RULES: "rules",
+      DESCRIPTION: "description",
+      SHORT_DESC: "short_desc",
+      CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
   VARIANT: {
     SCHEMA: SCHEMA_PRODUCT,
     TABLE: "variant",
@@ -77,9 +90,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       IS_ACTIVE: "is_active",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
-      SHORT_DESC: "short_desc",
-      DESCRIPTION: "description",
-      RULES: "rules",
+      DESC_VARIANT_ID: "id_desc",
       IMAGE_URL: "image_url",
       PCT_CTV: "pct_ctv",
       PCT_KHACH: "pct_khach",
@@ -134,17 +145,14 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   },
 
   /**
-   * Alias: product_desc đã gộp vào variant (description, image_url, short_desc, rules).
-   * Giữ entry riêng để các query LEFT JOIN PRODUCT_DESC vẫn hoạt động.
+   * Alias bảng product.desc_variant (nội dung mô tả dùng chung; variant.id_desc → desc_variant.id).
    */
   PRODUCT_DESC: {
     SCHEMA: SCHEMA_PRODUCT,
-    TABLE: "variant",
+    TABLE: "desc_variant",
     COLS: {
       ID: "id",
-      VARIANT_ID: "id",
       DESCRIPTION: "description",
-      IMAGE_URL: "image_url",
       SHORT_DESC: "short_desc",
       RULES: "rules",
       UPDATED_AT: "updated_at",
@@ -656,6 +664,7 @@ const t = (key: string) => `${DB_SCHEMA[key]!.SCHEMA}.${DB_SCHEMA[key]!.TABLE}`;
 export const TABLES = {
   // Product
   PRODUCT:            t("PRODUCT"),
+  DESC_VARIANT:       t("DESC_VARIANT"),
   VARIANT:            t("VARIANT"),
   CATEGORY:           t("CATEGORY"),
   PRODUCT_CATEGORY:   t("PRODUCT_CATEGORY"),
