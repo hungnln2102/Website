@@ -51,27 +51,39 @@ function visualLabelFromDate(iso: string | null): string {
 }
 
 /**
- * Admin lưu ảnh dạng absolute (vd. http://localhost:3001/image/articles/... khi upload).
- * Trên dev, trình duyệt ở :4001 gọi thẳng :3001 — dễ lỗi / không đồng proxy.
- * Đổi thành path tương đối `/image/...` để cùng origin với Vite và đi qua proxy tới admin.
+ * Admin lưu ảnh bìa dạng absolute (vd. http://localhost:3001/image/articles/...).
+ * Trên production, trang www HTTPS không được tải http://localhost (mixed content + CSP img-src).
+ * Đổi thành `/image/...` rồi ghép getApiBase() (HTTPS) — proxy store → admin_orderlist.
+ *
+ * Prod: nên set `VITE_ADMIN_PUBLIC_ORIGIN=https://admin.mavrykpremium.store` nếu DB còn URL đầy đủ trỏ admin.
  */
-function normalizeArticleImageUrlForDev(url: string): string {
-  if (!import.meta.env.DEV) return url;
+function normalizeArticleImageStorageUrl(url: string): string {
   if (!/^https?:\/\//i.test(url)) return url;
 
   try {
     const parsed = new URL(url);
-    const host = parsed.hostname;
+    const host = parsed.hostname.toLowerCase();
     const isLoopback =
       host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
 
-    if (isLoopback && parsed.pathname.startsWith('/image/')) {
+    if (!parsed.pathname.startsWith('/image/')) {
+      return url;
+    }
+
+    if (isLoopback) {
       return `${parsed.pathname}${parsed.search}`;
     }
 
     const stripOrigin = import.meta.env.VITE_ADMIN_PUBLIC_ORIGIN?.replace(/\/+$/, '');
-    if (stripOrigin && url.startsWith(`${stripOrigin}/`)) {
-      return `${parsed.pathname}${parsed.search}`;
+    if (stripOrigin) {
+      const normalizedIncoming = url.replace(/^http:\/\//i, 'https://');
+      const normalizedOrigin = stripOrigin.replace(/^http:\/\//i, 'https://');
+      if (
+        url.startsWith(`${stripOrigin}/`) ||
+        normalizedIncoming.startsWith(`${normalizedOrigin}/`)
+      ) {
+        return `${parsed.pathname}${parsed.search}`;
+      }
     }
   } catch {
     /* ignore */
@@ -83,7 +95,7 @@ function normalizeArticleImageUrlForDev(url: string): string {
 export function resolveArticleImageUrl(imageUrl: string | null | undefined): string | null {
   if (!imageUrl?.trim()) return null;
   let u = imageUrl.trim();
-  u = normalizeArticleImageUrlForDev(u);
+  u = normalizeArticleImageStorageUrl(u);
   if (u.startsWith('http://') || u.startsWith('https://')) return u;
   const base = getApiBase().replace(/\/+$/, '');
   if (u.startsWith('/')) return `${base}${u}`;
