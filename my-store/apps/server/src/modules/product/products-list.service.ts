@@ -51,8 +51,8 @@ export async function getProductsList() {
         d.short_desc,
         d.description,
         d.rules,
-        /* Ảnh gói (catalog): ưu tiên product; chỉ dùng variant khi gói chưa có ảnh. */
-        COALESCE(p.image_url, v.image_url) AS image_url,
+        /* Ảnh danh mục theo gói: chỉ cột product (không gộp biến thể). */
+        p.image_url AS image_url,
         p.created_at AS created_at
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id

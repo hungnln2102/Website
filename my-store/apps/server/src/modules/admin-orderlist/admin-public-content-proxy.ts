@@ -29,3 +29,16 @@ articleImagesProxyRouter.use(
     },
   }),
 );
+
+/** Ảnh biến thể (admin_orderlist /image_variant) — không dùng chung image_product */
+export const variantImagesProxyRouter = Router();
+variantImagesProxyRouter.use(
+  createAdminOrderlistProxyHandler({
+    upstreamPath: "/image_variant",
+    logLabel: "variant-images-proxy",
+    connectionFailureBody: {
+      error: "SERVICE_UNAVAILABLE",
+      message: "Không tải được ảnh biến thể.",
+    },
+  }),
+);

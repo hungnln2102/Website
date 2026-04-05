@@ -95,7 +95,7 @@ export class VariantDetailService {
         d.short_desc,
         d.description,
         d.rules AS purchase_rules,
-        COALESCE(v.image_url, p.image_url) AS image_url,
+        v.image_url AS image_url,
         COALESCE(vsc.sales_count, 0) AS sold_count
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
@@ -127,7 +127,7 @@ export class VariantDetailService {
         d.short_desc,
         d.description,
         d.rules AS purchase_rules,
-        COALESCE(v.image_url, p.image_url) AS image_url,
+        v.image_url AS image_url,
         COALESCE(vsc.sales_count, 0) AS sold_count
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
@@ -165,7 +165,7 @@ export class VariantDetailService {
         SPLIT_PART(v.display_name, '--', 2) AS duration,
         d.short_desc,
         d.description,
-        COALESCE(v.image_url, p.image_url) AS image_url,
+        v.image_url AS image_url,
         d.rules AS purchase_rules,
         COALESCE(vsc.sales_count, 0) AS sold_count,
         COALESCE(v.pct_ctv, 0) AS pct_ctv,

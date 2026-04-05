@@ -272,7 +272,7 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
        c.id, c.variant_id, c.quantity, COALESCE(c.price_type, 'retail') AS price_type, c.extra_info, c.created_at, c.updated_at,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       COALESCE(v.image_url, p.image_url) AS image_url, d.description, d.rules AS purchase_rules,
+       v.image_url AS image_url, d.description, d.rules AS purchase_rules,
        COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${CART_FULL} c
@@ -399,7 +399,7 @@ export async function getVariantProductData(
        v.id AS variant_id,
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
-       COALESCE(v.image_url, p.image_url) AS image_url, d.description, d.rules AS purchase_rules,
+       v.image_url AS image_url, d.description, d.rules AS purchase_rules,
        COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${schema}.variant v

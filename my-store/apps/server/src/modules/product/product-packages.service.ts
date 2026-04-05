@@ -38,7 +38,7 @@ export async function getProductPackages(packageName: string) {
         COALESCE(vsc.sales_count, 0) AS sold_count_30d,
         d.short_desc,
         d.description,
-        COALESCE(v.image_url, p.image_url) AS image_url,
+        v.image_url AS image_url,
         d.rules AS purchase_rules
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id

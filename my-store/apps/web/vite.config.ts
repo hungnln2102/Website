@@ -121,6 +121,7 @@ export default defineConfig({
       '/api': proxyTo(STORE_API_URL, 'my-store server'),
       /** Ảnh upload bài viết (admin_orderlist/static …/image/articles/) — phải trước `/image` */
       '/image/articles': proxyTo(ADMIN_API_URL, 'admin_orderlist (ảnh bài viết)'),
+      '/image_variant': proxyTo(ADMIN_API_URL, 'admin_orderlist (ảnh biến thể)'),
       '/image': proxyTo(STORE_API_URL, 'my-store server'),
       '/image_product': proxyTo(STORE_API_URL, 'my-store server'),
       '/products': proxyTo(STORE_API_URL, 'my-store server'),

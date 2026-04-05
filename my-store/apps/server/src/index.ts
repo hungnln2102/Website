@@ -36,6 +36,7 @@ import { renewAdobePublicProxyRouter } from "./modules/renew-adobe/renew-adobe-p
 import {
   articleImagesProxyRouter,
   publicContentProxyRouter,
+  variantImagesProxyRouter,
 } from "./modules/admin-orderlist/admin-public-content-proxy";
 import { warnIfAdminOrderlistUrlMissingInProduction } from "./modules/admin-orderlist/create-admin-orderlist-proxy";
 import productsRouter from "./modules/product/product.routes";
@@ -215,6 +216,8 @@ app.use("/api/renew-adobe/public", renewAdobePublicProxyRouter);
 app.use("/api/public/content", publicContentProxyRouter);
 /** Ảnh bài viết /image/articles/* — admin_orderlist static */
 app.use("/image/articles", articleImagesProxyRouter);
+/** Ảnh biến thể /image_variant/* — admin_orderlist static */
+app.use("/image_variant", variantImagesProxyRouter);
 
 // CSRF protection for state-changing requests
 // BỎ QUA cho các route /api/fix-adobe/* và /api/netflix/*

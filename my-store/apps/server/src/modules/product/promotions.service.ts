@@ -24,7 +24,7 @@ export async function getPromotionsList() {
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         d.description,
-        COALESCE(v.image_url, p.image_url) AS image_url
+        v.image_url AS image_url
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
