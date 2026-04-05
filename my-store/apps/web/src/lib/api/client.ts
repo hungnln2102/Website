@@ -80,9 +80,15 @@ export async function apiFetch(
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === "AbortError") {
+      const isRenewActivate =
+        typeof url === "string" && url.includes("/api/renew-adobe/public/activate");
       const hint = import.meta.env.DEV
-        ? " Kiểm tra my-store server (4000) và admin_orderlist (3001) nếu dùng tin tức."
-        : "";
+        ? isRenewActivate
+          ? " Hết thời gian chờ (hoặc proxy đóng sớm). Kích hoạt Renew Adobe có thể mất vài phút — thử bấm Kiểm tra profile lại sau; đảm bảo Vite/apps/server proxy tới admin_orderlist đủ lâu (vài trăm giây)."
+          : " Kiểm tra my-store server (4000) và admin_orderlist (3001) nếu dùng tin tức."
+        : isRenewActivate
+          ? " Thao tác kích hoạt có thể vẫn đang chạy trên máy chủ — thử kiểm tra profile lại sau vài phút."
+          : "";
       throw new Error("Không kết nối được máy chủ. Kiểm tra mạng hoặc thử lại sau." + hint);
     }
     const msg = err instanceof Error ? err.message : "";

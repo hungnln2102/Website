@@ -11,13 +11,17 @@ const BRANDING_ASSET_PUBLIC_DIR = path.resolve(__dirname, './public/assets/image
 const BRANDING_ASSET_EXTENSIONS = ['.webp', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.avif'];
 const FAVICON_EXTENSIONS = ['.ico', '.png', '.svg', '.webp', '.jpg', '.jpeg', '.avif'];
 
+/** Timeout proxy (ms). Renew Adobe /activate có Playwright lâu — phải ≥ timeout phía web (renewAdobe.api). */
+const PROXY_TIMEOUT_SHORT_MS = 30_000;
+const PROXY_TIMEOUT_RENEW_ADOBE_MS = 660_000;
+
 /** Khi backend chưa chạy (ECONNREFUSED): log rõ, tránh spam stack trace. */
-function proxyTo(target: string, label: string) {
+function proxyTo(target: string, label: string, timeoutMs: number = PROXY_TIMEOUT_SHORT_MS) {
   return {
     target,
     changeOrigin: true,
-    timeout: 30_000,
-    proxyTimeout: 30_000,
+    timeout: timeoutMs,
+    proxyTimeout: timeoutMs,
     configure: (proxy: any) => {
       proxy.on('error', (err: NodeJS.ErrnoException, _req: any, res: any) => {
         if (err.code === 'ECONNREFUSED') {
@@ -112,6 +116,7 @@ export default defineConfig({
       '/api/renew-adobe/public': proxyTo(
         ADMIN_API_URL,
         'admin_orderlist (Renew Adobe public)',
+        PROXY_TIMEOUT_RENEW_ADOBE_MS,
       ),
       '/api': proxyTo(STORE_API_URL, 'my-store server'),
       /** Ảnh upload bài viết (admin_orderlist/static …/image/articles/) — phải trước `/image` */

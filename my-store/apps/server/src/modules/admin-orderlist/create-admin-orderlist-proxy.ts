@@ -9,6 +9,9 @@ const DEFAULT_ADMIN = "http://127.0.0.1:3001";
 /** Timeout gọi admin (Adobe / DB có thể chậm lúc cold start). */
 const UPSTREAM_TIMEOUT_MS = 60_000;
 
+/** Renew Adobe public /activate chạy Playwright vài phút — không dùng timeout ngắn. */
+export const UPSTREAM_TIMEOUT_RENEW_ADOBE_MS = 660_000;
+
 function normalizeAdminBase(raw: string): string {
   let b = raw.trim().replace(/\/+$/, "");
   if (b.endsWith("/api")) {
@@ -34,19 +37,22 @@ export type AdminOrderlistProxyOptions = {
   logLabel: string;
   /** JSON trả về khi không kết nối được admin (fetch throw / timeout). */
   connectionFailureBody: Record<string, unknown>;
+  /** Mặc định 60s; route Playwright (Renew Adobe) nên truyền ~660s. */
+  upstreamTimeoutMs?: number;
 };
 
 export function createAdminOrderlistProxyHandler(
   options: AdminOrderlistProxyOptions,
 ): RequestHandler {
   const { upstreamPath, logLabel, connectionFailureBody } = options;
+  const upstreamTimeoutMs = options.upstreamTimeoutMs ?? UPSTREAM_TIMEOUT_MS;
 
   return async (req: Request, res: Response) => {
     const base = getAdminOrderlistBase();
     const target = `${base}${upstreamPath}${req.url}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), upstreamTimeoutMs);
 
     try {
       const headers: Record<string, string> = {

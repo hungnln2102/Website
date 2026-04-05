@@ -3,7 +3,10 @@
  * Web (prod) gọi VITE_API_URL (store); route này proxy tới ADMIN_ORDERLIST_API_URL.
  */
 import { Router } from "express";
-import { createAdminOrderlistProxyHandler } from "../admin-orderlist/create-admin-orderlist-proxy";
+import {
+  createAdminOrderlistProxyHandler,
+  UPSTREAM_TIMEOUT_RENEW_ADOBE_MS,
+} from "../admin-orderlist/create-admin-orderlist-proxy";
 
 export const renewAdobePublicProxyRouter = Router();
 renewAdobePublicProxyRouter.use(
@@ -16,5 +19,6 @@ renewAdobePublicProxyRouter.use(
       /** Để biết đây là lỗi proxy → kiểm tra ADMIN_ORDERLIST_API_URL & backend :3001 */
       code: "RENEW_ADOBE_UPSTREAM_UNREACHABLE",
     },
+    upstreamTimeoutMs: UPSTREAM_TIMEOUT_RENEW_ADOBE_MS,
   }),
 );
