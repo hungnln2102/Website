@@ -1,9 +1,19 @@
 /**
- * Products list: one row per package (lowest price variant), with sales counts and promo info.
+ * Products list: một dòng / gói (`package`).
+ * - Mỗi variant: giá list = một giá (MAV: max NCC từ supply_max, làm tròn nghìn; khách/CTV: công thức margin).
+ * - Cột "TỪ" / `from_price`: MIN trên các variant trong gói (entry thấp nhất), gồm cả MAV.
  */
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
-import { sqlRetailPrice, sqlPromoPrice } from "../../shared/utils/pricing";
+import {
+  sqlRetailPrice,
+  sqlPromoPrice,
+  sqlCtvPrice,
+  sqlStudentPrice,
+  sqlCostPriceRounded,
+} from "../../shared/utils/pricing";
+import type { ProductListPriceScope } from "../../shared/utils/role-code";
+import { normalizeProductListPriceScope } from "../../shared/utils/role-code";
 import { SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
@@ -32,8 +42,38 @@ type RawProductRow = {
   created_at?: unknown;
 };
 
-export async function getProductsList() {
-  const query = `
+const PM = "priced.price_max";
+const CTV = "priced.pct_ctv";
+const KH = "priced.pct_khach";
+const PR = "priced.pct_promo";
+const STU = "priced.pct_stu";
+
+function scopeSaleSql(scope: ProductListPriceScope): string {
+  switch (scope) {
+    case "MAV":
+      /* Admin: mỗi variant = max giá NCC (supply_max), làm tròn nghìn; gói hiển thị MIN(variant) ở bước aggregate */
+      return sqlCostPriceRounded(PM);
+    case "MAVC":
+      return sqlCtvPrice(PM, CTV);
+    case "MAVS":
+      return sqlStudentPrice(PM, CTV, KH, STU);
+    case "MAVK":
+      return sqlPromoPrice(PM, CTV, KH, PR);
+    case "MAVN":
+      return sqlCostPriceRounded(PM);
+    case "MAVT":
+      return `0::numeric`;
+    case "MAVL":
+    default:
+      return sqlRetailPrice(PM, CTV, KH);
+  }
+}
+
+function buildProductsListQuery(scope: ProductListPriceScope): string {
+  const saleExpr = scopeSaleSql(scope);
+  const mavAdminNcc = scope === "MAV";
+  const promoExpr = mavAdminNcc ? `(${saleExpr})` : sqlPromoPrice(PM, CTV, KH, PR);
+  return `
     WITH ${SUPPLY_MAX_CTE},
     priced AS (
       SELECT
@@ -45,13 +85,13 @@ export async function getProductsList() {
         COALESCE(v.pct_ctv, 0) AS pct_ctv,
         COALESCE(v.pct_khach, 0) AS pct_khach,
         v.pct_promo AS pct_promo,
+        v.pct_stu AS pct_stu,
         (v.pct_promo IS NOT NULL) AS has_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         d.short_desc,
         d.description,
         d.rules,
-        /* Ảnh danh mục theo gói: chỉ cột product (không gộp biến thể). */
         p.image_url AS image_url,
         p.created_at AS created_at
       FROM ${TABLES.VARIANT} v
@@ -66,18 +106,16 @@ export async function getProductsList() {
     sale_calc AS (
       SELECT
         priced.*,
-        ${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')}
-          AS sale_price,
-        ${sqlPromoPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach', 'priced.pct_promo')}
-          AS promo_price,
+        (${saleExpr}) AS sale_price,
+        ${promoExpr} AS promo_price,
         COALESCE(psc.total_sales_count, 0) AS package_sales_count,
         COALESCE(p30d.sold_count_30d, 0) AS sold_count_30d,
         COUNT(*) OVER (PARTITION BY priced.package) AS package_count,
         BOOL_OR(priced.is_active) OVER (PARTITION BY priced.package) AS has_active_variant,
         MIN(
           CASE
-            WHEN (${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')}) > 0
-            THEN (${sqlRetailPrice('priced.price_max', 'priced.pct_ctv', 'priced.pct_khach')})
+            WHEN (${saleExpr}) > 0
+            THEN (${saleExpr})
           END
         ) OVER (PARTITION BY priced.package) AS min_nonzero_sale_price
       FROM priced
@@ -119,6 +157,11 @@ export async function getProductsList() {
     WHERE rn = 1
     ORDER BY package;
   `;
+}
+
+export async function getProductsList(scopeInput?: ProductListPriceScope | string) {
+  const scope = normalizeProductListPriceScope(scopeInput);
+  const query = buildProductsListQuery(scope);
   const { rows } = await pool.query<RawProductRow>(query);
 
   return rows.map((row) => {
@@ -129,9 +172,10 @@ export async function getProductsList() {
     });
     const basePrice = toNumber(row.sale_price);
     const discountPctRaw = toNumber(row.pct_promo);
-    const discountPct = discountPctRaw > 1 ? discountPctRaw : discountPctRaw * 100;
+    const discountPct =
+      scope === "MAV" ? 0 : discountPctRaw > 1 ? discountPctRaw : discountPctRaw * 100;
     const packageCount = toNumber(row.package_count) || 1;
-    const hasPromo = row.has_promo === true;
+    const hasPromo = scope === "MAV" ? false : row.has_promo === true;
     const fromPrice = toNumber(row.min_nonzero_sale_price);
     const routeSlug = slugify(String(row.package || row.id_product || row.id));
 
@@ -159,6 +203,7 @@ export async function getProductsList() {
       average_rating: 0,
       package_count: packageCount,
       created_at: row.created_at ?? null,
+      price_scope: scope,
     };
   });
 }

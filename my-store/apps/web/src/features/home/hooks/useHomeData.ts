@@ -1,6 +1,14 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchCategories, fetchProducts, fetchPromotions, type CategoryDto, type PromotionDto } from "@/lib/api";
+import {
+  fetchCategories,
+  fetchProducts,
+  fetchPromotions,
+  productsQueryKey,
+  type CategoryDto,
+  type PromotionDto,
+} from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks";
 import { categoriesMock } from "@/lib/mockData";
 import { slugify } from "@/lib/utils";
 
@@ -39,7 +47,9 @@ export interface CategoryUI {
 
 export function useHomeData() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const catalogReady = true;
+  const productsQk = productsQueryKey(user?.roleCode);
 
   // Fetch products (timeout 20s, retry 2 lần khi lỗi)
   const {
@@ -47,7 +57,7 @@ export function useHomeData() {
     isLoading: loading,
     error: fetchError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQk,
     queryFn: fetchProducts,
     enabled: true,
     retry: 2,

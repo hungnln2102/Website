@@ -1,14 +1,17 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import type { NormalizedProduct } from "./useHomeData";
 import { ROUTES } from "@/lib/constants";
+import { useCatalogGridColumnCount } from "@/features/catalog/hooks/useCatalogGridColumnCount";
+import type { ProductSortLoadMore } from "@/features/catalog/hooks/useProductSort";
 
 interface UseHomeFiltersOptions {
   products: NormalizedProduct[];
   categoryProductsMap: Map<string, Set<string>>;
-  perPage?: number;
 }
 
-// Helper function to check if product is new (created within 7 days)
+const PREVIEW_COUNT = 5;
+const ROWS_PER_REVEAL = 2;
+
 const isNewProduct = (createdAt: string | null): boolean => {
   if (!createdAt) return false;
   const createdDate = new Date(createdAt);
@@ -18,17 +21,13 @@ const isNewProduct = (createdAt: string | null): boolean => {
   return diffDays <= 7;
 };
 
-export function useHomeFilters({
-  products,
-  categoryProductsMap,
-  perPage = 12,
-}: UseHomeFiltersOptions) {
+export function useHomeFilters({ products, categoryProductsMap }: UseHomeFiltersOptions) {
+  const gridCols = useCatalogGridColumnCount();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [revealSteps, setRevealSteps] = useState(1);
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Listen for URL changes
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -45,7 +44,10 @@ export function useHomeFilters({
     };
   }, []);
 
-  // Get new products (created within 7 days)
+  useEffect(() => {
+    setRevealSteps(1);
+  }, [selectedCategory, searchQuery, showAllProducts, products.length]);
+
   const newProducts = useMemo(() => {
     return [...products]
       .filter((p) => isNewProduct(p.created_at))
@@ -73,11 +75,9 @@ export function useHomeFilters({
       .slice(0, 10);
   }, [products]);
 
-  // Filter and sort products
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Filter by category
     if (selectedCategory !== null) {
       result = result.filter((p) => {
         const productIds = categoryProductsMap.get(selectedCategory);
@@ -86,7 +86,6 @@ export function useHomeFilters({
       });
     }
 
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -96,7 +95,6 @@ export function useHomeFilters({
       );
     }
 
-    // Sort: Best Selling (sold_count_30d > 10) > Hot (5 <= sold_count_30d <= 10) > others
     result = result.sort((a, b) => {
       const sold30dA = a.sold_count_30d ?? 0;
       const sold30dB = b.sold_count_30d ?? 0;
@@ -118,22 +116,29 @@ export function useHomeFilters({
     return result;
   }, [products, selectedCategory, categoryProductsMap, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
-  const pageProducts = filteredProducts.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
-  );
-
-  // Display mode
   const isDefaultView = !searchQuery && !selectedCategory;
   const isPreviewMode = isDefaultView && !showAllProducts;
-  const displayedProducts = isPreviewMode ? pageProducts.slice(0, 5) : pageProducts;
 
-  // Handlers
+  const displayedProducts = useMemo(() => {
+    if (isPreviewMode) return filteredProducts.slice(0, PREVIEW_COUNT);
+    const cap = Math.min(filteredProducts.length, revealSteps * ROWS_PER_REVEAL * gridCols);
+    return filteredProducts.slice(0, cap);
+  }, [isPreviewMode, filteredProducts, revealSteps, gridCols]);
+
+  const productsLoadMore = useMemo((): ProductSortLoadMore | undefined => {
+    if (isPreviewMode) return undefined;
+    const cap = Math.min(filteredProducts.length, revealSteps * ROWS_PER_REVEAL * gridCols);
+    const remaining = filteredProducts.length - cap;
+    if (remaining <= 0) return undefined;
+    return {
+      remainingCount: remaining,
+      onLoadMore: () => setRevealSteps((s) => s + 1),
+      itemLabel: "sản phẩm",
+    };
+  }, [isPreviewMode, filteredProducts.length, revealSteps, gridCols]);
+
   const handleCategorySelect = useCallback((slug: string | null) => {
     setSelectedCategory(slug);
-    setCurrentPage(1);
   }, []);
 
   const handleSearchChange = useCallback((value: string) => {
@@ -142,7 +147,6 @@ export function useHomeFilters({
 
   const handleLogoClick = useCallback(() => {
     setSelectedCategory(null);
-    setCurrentPage(1);
     setShowAllProducts(false);
     setSearchQuery("");
 
@@ -154,22 +158,15 @@ export function useHomeFilters({
   }, []);
 
   return {
-    // State
     selectedCategory,
-    currentPage,
     searchQuery,
     showAllProducts,
-
-    // Computed
     newProducts,
     bestSellingProducts,
     filteredProducts,
     displayedProducts,
-    totalPages,
     isPreviewMode,
-
-    // Handlers
-    setCurrentPage,
+    productsLoadMore,
     setSearchQuery: handleSearchChange,
     handleCategorySelect,
     handleLogoClick,

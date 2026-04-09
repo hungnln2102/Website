@@ -303,13 +303,21 @@ export async function getTransactions(
   const promotionIdCol = COLS_WT.PROMOTION_ID as string;
   const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
   const OC_PAYMENT_ID = DB_SCHEMA.ORDER_CUSTOMER!.COLS.PAYMENT_ID;
+  const OC_ID_ORDER = DB_SCHEMA.ORDER_CUSTOMER!.COLS.ID_ORDER;
 
+  // Một payment_id có thể gắn nhiều order_customer (nhiều dòng sản phẩm) — dùng subquery để 1 dòng / giao dịch ví.
+  // payment_id vs wt.id có thể khác kiểu (int/text) → so sánh ::text.
   const result = await pool.query(
     `SELECT wt.id, wt.${txIdCol}, wt.account_id, wt.type, wt.direction, wt.amount,
             wt.balance_before, wt.balance_after, wt.${methodCol}, wt.${promotionIdCol}, wt.created_at,
-            oc.id_order
+            (SELECT MIN(${OC_ID_ORDER})::text
+               FROM ${ORDER_CUSTOMER_TABLE} oc2
+              WHERE oc2.account_id = wt.account_id
+                AND oc2.${OC_PAYMENT_ID} IS NOT NULL
+                AND wt.${idCol} IS NOT NULL
+                AND trim(oc2.${OC_PAYMENT_ID}::text) = trim(wt.${idCol}::text)
+            ) AS id_order
      FROM ${WALLET_TX_TABLE} wt
-     LEFT JOIN ${ORDER_CUSTOMER_TABLE} oc ON (oc.account_id = wt.account_id AND oc.${OC_PAYMENT_ID} = wt.${idCol})
      WHERE wt.account_id = $1
      ORDER BY wt.created_at DESC
      LIMIT $2`,

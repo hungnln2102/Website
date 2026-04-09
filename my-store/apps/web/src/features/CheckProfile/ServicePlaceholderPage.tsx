@@ -3,7 +3,7 @@ import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { ServicesSidebar } from "./ServicesSidebar";
 import { Construction } from "lucide-react";
@@ -24,7 +24,7 @@ export default function ServicePlaceholderPage({
   const { title, description } = TITLES[serviceId] ?? { title: "Dịch vụ", description: "" };
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
   const { data: categories = [] } = useQuery({

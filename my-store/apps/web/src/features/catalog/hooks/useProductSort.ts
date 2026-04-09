@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import type { SortOption } from "../components/SortToolbar";
+import { useCatalogGridColumnCount } from "./useCatalogGridColumnCount";
 
 interface Product {
   id: string;
@@ -12,28 +13,53 @@ interface Product {
   [key: string]: any;
 }
 
+export interface ProductSortLoadMore {
+  remainingCount: number;
+  onLoadMore: () => void;
+  itemLabel: string;
+}
+
 interface UseProductSortOptions {
   products: Product[];
   searchQuery?: string;
+  /**
+   * Phân trang theo số bản ghi mỗi trang (client).
+   * Chỉ dùng khi không bật `rowsPerReveal`.
+   */
   perPage?: number;
+  /**
+   * Mỗi lần hiển thị / mỗi lần "Xem thêm" = N hàng đầy (N × số cột theo màn hình).
+   * Ví dụ `2` → 2 hàng; bấm thêm → +2 hàng, đến khi hết danh sách.
+   */
+  rowsPerReveal?: number;
+  /** Danh từ trong nút "Xem thêm …" — mặc định "sản phẩm". */
+  loadMoreItemLabel?: string;
   defaultSort?: SortOption;
 }
+
+const SHOW_ALL = Number.MAX_SAFE_INTEGER;
 
 export function useProductSort({
   products,
   searchQuery = "",
-  perPage = 12,
+  perPage,
+  rowsPerReveal,
+  loadMoreItemLabel = "sản phẩm",
   defaultSort = "featured",
 }: UseProductSortOptions) {
+  const gridCols = useCatalogGridColumnCount();
+  const rowMode = rowsPerReveal != null && rowsPerReveal > 0;
+  const pageSize = rowMode ? SHOW_ALL : perPage ?? SHOW_ALL;
+
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>(defaultSort);
+  const [revealSteps, setRevealSteps] = useState(1);
 
-  // Reset page when sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [sortBy, searchQuery]);
+    if (rowMode) setRevealSteps(1);
+  }, [sortBy, searchQuery, rowMode, products]);
 
-  // Sort products
   const sortedProducts = useMemo(() => {
     const sorted = [...products];
 
@@ -79,7 +105,6 @@ export function useProductSort({
     }
   }, [products, sortBy]);
 
-  // Filter by search
   const filteredProducts = useMemo(() => {
     if (!searchQuery) return sortedProducts;
     const query = searchQuery.toLowerCase();
@@ -90,12 +115,31 @@ export function useProductSort({
     );
   }, [sortedProducts, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
+  const rowChunk = rowMode ? rowsPerReveal! * gridCols : 0;
+  const visibleCap = rowMode ? Math.min(filteredProducts.length, revealSteps * rowChunk) : filteredProducts.length;
+
+  const totalPages = rowMode
+    ? 1
+    : Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+
   const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filteredProducts.slice(start, start + perPage);
-  }, [filteredProducts, currentPage, perPage]);
+    if (rowMode) {
+      return filteredProducts.slice(0, visibleCap);
+    }
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize, rowMode, visibleCap]);
+
+  const loadMore = useMemo((): ProductSortLoadMore | undefined => {
+    if (!rowMode) return undefined;
+    const remaining = filteredProducts.length - visibleCap;
+    if (remaining <= 0) return undefined;
+    return {
+      remainingCount: remaining,
+      onLoadMore: () => setRevealSteps((s) => s + 1),
+      itemLabel: loadMoreItemLabel,
+    };
+  }, [rowMode, filteredProducts.length, visibleCap, loadMoreItemLabel]);
 
   return {
     sortBy,
@@ -107,5 +151,6 @@ export function useProductSort({
     paginatedProducts,
     totalPages,
     totalCount: filteredProducts.length,
+    loadMore,
   };
 }

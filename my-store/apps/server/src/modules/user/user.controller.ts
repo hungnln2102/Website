@@ -11,8 +11,12 @@ import { refreshTokenService } from "../auth/refresh-token.service";
 import { passwordHistoryService } from "../auth/password-history.service";
 import { walletService } from "../wallet/wallet.service";
 import { getCurrentTierCycle } from "../../config/tier-cycle.config";
+import * as customerEmail from "../notification/customer-email.service";
+import { normalizeProductListPriceScope } from "../../shared/utils/role-code";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
+const ROLES_TABLE = `${DB_SCHEMA.ROLES!.SCHEMA}.${DB_SCHEMA.ROLES!.TABLE}`;
+const COLS_ROLE = DB_SCHEMA.ROLES!.COLS as { ID: string; CODE: string };
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
 const TIERS_TABLE = `${DB_SCHEMA.CUSTOMER_TIERS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TIERS!.TABLE}`;
 const SPEND_STATS_TABLE = `${DB_SCHEMA.CUSTOMER_SPEND_STATS!.SCHEMA}.${DB_SCHEMA.CUSTOMER_SPEND_STATS!.TABLE}`;
@@ -24,7 +28,28 @@ const COLS_TC = DB_SCHEMA.TIER_CYCLES!.COLS as {
   STATUS: string;
 };
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
-const COLS_CP = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as { TIER_ID: string };
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** Một lần đổi ngày sinh, sau đó phải đợi 365 ngày mới đổi lại được. */
+const DOB_CHANGE_COOLDOWN_MS = 365 * MS_PER_DAY;
+
+const COLS_CP = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as {
+  TIER_ID: string;
+  FIRST_NAME: string;
+  LAST_NAME: string;
+  DATE_OF_BIRTH: string;
+  DATE_OF_BIRTH_CHANGED_AT: string;
+};
+
+/** Chuẩn hóa date_of_birth từ DB/API để so sánh YYYY-MM-DD. */
+function normalizeProfileDobValue(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    return v.toISOString().slice(0, 10);
+  }
+  const s = String(v);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m?.[1] ?? null;
+}
 const COLS_CT = DB_SCHEMA.CUSTOMER_TIERS!.COLS as { ID: string; NAME: string; MIN_TOTAL_SPEND: string };
 const COLS_CSS = DB_SCHEMA.CUSTOMER_SPEND_STATS!.COLS as { LIFETIME_SPEND: string };
 const WALLET_SCHEMA = DB_SCHEMA.WALLET!.SCHEMA;
@@ -52,15 +77,17 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
     const [result, tiersResult] = await Promise.all([
       pool.query(
         `SELECT a.id, a.username, a.email, a.created_at,
-                cp.first_name, cp.last_name, cp.date_of_birth,
+                cp.first_name, cp.last_name, cp.date_of_birth, cp.date_of_birth_changed_at,
                 COALESCE(w.balance, 0) as balance,
                 COALESCE(ct.name, 'Member') as customer_type,
-                COALESCE(css.${COLS_CSS.LIFETIME_SPEND}, 0) as total_spend
+                COALESCE(css.${COLS_CSS.LIFETIME_SPEND}, 0) as total_spend,
+                r.${COLS_ROLE.CODE} AS role_code
          FROM ${ACCOUNT_TABLE} a
          LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
          LEFT JOIN ${TIERS_TABLE} ct ON ct.${COLS_CT.ID} = cp.${COLS_CP.TIER_ID}
          LEFT JOIN ${SPEND_STATS_TABLE} css ON css.account_id = a.id
          LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
+         LEFT JOIN ${ROLES_TABLE} r ON r.${COLS_ROLE.ID} = a.${DB_SCHEMA.ACCOUNT!.COLS.ROLE_ID}
          WHERE a.id = $1`,
         [userId]
       ),
@@ -167,6 +194,17 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       logger.debug("[Profile] response currentCycle: " + JSON.stringify(currentCycle ? { id: currentCycle.id, cycleStartAt: currentCycle.cycleStartAt, cycleEndAt: currentCycle.cycleEndAt, status: currentCycle.status } : null));
     }
 
+    const dobChangedAtRaw = user.date_of_birth_changed_at;
+    let dateOfBirthNextEditableAt: string | null = null;
+    if (dobChangedAtRaw) {
+      const nextMs = new Date(dobChangedAtRaw as string).getTime() + DOB_CHANGE_COOLDOWN_MS;
+      if (nextMs > now.getTime()) {
+        dateOfBirthNextEditableAt = new Date(nextMs).toISOString();
+      }
+    }
+
+    const roleCode = normalizeProductListPriceScope(user.role_code);
+
     res.json({
       id: user.id,
       username: user.username,
@@ -174,9 +212,11 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
       firstName: user.first_name,
       lastName: user.last_name,
       dateOfBirth: user.date_of_birth,
+      dateOfBirthNextEditableAt,
       createdAt: user.created_at,
       balance: parseInt(user.balance, 10) || 0,
       customerType: user.customer_type,
+      roleCode,
       totalSpend: parseFloat(user.total_spend) || 0,
       tiers,
       tierCycleEnd: tierCycleEnd.toISOString(),
@@ -268,27 +308,191 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateProfile(req: Request, res: Response): Promise<void> {
+  const client = await pool.connect();
   try {
     const userId = getUserId(req);
-    const { firstName, lastName } = req.body;
+    const {
+      firstName,
+      lastName,
+      dateOfBirth,
+      email,
+      currentPassword,
+    } = req.body as {
+      firstName?: string;
+      lastName?: string;
+      dateOfBirth?: string | null;
+      email?: string;
+      currentPassword?: string;
+    };
+
     if (!firstName?.trim() || !lastName?.trim()) {
       res.status(400).json({ error: "Vui lòng điền đầy đủ họ tên" });
       return;
     }
+
     const sanitizedFirstName = firstName.trim().replace(/[<>'"&]/g, "");
     const sanitizedLastName = lastName.trim().replace(/[<>'"&]/g, "");
-    await pool.query(
-      `UPDATE ${PROFILE_TABLE} SET first_name = $1, last_name = $2, updated_at = NOW() WHERE account_id = $3`,
-      [sanitizedFirstName, sanitizedLastName, userId]
+
+    const accRes = await client.query(
+      `SELECT username, email, password_hash FROM ${ACCOUNT_TABLE} WHERE id = $1`,
+      [userId]
     );
+    if (accRes.rows.length === 0) {
+      res.status(404).json({ error: "Người dùng không tồn tại" });
+      return;
+    }
+    const curUsername = String(accRes.rows[0].username ?? "");
+    const curEmail = String(accRes.rows[0].email ?? "");
+    const passwordHash = accRes.rows[0].password_hash as string;
+
+    const bodyUsername = (req.body as { username?: string }).username;
+    if (bodyUsername !== undefined && bodyUsername !== null) {
+      const u = String(bodyUsername).trim();
+      if (u !== curUsername) {
+        res.status(400).json({ error: "Tên đăng nhập không thể thay đổi" });
+        return;
+      }
+    }
+
+    let nextEmail = curEmail;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email !== undefined && email !== null) {
+      const eTrim = String(email).trim();
+      if (eTrim.toLowerCase() !== curEmail.toLowerCase()) {
+        if (!emailRegex.test(eTrim)) {
+          res.status(400).json({ error: "Email không hợp lệ" });
+          return;
+        }
+        if (!currentPassword) {
+          res.status(400).json({
+            error: "Vui lòng nhập mật khẩu hiện tại để xác nhận đổi email",
+          });
+          return;
+        }
+        const isValidPw = await authService.verifyPassword(currentPassword, passwordHash);
+        if (!isValidPw) {
+          await auditService.logAuth("EMAIL_CHANGE", userId, req, { reason: "wrong_password" }, "failed");
+          res.status(401).json({ error: "Mật khẩu không đúng" });
+          return;
+        }
+        const emailCheck = await client.query(
+          `SELECT 1 FROM ${ACCOUNT_TABLE} WHERE LOWER(email) = LOWER($1) AND id != $2 LIMIT 1`,
+          [eTrim, userId]
+        );
+        if (emailCheck.rows.length > 0) {
+          res.status(409).json({ error: "Email đã được sử dụng" });
+          return;
+        }
+        nextEmail = eTrim.toLowerCase();
+      }
+    }
+
+    let dobSql: string | null | undefined;
+    if (dateOfBirth !== undefined) {
+      const raw = dateOfBirth === null ? "" : String(dateOfBirth).trim();
+      if (!raw) {
+        dobSql = null;
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const parsed = new Date(`${raw}T12:00:00`);
+        if (Number.isNaN(parsed.getTime())) {
+          res.status(400).json({ error: "Ngày sinh không hợp lệ" });
+          return;
+        }
+        dobSql = raw;
+      } else {
+        res.status(400).json({ error: "Ngày sinh không hợp lệ" });
+        return;
+      }
+    }
+
+    const fnCol = COLS_CP.FIRST_NAME;
+    const lnCol = COLS_CP.LAST_NAME;
+    const dobCol = COLS_CP.DATE_OF_BIRTH;
+    const dobChCol = COLS_CP.DATE_OF_BIRTH_CHANGED_AT;
+
+    let dobChanging = false;
+    if (dateOfBirth !== undefined && dobSql !== undefined) {
+      const profileSnap = await client.query(
+        `SELECT ${dobCol} as d, ${dobChCol} as changed_at FROM ${PROFILE_TABLE} WHERE account_id = $1`,
+        [userId]
+      );
+      const pr = profileSnap.rows[0];
+      const prevNorm = normalizeProfileDobValue(pr?.d);
+      dobChanging = prevNorm !== dobSql;
+      if (dobChanging && pr?.changed_at) {
+        const changedMs = new Date(pr.changed_at as string).getTime();
+        if (Date.now() - changedMs < DOB_CHANGE_COOLDOWN_MS) {
+          const nextAllowed = new Date(changedMs + DOB_CHANGE_COOLDOWN_MS);
+          res.status(429).json({
+            error: `Ngày sinh chỉ được đổi một lần trong 365 ngày. Có thể đổi lại sau ${nextAllowed.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}.`,
+            dateOfBirthNextEditableAt: nextAllowed.toISOString(),
+          });
+          return;
+        }
+      }
+    }
+
+    await client.query("BEGIN");
+    try {
+      if (nextEmail !== curEmail) {
+        await client.query(
+          `UPDATE ${ACCOUNT_TABLE} SET email = $1, updated_at = NOW() WHERE id = $2`,
+          [nextEmail, userId]
+        );
+        await auditService.logAuth("EMAIL_CHANGE", userId, req, { newEmail: nextEmail });
+      }
+      if (dobSql !== undefined) {
+        if (dobChanging) {
+          await client.query(
+            `UPDATE ${PROFILE_TABLE}
+             SET ${fnCol} = $1, ${lnCol} = $2, ${dobCol} = $3, ${dobChCol} = NOW(), updated_at = NOW()
+             WHERE account_id = $4`,
+            [sanitizedFirstName, sanitizedLastName, dobSql, userId]
+          );
+        } else {
+          await client.query(
+            `UPDATE ${PROFILE_TABLE}
+             SET ${fnCol} = $1, ${lnCol} = $2, ${dobCol} = $3, updated_at = NOW()
+             WHERE account_id = $4`,
+            [sanitizedFirstName, sanitizedLastName, dobSql, userId]
+          );
+        }
+      } else {
+        await client.query(
+          `UPDATE ${PROFILE_TABLE}
+           SET ${fnCol} = $1, ${lnCol} = $2, updated_at = NOW()
+           WHERE account_id = $3`,
+          [sanitizedFirstName, sanitizedLastName, userId]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    }
+
     await auditService.logAuth("PROFILE_UPDATE", userId, req, {
       firstName: sanitizedFirstName,
       lastName: sanitizedLastName,
+      emailChanged: nextEmail !== curEmail,
+      dateOfBirthUpdated: dobChanging,
     });
+    if (nextEmail !== curEmail && customerEmail.isCustomerEmailConfigured()) {
+      customerEmail
+        .sendEmailUpdatedNotice({
+          to: nextEmail,
+          username: curUsername,
+          newEmail: nextEmail,
+          oldEmail: curEmail,
+        })
+        .catch((e) => logger.error("[user] Gửi mail cập nhật email thất bại:", e));
+    }
     res.json({ message: "Cập nhật thông tin thành công" });
   } catch (err) {
     logger.error("Update profile error:", err);
     res.status(500).json({ error: "Lỗi cập nhật thông tin" });
+  } finally {
+    client.release();
   }
 }
 
@@ -402,13 +606,29 @@ export async function changeEmail(req: Request, res: Response): Promise<void> {
       res.status(409).json({ error: "Email đã được sử dụng" });
       return;
     }
+    const prevEmail = (
+      await pool.query(`SELECT email FROM ${ACCOUNT_TABLE} WHERE id = $1`, [userId])
+    ).rows[0]?.email as string | undefined;
+    const next = newEmail.trim().toLowerCase();
     await pool.query(
       `UPDATE ${ACCOUNT_TABLE} SET email = $1 WHERE id = $2`,
-      [newEmail.trim().toLowerCase(), userId]
+      [next, userId]
     );
     await auditService.logAuth("EMAIL_CHANGE", userId, req, {
       newEmail: newEmail.trim(),
     });
+    if (customerEmail.isCustomerEmailConfigured()) {
+      const u = await pool.query(`SELECT username FROM ${ACCOUNT_TABLE} WHERE id = $1`, [userId]);
+      const uname = String(u.rows[0]?.username ?? "");
+      customerEmail
+        .sendEmailUpdatedNotice({
+          to: next,
+          username: uname,
+          newEmail: next,
+          oldEmail: prevEmail ? String(prevEmail) : undefined,
+        })
+        .catch((e) => logger.error("[user] Gửi mail đổi email thất bại:", e));
+    }
     res.json({ message: "Cập nhật email thành công" });
   } catch (err) {
     logger.error("Change email error:", err);
@@ -510,7 +730,11 @@ export async function getReviews(req: Request, res: Response): Promise<void> {
 export async function getTransactions(req: Request, res: Response): Promise<void> {
   try {
     const userId = getUserId(req);
-    const accountId = parseInt(userId, 10);
+    const accountId = Number.parseInt(String(userId), 10);
+    if (!Number.isFinite(accountId)) {
+      res.status(400).json({ error: "Tài khoản không hợp lệ" });
+      return;
+    }
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
     const transactions = await walletService.getTransactions(accountId, limit);
     res.json({

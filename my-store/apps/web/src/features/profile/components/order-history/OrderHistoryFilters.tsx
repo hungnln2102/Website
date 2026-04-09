@@ -3,10 +3,8 @@ import { Search, Filter, X } from "lucide-react";
 export type OrderHistoryFiltersProps = {
   filterOrderId: string;
   setFilterOrderId: (v: string) => void;
-  filterAmountFrom: string;
-  setFilterAmountFrom: (v: string) => void;
-  filterAmountTo: string;
-  setFilterAmountTo: (v: string) => void;
+  filterProductName: string;
+  setFilterProductName: (v: string) => void;
   filterDateFrom: string;
   setFilterDateFrom: (v: string) => void;
   filterDateTo: string;
@@ -23,10 +21,8 @@ const inputDateClass = inputClass + " dark:[color-scheme:dark]";
 export function OrderHistoryFilters({
   filterOrderId,
   setFilterOrderId,
-  filterAmountFrom,
-  setFilterAmountFrom,
-  filterAmountTo,
-  setFilterAmountTo,
+  filterProductName,
+  setFilterProductName,
   filterDateFrom,
   setFilterDateFrom,
   filterDateTo,
@@ -41,7 +37,7 @@ export function OrderHistoryFilters({
 
   return (
     <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Mã đơn hàng</label>
           <div className="relative">
@@ -56,29 +52,19 @@ export function OrderHistoryFilters({
             />
           </div>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Số tiền từ</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={filterAmountFrom}
-            onChange={(e) => /^\d*$/.test(e.target.value) && setFilterAmountFrom(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, onFilter)}
-            placeholder="0"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Số tiền đến</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={filterAmountTo}
-            onChange={(e) => /^\d*$/.test(e.target.value) && setFilterAmountTo(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, onFilter)}
-            placeholder="10,000,000"
-            className={inputClass}
-          />
+        <div className="relative">
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Tên sản phẩm</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+            <input
+              type="text"
+              value={filterProductName}
+              onChange={(e) => setFilterProductName(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, onFilter)}
+              placeholder="Nhập tên sản phẩm..."
+              className={`${inputClass} pl-9 pr-3`}
+            />
+          </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Từ ngày</label>

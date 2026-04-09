@@ -57,10 +57,12 @@ export default function BestSellingPage({
     paginatedProducts,
     totalPages,
     totalCount,
+    loadMore,
   } = useProductSort({
     products: normalizedProducts,
     searchQuery,
     defaultSort: "best-selling",
+    rowsPerReveal: 2,
   });
 
   const seoMetadata = useMemo(
@@ -117,6 +119,7 @@ export default function BestSellingPage({
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          loadMore={loadMore}
           emptyIcon={TrendingUp}
           emptyTitle="Chưa có sản phẩm bán chạy"
           emptyMessage="Hiện chưa có sản phẩm nào đạt ngưỡng bán chạy trong hệ thống."

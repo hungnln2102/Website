@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { useState } from "react";
 import { ChevronLeft, AlertTriangle, Info, CheckCircle2, Youtube } from "lucide-react";
@@ -81,7 +81,7 @@ export default function AdobeGuidePage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
   const { data: categories = [] } = useQuery({

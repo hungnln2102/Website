@@ -20,6 +20,7 @@ import {
   registerUser,
   loginUser,
 } from "./services/auth.service";
+import { clearClientAuthStorage, persistClientTokens } from "./api/auth";
 
 interface LoginPageProps {
   onBack: () => void;
@@ -95,20 +96,32 @@ export default function LoginPage({ onBack, initialMode = "login" }: LoginPagePr
         return;
       }
 
-      // Khi server dùng httpOnly cookie (mavryk_at), không lưu token vào sessionStorage để tránh XSS
-      if (!result.useHttpOnlyCookie) {
-        if (result.accessToken) sessionStorage.setItem("accessToken", result.accessToken);
-        if (result.refreshToken) sessionStorage.setItem("refreshToken", result.refreshToken);
+      /** Lưu access/refresh cùng cặp storage với phiên user (session ưu tiên). */
+      if (result.accessToken || result.refreshToken) {
+        const stored = persistClientTokens(result.accessToken, result.refreshToken);
+        if (!stored) {
+          showNotification(
+            "Trình duyệt chặn lưu đăng nhập (cookies/storage). Tắt chế độ ẩn danh hoặc cho phép lưu trữ cho trang này.",
+            "error"
+          );
+          return;
+        }
       }
       setCaptchaRequired(false);
 
-      login({
+      const sessionSaved = login({
         id: result.user!.id,
         email: result.user!.email,
         username: result.user!.username,
         firstName: result.user!.firstName,
         lastName: result.user!.lastName,
+        ...(result.user?.roleCode ? { roleCode: result.user.roleCode } : {}),
       });
+      if (!sessionSaved) {
+        clearClientAuthStorage();
+        showNotification("Không thể lưu phiên đăng nhập. Kiểm tra quyền lưu trữ của trình duyệt.", "error");
+        return;
+      }
       // Xóa cache profile cũ để lần vào Tổng quan luôn gọi API lấy currentCycle đúng theo user vừa login
       queryClient.removeQueries({ queryKey: ["user-profile"] });
 

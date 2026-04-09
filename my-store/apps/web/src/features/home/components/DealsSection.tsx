@@ -1,9 +1,11 @@
 "use client";
 
-import { Flame, ArrowRight } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Flame, ArrowRight, ChevronDown } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import type { PromotionDto } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import { useCatalogGridColumnCount } from "@/features/catalog/hooks/useCatalogGridColumnCount";
 
 interface DealsSectionProps {
   promotions: PromotionDto[];
@@ -11,16 +13,33 @@ interface DealsSectionProps {
   onPromotionClick: (promotion: PromotionDto) => void;
 }
 
+const ROWS_PER_REVEAL = 2;
+
 export function DealsSection({ promotions, onProductClick, onPromotionClick }: DealsSectionProps) {
-  const promotionProducts = promotions.map((p) => ({
-    ...p,
-    id: String(p.id),
-    category_id: null,
-    full_description: null,
-    is_featured: false,
-    purchase_rules: null,
-    created_at: new Date().toISOString(),
-  }));
+  const gridCols = useCatalogGridColumnCount();
+  const [revealSteps, setRevealSteps] = useState(1);
+
+  useEffect(() => {
+    setRevealSteps(1);
+  }, [promotions.length]);
+
+  const promotionProducts = useMemo(
+    () =>
+      promotions.map((p) => ({
+        ...p,
+        id: String(p.id),
+        category_id: null,
+        full_description: null,
+        is_featured: false,
+        purchase_rules: null,
+        created_at: new Date().toISOString(),
+      })),
+    [promotions]
+  );
+
+  const cap = Math.min(promotionProducts.length, revealSteps * ROWS_PER_REVEAL * gridCols);
+  const visibleProducts = promotionProducts.slice(0, cap);
+  const remaining = promotionProducts.length - cap;
 
   const handleViewAll = () => {
     if (typeof window !== "undefined") {
@@ -35,7 +54,6 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
       <div className="relative overflow-hidden rounded-2xl border border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-rose-50/50 shadow-lg shadow-orange-500/10 dark:border-orange-900/40 dark:from-slate-900/95 dark:via-slate-900 dark:to-orange-950/30 dark:shadow-orange-950/20">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
         <div className="p-4 sm:p-5 lg:p-6">
-          {/* Header */}
           <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="relative flex shrink-0">
@@ -61,16 +79,15 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
             </div>
             <button
               onClick={handleViewAll}
-              className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-300 sm:self-center cursor-pointer"
+              className="group inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-300 sm:self-center"
             >
               <span>Xem tất cả ưu đãi</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
           </div>
 
-          {/* Grid đồng bộ với Sản Phẩm Mới & Tất cả sản phẩm */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {promotionProducts.map((product: any) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {visibleProducts.map((product: any) => (
               <div key={product.id} className="w-full sm:max-w-[210px]">
                 <ProductCard
                   {...product}
@@ -84,6 +101,19 @@ export function DealsSection({ promotions, onProductClick, onPromotionClick }: D
               </div>
             ))}
           </div>
+
+          {remaining > 0 ? (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setRevealSteps((s) => s + 1)}
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-orange-500 bg-white px-6 py-3 text-sm font-semibold text-orange-600 shadow-sm transition-colors hover:bg-orange-50 dark:border-orange-400 dark:bg-slate-900 dark:text-orange-400 dark:hover:bg-orange-950/40"
+              >
+                Xem thêm {remaining} ưu đãi
+                <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

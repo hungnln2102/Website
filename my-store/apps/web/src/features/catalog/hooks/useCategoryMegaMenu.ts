@@ -1,23 +1,31 @@
 import { useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategories, fetchProducts, type CategoryDto } from "@/lib/api";
+import { fetchCategories, fetchProducts, productsQueryKey, type CategoryDto } from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks";
 import { slugify } from "@/lib/utils";
 
 export type CategoryItem = { id: string; name: string; slug: string; icon?: string | null };
 
+export interface UseCategoryMegaMenuOpts {
+  /** Không chọn mặc định danh mục đầu — dùng cho sidebar trang chủ (chỉ hiện SP khi hover). */
+  noDefaultActive?: boolean;
+}
+
 export function useCategoryMegaMenu(
   propsCategories?: CategoryItem[] | null,
   propsSelectedCategory?: string | null,
-  hoveredCategorySlug: string | null = null
+  hoveredCategorySlug: string | null = null,
+  opts?: UseCategoryMegaMenuOpts
 ) {
+  const { user } = useAuth();
+  /** Luôn gọi query (đã cache từ trang chủ) để lấy `product_ids` — không phụ thuộc chỉ `propsCategories`. */
   const { data: fetchedCategories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
-    enabled: !propsCategories?.length,
   });
 
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 
@@ -31,10 +39,9 @@ export function useCategoryMegaMenu(
     }));
   }, [propsCategories, fetchedCategories]);
 
-  const activeHoveredSlug =
-    hoveredCategorySlug ??
-    propsSelectedCategory ??
-    (categories.length > 0 ? categories[0].slug : null);
+  const activeHoveredSlug = opts?.noDefaultActive
+    ? hoveredCategorySlug ?? propsSelectedCategory ?? null
+    : hoveredCategorySlug ?? propsSelectedCategory ?? (categories.length > 0 ? categories[0].slug : null);
 
   const filteredProducts = useMemo(() => {
     if (activeHoveredSlug == null) return [];
@@ -48,7 +55,7 @@ export function useCategoryMegaMenu(
     const filtered = allProducts.filter((p: { id: unknown }) =>
       productIds.has(String(p.id))
     );
-    return filtered.slice(0, 6).map((p: Record<string, unknown>) => ({
+    return filtered.slice(0, 24).map((p: Record<string, unknown>) => ({
       id: String(p.id),
       name: p.name,
       description: p.description ?? null,

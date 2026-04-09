@@ -7,7 +7,6 @@ import SiteHeader from "@/components/SiteHeader";
 import { useScroll } from "@/hooks/useScroll";
 import { slugify } from "@/lib/utils";
 import type { CategoryDto } from "@/lib/api";
-import { useAuth } from "@/features/auth/hooks";
 import { ROUTES } from "@/lib/constants";
 
 interface CatalogLayoutProps {
@@ -19,7 +18,6 @@ interface CatalogLayoutProps {
   searchPlaceholder?: string;
   products: any[];
   categories: CategoryDto[];
-  selectedCategory?: string | null;
 }
 
 export function CatalogLayout({
@@ -31,10 +29,8 @@ export function CatalogLayout({
   searchPlaceholder = "Tìm kiếm sản phẩm...",
   products,
   categories,
-  selectedCategory = null,
 }: CatalogLayoutProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
 
   const handleCategoryClick = (slug: string) => {
     window.history.pushState({}, "", ROUTES.category(slug));
@@ -71,22 +67,9 @@ export function CatalogLayout({
           }))}
           onProductClick={onProductClick}
           onCategoryClick={handleCategoryClick}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories.map((c: CategoryDto) => ({
-            id: String(c.id),
-            name: c.name,
-            slug: slugify(c.name),
-            icon: null,
-          }))}
-          selectedCategory={selectedCategory}
-          onSelectCategory={(slug) => {
-            if (slug) handleCategoryClick(slug);
-          }}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       {/* Main Content */}

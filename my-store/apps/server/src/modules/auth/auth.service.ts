@@ -16,7 +16,10 @@ const JWT_REFRESH_SECRET: string = _JWT_REFRESH_SECRET;
 export interface TokenPayload {
   userId: string;
   email: string;
+  /** CTV | CUSTOMER — phục vụ giỏ hàng; suy từ roleCode khi có. */
   role?: string;
+  /** MAVC, MAVL, MAVK, … khớp admin_orderlist / cột roles.code */
+  roleCode?: string;
 }
 
 export class AuthService {
@@ -84,6 +87,7 @@ export class AuthService {
         userId: decoded.userId,
         email: decoded.email,
         role: decoded.role,
+        roleCode: decoded.roleCode,
       };
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {

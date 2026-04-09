@@ -1,3 +1,4 @@
+export { HomeHeroCategoryBanner } from "./HomeHeroCategoryBanner";
 export { BackgroundEffects } from "./BackgroundEffects";
 export { DealsSection } from "./DealsSection";
 export { HomeSectionSkeleton } from "./HomeSectionSkeleton";

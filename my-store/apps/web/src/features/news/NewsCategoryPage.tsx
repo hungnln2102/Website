@@ -8,8 +8,8 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuBar from "@/components/MenuBar";
 import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
 import { generateBreadcrumbSchema } from "@/lib/seo";
@@ -31,10 +31,10 @@ export default function NewsCategoryPage({
   setSearchQuery,
 }: NewsCategoryPageProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 
@@ -133,15 +133,9 @@ export default function NewsCategoryPage({
           }))}
           onProductClick={onProductClick}
           onCategoryClick={(slug) => navigateAppRoute(ROUTES.category(slug))}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories as CategoryDto[]}
-          selectedCategory={null}
-          onSelectCategory={(slug) => navigateAppRoute(ROUTES.category(slug))}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -166,7 +160,7 @@ export default function NewsCategoryPage({
         </header>
 
         {articlesLoading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-56 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
             ))}
@@ -176,7 +170,7 @@ export default function NewsCategoryPage({
             Không tải được danh sách tin.
           </p>
         ) : (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {categoryArticles.map((article) => (
             <article
               key={article.id}
@@ -184,10 +178,10 @@ export default function NewsCategoryPage({
             >
               <div className={`h-1.5 w-full bg-gradient-to-r ${article.accentClass}`} aria-hidden="true" />
               <div
-                className={`relative h-30 w-full overflow-hidden ${
+                className={`relative w-full overflow-hidden ${
                   article.coverImageUrl
-                    ? 'bg-slate-900/90 dark:bg-slate-950'
-                    : `bg-gradient-to-br ${article.accentClass}`
+                    ? "bg-slate-900/90 dark:bg-slate-950"
+                    : `flex min-h-[7.5rem] items-center justify-center bg-gradient-to-br ${article.accentClass}`
                 }`}
                 aria-hidden="true"
               >
@@ -195,7 +189,7 @@ export default function NewsCategoryPage({
                   <img
                     src={article.coverImageUrl}
                     alt=""
-                    className="h-full w-full object-contain object-center"
+                    className="news-card-cover-img"
                     loading="lazy"
                   />
                 ) : (
@@ -230,7 +224,7 @@ export default function NewsCategoryPage({
                 <button
                   type="button"
                   onClick={() => navigateAppRoute(ROUTES.newsArticle(article.slug))}
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                 >
                   <span>Xem chi tiết bài viết</span>
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

@@ -124,18 +124,19 @@ export function formatCompoundProductName(item: {
 
 export type OrderFilters = {
   orderId: string;
-  amountFrom: string;
-  amountTo: string;
+  productName: string;
   dateFrom: string;
   dateTo: string;
 };
 
-export function filterOrders(orders: UserOrder[], applied: OrderFilters, getOrderTotalFn: (o: UserOrder) => number): UserOrder[] {
+export function filterOrders(orders: UserOrder[], applied: OrderFilters): UserOrder[] {
   return orders.filter((order) => {
     if (applied.orderId && !(order.id_order ?? "").toLowerCase().includes(applied.orderId.toLowerCase())) return false;
-    const total = getOrderTotalFn(order);
-    if (applied.amountFrom && total < Number(applied.amountFrom)) return false;
-    if (applied.amountTo && total > Number(applied.amountTo)) return false;
+    if (applied.productName) {
+      const q = applied.productName.toLowerCase().trim();
+      const hit = order.items.some((item) => formatCompoundProductName(item).toLowerCase().includes(q));
+      if (!hit) return false;
+    }
     if (applied.dateFrom) {
       const from = new Date(applied.dateFrom);
       if (new Date(order.order_date) < from) return false;

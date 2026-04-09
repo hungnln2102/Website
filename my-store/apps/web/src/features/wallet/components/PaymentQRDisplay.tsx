@@ -31,6 +31,9 @@ export function PaymentQRDisplay({
   isTestLoading,
   handleTestTopup,
 }: PaymentQRDisplayProps) {
+  /** Chỉ hiện nút test trong dev hoặc khi bật VITE_ENABLE_TOPUP_TEST=true (staging). */
+  const showTestTopupButton =
+    import.meta.env.DEV || import.meta.env.VITE_ENABLE_TOPUP_TEST === "true";
   const qrSrc = generateQRUrl();
   const [qrImageFailed, setQrImageFailed] = useState(false);
   useEffect(() => {
@@ -175,10 +178,9 @@ export function PaymentQRDisplay({
             Hủy
           </button>
 
-          {/* Nút test nạp tiền (development / demo) */}
-          {/* TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
-          {handleTestTopup && (
+          {showTestTopupButton && handleTestTopup && (
             <button
+              type="button"
               onClick={handleTestTopup}
               disabled={isTestLoading}
               className="flex-1 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 py-3 font-medium text-amber-400 transition-all hover:bg-amber-500/20 disabled:opacity-50"
@@ -193,7 +195,6 @@ export function PaymentQRDisplay({
               )}
             </button>
           )}
-          */}
         </div>
       </div>
     </div>

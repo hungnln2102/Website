@@ -1,11 +1,12 @@
 import express from "express";
 import { strictLimiter } from "../../shared/middleware/rate-limiter";
+import { optionalAuth } from "../../shared/middleware/auth";
 import * as productController from "./product.controller";
 import * as seoController from "./seo.controller";
 
 const router = express.Router();
 
-router.get("/products", productController.getProducts);
+router.get("/products", optionalAuth, productController.getProducts);
 router.get("/promotions", productController.getPromotions);
 router.get("/categories", productController.getCategories);
 router.get("/product-packages/:package", strictLimiter, productController.getProductPackagesHandler);

@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { reportWebVitals, measurePerformance } from '@/lib/performance/web-vitals';
 import { errorTracker } from '@/lib/error-tracking/error-tracker';
 import App from './App';
+import { AuthProvider } from '@/features/auth/hooks';
 import './index.css';
 
 // Retry function with exponential backoff
@@ -124,7 +125,9 @@ createRoot(document.getElementById('root')!).render(
         enableSystem
         storageKey="vite-ui-theme"
       >
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
         <Toaster />
       </ThemeProvider>
     </QueryClientProvider>

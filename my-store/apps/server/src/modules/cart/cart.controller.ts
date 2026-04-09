@@ -8,6 +8,7 @@ interface ReqUser {
   id?: number | string;
   userId?: string;
   role?: string;
+  roleCode?: string;
 }
 
 function getAccountId(req: Request): number | null {
@@ -18,10 +19,15 @@ function getAccountId(req: Request): number | null {
 }
 
 /** Chuẩn hóa price_type theo role: CUSTOMER chỉ retail|promo, CTV chỉ ctv. */
-function normalizePriceTypeByRole(role: string | undefined, priceType: string | undefined): cartService.CartPriceType {
+function normalizePriceTypeByRole(
+  role: string | undefined,
+  roleCode: string | undefined,
+  priceType: string | undefined,
+): cartService.CartPriceType {
   const r = (role ?? "").toUpperCase();
+  const c = (roleCode ?? "").toUpperCase().slice(0, 4);
   const p = (priceType ?? "retail").toLowerCase();
-  if (r === "CTV") return "ctv";
+  if (r === "CTV" || c === "MAVC") return "ctv";
   if (r === "CUSTOMER") return p === "promo" ? "promo" : "retail";
   return (p === "ctv" ? "ctv" : p === "promo" ? "promo" : "retail") as cartService.CartPriceType;
 }
@@ -104,7 +110,7 @@ export async function addItem(req: Request, res: Response) {
 
     const user = (req as Request & { user?: ReqUser }).user;
     const { variantId, quantity = 1, priceType, extraInfo } = req.body;
-    const effectivePriceType = normalizePriceTypeByRole(user?.role, priceType);
+    const effectivePriceType = normalizePriceTypeByRole(user?.role, user?.roleCode, priceType);
 
     const item = await cartService.addCartItem({
       accountId,
@@ -238,7 +244,7 @@ export async function syncCart(req: Request, res: Response) {
       ? items.map((it: { variantId: string; quantity?: number; priceType?: string; extraInfo?: unknown }) => ({
           variantId: it.variantId,
           quantity: it.quantity ?? 1,
-          priceType: normalizePriceTypeByRole(user?.role, it.priceType),
+          priceType: normalizePriceTypeByRole(user?.role, user?.roleCode, it.priceType),
           extraInfo: it.extraInfo,
         }))
       : [];

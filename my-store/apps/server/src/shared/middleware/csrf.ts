@@ -36,6 +36,10 @@ const EXEMPT_PATHS = [
   "/auth/captcha-required",
   "/auth/check-user",   // Rate limited, doesn't change state
   "/auth/sessions",     // Session management
+  // Password reset — public, rate-limited; CSRF cookie often blocked on HTTP when NODE_ENV=production
+  "/auth/forgot-password",
+  "/auth/verify-reset-otp",
+  "/auth/reset-password",
   // Payment webhooks use signature verification instead of CSRF
   "/payment/webhook",
   "/payment/callback",
@@ -59,6 +63,23 @@ function isExemptPath(path: string): boolean {
   return EXEMPT_PATHS.some(exempt => 
     path === exempt || path.startsWith(exempt + "/")
   );
+}
+
+/**
+ * Set Cookie "Secure" only when the browser connection is HTTPS (or proxy says so).
+ * Avoids dropping CSRF cookies on http://localhost when NODE_ENV=production.
+ * Override: CSRF_COOKIE_SECURE=true|false
+ */
+export function csrfCookieSecure(req: Request | undefined): boolean {
+  if (process.env.CSRF_COOKIE_SECURE === "true") return true;
+  if (process.env.CSRF_COOKIE_SECURE === "false") return false;
+  if (!req) return false;
+  if (req.secure) return true;
+  const xf = req.headers["x-forwarded-proto"];
+  if (typeof xf === "string" && xf.split(",")[0]?.trim().toLowerCase() === "https") {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -157,11 +178,13 @@ export const setCsrfToken = async (
   userId: string | null = null
 ): Promise<string> => {
   const token = await csrfService.generateToken(userId);
+  const req = res.req as Request | undefined;
+  const secure = csrfCookieSecure(req);
 
   // Set token in cookie (httpOnly: false so JavaScript can read it)
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: false, // Must be accessible to JavaScript
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "strict",
     maxAge: 60 * 60 * 1000, // 1 hour
     path: "/",
@@ -174,9 +197,11 @@ export const setCsrfToken = async (
  * Clear CSRF token on logout
  */
 export const clearCsrfToken = (res: Response): void => {
+  const req = res.req as Request | undefined;
+  const secure = csrfCookieSecure(req);
   res.clearCookie(CSRF_COOKIE_NAME, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "strict",
     path: "/",
   });

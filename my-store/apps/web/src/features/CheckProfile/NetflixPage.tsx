@@ -5,7 +5,7 @@ import { ServicesSidebar } from "./ServicesSidebar";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories, getApiBase } from "@/lib/api";
+import { fetchProducts, fetchCategories, getApiBase, productsQueryKey } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import {
   ShieldCheck,
@@ -203,7 +203,7 @@ export default function NetflixPage() {
   >(null);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
   const { data: categories = [] } = useQuery({

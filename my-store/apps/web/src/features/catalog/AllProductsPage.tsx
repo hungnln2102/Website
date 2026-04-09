@@ -53,9 +53,11 @@ export default function AllProductsPage({
     paginatedProducts,
     totalPages,
     totalCount,
+    loadMore,
   } = useProductSort({
     products: normalizedProducts,
     searchQuery,
+    rowsPerReveal: 2,
   });
 
   return (
@@ -96,6 +98,7 @@ export default function AllProductsPage({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        loadMore={loadMore}
         emptyIcon={Package}
         emptyTitle="Chưa có sản phẩm"
         emptyMessage="Hiện chưa có sản phẩm nào trong hệ thống."

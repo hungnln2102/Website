@@ -9,8 +9,9 @@ export {
 } from "./components";
 
 // Hooks
-export { useAuth } from "./hooks";
+export { AuthProvider, useAuth } from "./hooks";
 export type { User } from "./hooks";
 
 // Page
 export { default as LoginPage } from "./LoginPage";
+export { default as ForgotPasswordPage } from "./ForgotPasswordPage";

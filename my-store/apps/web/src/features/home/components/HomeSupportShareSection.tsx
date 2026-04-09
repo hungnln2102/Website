@@ -123,7 +123,7 @@ export function HomeSupportShareSection() {
           <button
             type="button"
             onClick={() => navigateAppRoute(ROUTES.news)}
-            className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+            className="cursor-pointer text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
           >
             Xem tất cả
           </button>
@@ -141,10 +141,10 @@ export function HomeSupportShareSection() {
               <button
                 type="button"
                 onClick={() => navigateAppRoute(ROUTES.newsArticle(activeArticle.slug))}
-                className="group relative block w-full overflow-hidden text-left"
+                className="group relative block w-full cursor-pointer overflow-hidden text-left"
                 aria-label={`Xem chi tiết bài viết ${activeArticle.title}`}
               >
-                <div className="relative aspect-video w-full overflow-hidden bg-slate-900/40 dark:bg-slate-950/60">
+                <div className="relative w-full overflow-hidden bg-slate-900/90 dark:bg-slate-950">
                   {activeArticle.coverImageUrl ? (
                     <img
                       src={activeArticle.coverImageUrl}
@@ -152,10 +152,10 @@ export function HomeSupportShareSection() {
                       loading="lazy"
                       decoding="async"
                       sizes="(min-width: 1280px) 640px, (min-width: 640px) 90vw, 100vw"
-                      className="absolute inset-0 h-full w-full object-contain object-center transition-transform duration-500 ease-out group-hover:scale-[1.01]"
+                      className="news-card-cover-img"
                     />
                   ) : (
-                    <>
+                    <div className="relative aspect-video w-full">
                       <div
                         className={`absolute inset-0 bg-gradient-to-br ${activeArticle.accentClass}`}
                         aria-hidden="true"
@@ -172,7 +172,7 @@ export function HomeSupportShareSection() {
                         decoding="async"
                         className="absolute inset-0 m-auto h-28 w-28 object-contain opacity-25 sm:h-32 sm:w-32"
                       />
-                    </>
+                    </div>
                   )}
                   {/* Logo shop — góc phải (dưới ảnh), luôn hiển thị */}
                   <img
@@ -218,7 +218,7 @@ export function HomeSupportShareSection() {
                   <button
                     type="button"
                     onClick={() => navigateAppRoute(ROUTES.newsArticle(activeArticle.slug))}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                   >
                     <span>Xem chi tiết bài viết</span>
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -243,7 +243,7 @@ export function HomeSupportShareSection() {
                     onClick={() => handleSelectArticle(article.id)}
                     aria-pressed={isActive}
                     aria-label={`${article.title}. ${article.publishedLabel}, ${article.category}.`}
-                    className={`group relative flex w-full items-start gap-3 px-3 py-3 text-left transition-colors sm:px-4 sm:py-3.5 ${
+                    className={`group relative flex w-full cursor-pointer items-start gap-3 px-3 py-3 text-left transition-colors sm:px-4 sm:py-3.5 ${
                       isActive
                         ? 'bg-blue-500/[0.07] dark:bg-blue-400/[0.09]'
                         : 'hover:bg-slate-50/90 dark:hover:bg-white/[0.04]'

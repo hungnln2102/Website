@@ -41,6 +41,7 @@ const BestSellingPage = lazyWithRetry(() => import("@/features/catalog/BestSelli
 const PromotionsPage = lazyWithRetry(() => import("@/features/catalog/PromotionsPage"));
 const AllProductsPage = lazyWithRetry(() => import("@/features/catalog/AllProductsPage"));
 const LoginPage = lazyWithRetry(() => import("@/features/auth/LoginPage"));
+const ForgotPasswordPage = lazyWithRetry(() => import("@/features/auth/ForgotPasswordPage"));
 const CartPage = lazyWithRetry(() => import("@/features/cart/CartPage"));
 const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage"));
 const TopupPage = lazyWithRetry(() => import("@/features/wallet/TopupPage"));
@@ -171,6 +172,15 @@ export default function App() {
           description: "Trang nạp tiền tài khoản để thanh toán nhanh hơn trên Mavryk Premium Store.",
           keywords: "nạp tiền tài khoản, ví khách hàng, Mavryk Premium Store",
           url: getCurrentUrl(ROUTES.topup),
+          type: "website" as const,
+          robots: "noindex, follow",
+        };
+      case "login-forgot":
+        return {
+          title: `Quên mật khẩu - ${APP_CONFIG.name}`,
+          description: "Đặt lại mật khẩu bằng mã OTP gửi qua email.",
+          keywords: "quên mật khẩu, đặt lại mật khẩu, OTP",
+          url: getCurrentUrl(ROUTES.forgotPassword),
           type: "website" as const,
           robots: "noindex, follow",
         };
@@ -342,6 +352,7 @@ export default function App() {
             setSearchQuery={setSearchQuery}
           />
         )}
+        {view === "login-forgot" && <ForgotPasswordPage onBack={handleBack} />}
         {view === "login" && (
           <LoginPage
             onBack={handleBack}
@@ -421,7 +432,7 @@ export default function App() {
           />
         )}
       </Suspense>
-      {view !== "login" && (
+      {view !== "login" && view !== "login-forgot" && (
         <Suspense fallback={null}>
           <FloatingLogo />
         </Suspense>

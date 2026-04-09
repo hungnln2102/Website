@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 
 export default function AboutPage() {
@@ -13,7 +13,7 @@ export default function AboutPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 

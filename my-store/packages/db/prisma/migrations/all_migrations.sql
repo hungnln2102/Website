@@ -203,6 +203,12 @@ VALUES ('maintenance_mode', 'off')
 ON CONFLICT (key) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
+-- customer.customer_profiles — cooldown đổi ngày sinh (365 ngày)
+-- -----------------------------------------------------------------------------
+ALTER TABLE customer.customer_profiles
+  ADD COLUMN IF NOT EXISTS date_of_birth_changed_at TIMESTAMPTZ;
+
+-- -----------------------------------------------------------------------------
 -- DONE
 -- -----------------------------------------------------------------------------
 -- Các migration khác (create tables, cart, fix_wallet_sequence, ...) có thể đã

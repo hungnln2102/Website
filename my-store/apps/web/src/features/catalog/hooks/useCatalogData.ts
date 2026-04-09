@@ -1,16 +1,18 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories, fetchPromotions } from "@/lib/api";
+import { fetchProducts, fetchCategories, fetchPromotions, productsQueryKey } from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks";
 
 export function useCatalogData() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const {
     data: products = [],
     isLoading: loadingProducts,
     error: productsError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 

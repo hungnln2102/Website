@@ -7,7 +7,7 @@ import {
   clearCartApi,
   getAuthToken,
 } from "@/lib/api";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAuth } from "@/features/auth/hooks";
 import type { CartItem } from "../types";
 
 export type { CartItem } from "../types";

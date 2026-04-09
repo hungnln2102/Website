@@ -86,7 +86,15 @@ function navigateCta(href: string) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-export default function BannerSlider() {
+interface BannerSliderProps {
+  /**
+   * Dùng trong hero có sidebar (lg+): banner kéo full chiều cao hàng flex,
+   * tránh khoảng trống dưới banner khi cột danh mục cao hơn.
+   */
+  fillRow?: boolean;
+}
+
+export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
   const fallback = useMemo(() => buildFallbackSlides(), []);
   const [slides, setSlides] = useState<BannerSlide[]>(fallback);
 
@@ -189,9 +197,13 @@ export default function BannerSlider() {
     return null;
   }
 
+  const heightClass = fillRow
+    ? "h-[240px] min-h-[240px] sm:h-[280px] sm:min-h-[280px] md:h-[320px] md:min-h-[320px] lg:h-full lg:min-h-[320px] lg:flex-1"
+    : "h-[240px] sm:h-[280px] md:h-[320px]";
+
   return (
     <section
-      className="group/banner relative flex h-[240px] w-full flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-xl sm:h-[280px] md:h-[320px]"
+      className={`group/banner relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-xl ${heightClass}`}
       aria-label="Banner quảng cáo"
       role="region"
     >

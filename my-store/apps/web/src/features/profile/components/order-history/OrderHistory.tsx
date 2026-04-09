@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X, ShoppingBag } from "lucide-react";
 import { fetchUserOrders, type UserOrder } from "@/lib/api";
 import { ITEMS_PER_PAGE } from "./constants";
-import {
-  getOrderTotal,
-  filterOrders,
-  type OrderFilters,
-} from "./utils";
+import { filterOrders, type OrderFilters } from "./utils";
 import { useOrderCountdown } from "./useOrderCountdown";
 import { OrderHistoryFilters } from "./OrderHistoryFilters";
 import { OrderHistoryTable } from "./OrderHistoryTable";
@@ -17,8 +13,7 @@ import { OrderDetailModal } from "./OrderDetailModal";
 
 const emptyFilters: OrderFilters = {
   orderId: "",
-  amountFrom: "",
-  amountTo: "",
+  productName: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -36,8 +31,7 @@ export function OrderHistory() {
   const now = useOrderCountdown();
 
   const [filterOrderId, setFilterOrderId] = useState("");
-  const [filterAmountFrom, setFilterAmountFrom] = useState("");
-  const [filterAmountTo, setFilterAmountTo] = useState("");
+  const [filterProductName, setFilterProductName] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [appliedFilters, setAppliedFilters] = useState<OrderFilters>(emptyFilters);
@@ -48,8 +42,7 @@ export function OrderHistory() {
   const handleFilter = () => {
     setAppliedFilters({
       orderId: filterOrderId.trim(),
-      amountFrom: filterAmountFrom.trim(),
-      amountTo: filterAmountTo.trim(),
+      productName: filterProductName.trim(),
       dateFrom: filterDateFrom,
       dateTo: filterDateTo,
     });
@@ -58,8 +51,7 @@ export function OrderHistory() {
 
   const handleClearFilters = () => {
     setFilterOrderId("");
-    setFilterAmountFrom("");
-    setFilterAmountTo("");
+    setFilterProductName("");
     setFilterDateFrom("");
     setFilterDateTo("");
     setAppliedFilters(emptyFilters);
@@ -67,7 +59,7 @@ export function OrderHistory() {
   };
 
   const hasActiveFilters = Object.values(appliedFilters).some((v) => v !== "");
-  const filteredOrders = filterOrders(allOrders, appliedFilters, getOrderTotal);
+  const filteredOrders = filterOrders(allOrders, appliedFilters);
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ITEMS_PER_PAGE));
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -92,10 +84,8 @@ export function OrderHistory() {
       <OrderHistoryFilters
         filterOrderId={filterOrderId}
         setFilterOrderId={setFilterOrderId}
-        filterAmountFrom={filterAmountFrom}
-        setFilterAmountFrom={setFilterAmountFrom}
-        filterAmountTo={filterAmountTo}
-        setFilterAmountTo={setFilterAmountTo}
+        filterProductName={filterProductName}
+        setFilterProductName={setFilterProductName}
         filterDateFrom={filterDateFrom}
         setFilterDateFrom={setFilterDateFrom}
         filterDateTo={filterDateTo}

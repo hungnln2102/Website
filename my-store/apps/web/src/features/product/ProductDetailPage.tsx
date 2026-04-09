@@ -8,7 +8,6 @@ import MenuBar from "@/components/MenuBar";
 import SiteHeader from "@/components/SiteHeader";
 import { MetaTags, StructuredData } from "@/components/SEO";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { useAuth } from "@/features/auth/hooks";
 import { useScroll } from "@/hooks/useScroll";
 import { fetchFormFields, type CategoryDto } from "@/lib/api";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
@@ -56,7 +55,6 @@ export default function ProductDetailPage({
   setSearchQuery,
 }: ProductDetailPageProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
   const {
     selectedPackage,
     selectedDuration,
@@ -349,24 +347,9 @@ export default function ProductDetailPage({
             window.history.pushState({}, "", ROUTES.category(categorySlug));
             window.dispatchEvent(new Event("popstate"));
           }}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories.map((category: CategoryDto) => ({
-            id: String(category.id),
-            name: category.name,
-            slug: slugify(category.name),
-            icon: null,
-          }))}
-          selectedCategory={null}
-          onSelectCategory={(categorySlug) => {
-            if (!categorySlug) return;
-            window.history.pushState({}, "", ROUTES.category(categorySlug));
-            window.dispatchEvent(new Event("popstate"));
-          }}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       <main

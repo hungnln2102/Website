@@ -132,3 +132,25 @@ export function sqlCtvPrice(
   / GREATEST(1 - COALESCE(${pctCtvExpr}::numeric, 0), 0.0001)
   / 1000) * 1000`;
 }
+
+/**
+ * Giá “sinh viên” (MAVS): bậc 2 dùng pct_stu nếu có, không thì pct_khách — giống admin_orderlist.
+ */
+export function sqlStudentPrice(
+  priceMaxExpr: string,
+  pctCtvExpr: string,
+  pctKhachExpr: string,
+  pctStuExpr: string,
+): string {
+  const secondMargin = `COALESCE(${pctStuExpr}::numeric, ${pctKhachExpr}::numeric)`;
+  return `ROUND(
+  (${priceMaxExpr})::numeric
+  / GREATEST(1 - COALESCE(${pctCtvExpr}::numeric, 0), 0.0001)
+  / GREATEST(1 - ${secondMargin}, 0.0001)
+  / 1000) * 1000`;
+}
+
+/** Giá vốn / nhập (MAVN): làm tròn nghìn trên cost. */
+export function sqlCostPriceRounded(priceMaxExpr: string): string {
+  return `ROUND((${priceMaxExpr})::numeric / 1000) * 1000`;
+}

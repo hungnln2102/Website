@@ -56,9 +56,12 @@ export default function PromotionsPage({
     paginatedProducts,
     totalPages,
     totalCount,
+    loadMore,
   } = useProductSort({
     products: normalizedPromotions,
     searchQuery,
+    rowsPerReveal: 2,
+    loadMoreItemLabel: "ưu đãi",
   });
 
   const seoMetadata = useMemo(
@@ -114,6 +117,7 @@ export default function PromotionsPage({
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          loadMore={loadMore}
           emptyIcon={Flame}
           emptyTitle="Chưa có chương trình khuyến mãi"
           emptyMessage="Hãy quay lại sau để xem các ưu đãi mới nhất."

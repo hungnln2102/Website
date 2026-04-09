@@ -8,8 +8,8 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuBar from "@/components/MenuBar";
 import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
 import { generateBreadcrumbSchema } from "@/lib/seo";
@@ -25,11 +25,11 @@ interface NewsPageProps {
 
 export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }: NewsPageProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<string>("Tất cả");
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 
@@ -175,15 +175,9 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
           }))}
           onProductClick={onProductClick}
           onCategoryClick={handleCategoryClick}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories as CategoryDto[]}
-          selectedCategory={null}
-          onSelectCategory={handleCategoryClick}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -204,7 +198,7 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
         {articlesLoading ? (
           <div className="space-y-6" aria-busy="true" aria-label="Đang tải tin tức">
             <div className="h-10 w-full max-w-md animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="h-64 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
               ))}
@@ -228,7 +222,7 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
                 key={category}
                 type="button"
                 onClick={() => setActiveCategory(category)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
                   isActive
                     ? "border-blue-500 bg-blue-600 text-white dark:border-blue-400 dark:bg-blue-500"
                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -248,23 +242,13 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
                 <button
                   type="button"
                   onClick={() => navigateAppRoute(ROUTES.newsCategory(slugify(category)))}
-                  className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                  className="cursor-pointer text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
                 >
                   Xem tất cả
                 </button>
               </div>
 
-              <div
-                className={`grid grid-cols-1 gap-4 ${
-                  (() => {
-                    const count = Math.min((groupedArticles[category] ?? []).length, 4);
-                    if (count <= 1) return '';
-                    if (count === 2) return 'sm:grid-cols-2';
-                    if (count === 3) return 'sm:grid-cols-2 lg:grid-cols-3';
-                    return 'sm:grid-cols-2 lg:grid-cols-4';
-                  })()
-                }`}
-              >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {(groupedArticles[category] ?? []).slice(0, 4).map((article) => (
                   <article
                     key={article.id}
@@ -272,10 +256,10 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
                   >
                     <div className={`h-1.5 w-full bg-gradient-to-r ${article.accentClass}`} aria-hidden="true" />
                     <div
-                      className={`relative h-30 w-full overflow-hidden ${
+                      className={`relative w-full overflow-hidden ${
                         article.coverImageUrl
-                          ? 'bg-slate-900/90 dark:bg-slate-950'
-                          : `bg-gradient-to-br ${article.accentClass}`
+                          ? "bg-slate-900/90 dark:bg-slate-950"
+                          : `flex min-h-[7.5rem] items-center justify-center bg-gradient-to-br ${article.accentClass}`
                       }`}
                       aria-hidden="true"
                     >
@@ -283,7 +267,7 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
                         <img
                           src={article.coverImageUrl}
                           alt=""
-                          className="h-full w-full object-contain object-center"
+                          className="news-card-cover-img"
                           loading="lazy"
                         />
                       ) : (
@@ -318,7 +302,7 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
                       <button
                         type="button"
                         onClick={() => navigateAppRoute(ROUTES.newsArticle(article.slug))}
-                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                        className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                       >
                         <span>Đọc bài viết</span>
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword, changeEmail, getSessions, revokeSession } from "@/lib/api";
+import { changePassword, getSessions, revokeSession } from "@/lib/api";
 import type { UserSessionDto } from "@/lib/api";
 import { Monitor, Trash2, Loader2, Check, AlertCircle } from "lucide-react";
 
@@ -25,11 +25,6 @@ export function SecuritySettings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
-
-  const [newEmail, setNewEmail] = useState("");
-  const [emailPassword, setEmailPassword] = useState("");
-  const [emailMessage, setEmailMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [emailLoading, setEmailLoading] = useState(false);
 
   const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
     queryKey: ["user-sessions"],
@@ -66,28 +61,6 @@ export function SecuritySettings() {
       setConfirmPassword("");
     } else {
       setPasswordMessage({ type: "error", text: res.error ?? "Đổi mật khẩu thất bại." });
-    }
-  };
-
-  const handleChangeEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailMessage(null);
-    if (!newEmail.trim() || !emailPassword) {
-      setEmailMessage({ type: "error", text: "Vui lòng nhập email mới và mật khẩu." });
-      return;
-    }
-    setEmailLoading(true);
-    const res = await changeEmail({
-      newEmail: newEmail.trim(),
-      password: emailPassword,
-    });
-    setEmailLoading(false);
-    if (res.success) {
-      setEmailMessage({ type: "success", text: res.message ?? "Cập nhật email thành công." });
-      setNewEmail("");
-      setEmailPassword("");
-    } else {
-      setEmailMessage({ type: "error", text: res.error ?? "Cập nhật email thất bại." });
     }
   };
 
@@ -159,54 +132,6 @@ export function SecuritySettings() {
           >
             {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             Đổi mật khẩu
-          </button>
-        </form>
-      </section>
-
-      {/* Đổi email */}
-      <section className="max-w-md space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Đổi email</h3>
-        <form onSubmit={handleChangeEmail} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Email mới</label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-              placeholder="email@example.com"
-              autoComplete="email"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Mật khẩu hiện tại</label>
-            <input
-              type="password"
-              value={emailPassword}
-              onChange={(e) => setEmailPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-              placeholder="Xác nhận bằng mật khẩu"
-              autoComplete="current-password"
-            />
-          </div>
-          {emailMessage && (
-            <p
-              className={`flex items-center gap-2 text-sm ${
-                emailMessage.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-              }`}
-            >
-              {emailMessage.type === "error" && <AlertCircle className="h-4 w-4 flex-shrink-0" />}
-              {emailMessage.type === "success" && <Check className="h-4 w-4 flex-shrink-0" />}
-              {emailMessage.text}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={emailLoading}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-semibold transition-colors dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-50"
-          >
-            {emailLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Cập nhật email
           </button>
         </form>
       </section>

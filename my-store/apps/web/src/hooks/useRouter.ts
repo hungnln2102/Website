@@ -17,6 +17,7 @@ export type View =
   | "renew-zoom"
   | "netflix"
   | "adobe-guide"
+  | "login-forgot"
   | "login"
   | "cart"
   | "profile"
@@ -62,6 +63,10 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
 
   if (path === "register")
     return { view: "login", slug: "register", parentPath: ROUTES.home };
+
+  const forgotPath = ROUTES.forgotPassword.replace(/^\/+|\/+$/g, "");
+  if (path === forgotPath || path === "forgot-password")
+    return { view: "login-forgot", slug: null, parentPath: ROUTES.login };
 
   const cartPath = ROUTES.cart.replace(/^\/+|\/+$/g, "");
   if (path === cartPath || path === "cart")

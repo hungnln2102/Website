@@ -1,61 +1,26 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Phone, ClipboardList, Menu, X, ShoppingCart } from "lucide-react";
+import { Phone, Menu, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import CategoryButton from "@/features/catalog/components/CategoryButton";
 import { useAuth } from "@/features/auth/hooks";
-import { getCartCount, getAuthToken } from "@/lib/api";
+import { CartHeaderButton } from "@/components/header/CartHeaderButton";
+import { UserMenu } from "@/components/header/UserMenu";
 import { MENU_ITEMS } from "./menu/menuConstants";
-import { ROUTES } from "@/lib/constants";
 
 interface MenuBarProps {
   isScrolled: boolean;
-  categories?: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    icon?: string | null;
-  }>;
-  selectedCategory?: string | null;
-  onSelectCategory?: (slug: string | null) => void;
 }
 
-export default function MenuBar({ 
-  isScrolled,
-  categories,
-  selectedCategory,
-  onSelectCategory
-}: MenuBarProps) {
+export default function MenuBar({ isScrolled }: MenuBarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
-
-    const handleCartUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<Array<{ quantity?: number }>>;
-      const items = customEvent.detail ?? [];
-      const count = Array.isArray(items) ? items.reduce((s, i) => s + (i.quantity ?? 1), 0) : 0;
-      setCartCount(count);
-    };
-
-    window.addEventListener("cart-updated", handleCartUpdate);
-
-    if (user) {
-      const token = getAuthToken();
-      getCartCount(token).then((res) => {
-        if (res.success && res.data != null) setCartCount(res.data.totalItems ?? 0);
-      });
-    } else {
-      setCartCount(0);
-    }
-
-    return () => window.removeEventListener("cart-updated", handleCartUpdate);
-  }, [user]);
+  }, []);
 
   // Close mobile menu on escape key
   useEffect(() => {
@@ -119,33 +84,12 @@ const handleMobileMenuClose = () => {
   setIsMobileMenuOpen(false);
 };
 
-  const handleCartClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      goToLogin();
-      handleMobileMenuClose();
-    }
-  };
-
-  const handleOrderHistoryClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      goToLogin();
-      handleMobileMenuClose();
-    }
-  };
-
-  const goToLogin = () => {
-    window.history.pushState({}, "", ROUTES.login);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  };
-
   return (
     <>
       <nav 
         id="navigation"
         ref={menuRef}
-        className={`sticky z-50 border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20 transition-all duration-500 ${
+        className={`sticky z-50 overflow-visible border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20 transition-all duration-500 ${
           isScrolled ? "top-[60px] sm:top-[64px] md:top-[68px]" : "top-[72px] sm:top-[76px] md:top-[80px]"
         }`}
         aria-label="Main navigation"
@@ -155,21 +99,8 @@ const handleMobileMenuClose = () => {
 
         <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-5 lg:px-8">
           <div className={`relative flex ${isScrolled ? "h-11" : "h-14"} items-center justify-between gap-3`}>
-            {/* Left side: DANH MỤC + Menu Items (Desktop) */}
-            <div className="hidden lg:flex items-center gap-0 flex-1 min-w-0">
-              {/* DANH MỤC - primary */}
-              <div className="flex shrink-0 items-stretch pr-2">
-                <CategoryButton
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={onSelectCategory}
-                />
-              </div>
-
-              {/* Divider */}
-              <div className="h-5 w-px shrink-0 bg-gray-200 dark:bg-slate-600 mx-1" aria-hidden />
-
-              {/* Menu Items - Desktop */}
+            {/* Desktop: menu trái */}
+            <div className="hidden min-w-0 flex-1 items-center lg:flex">
               <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar lg:gap-1">
                 {MENU_ITEMS.map((item) => (
                   <a
@@ -191,67 +122,21 @@ const handleMobileMenuClose = () => {
               </div>
             </div>
 
-            {/* Mobile/Tablet: Category Button */}
-            <div className="flex lg:hidden items-center gap-2.5 flex-1 min-w-0">
-              <div className="flex shrink-0">
-                <CategoryButton
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={onSelectCategory}
-                />
-              </div>
+            {/* Desktop: mé phải — giỏ + tài khoản */}
+            <div className="hidden shrink-0 items-center gap-0.5 border-l border-gray-200/80 pl-2 dark:border-slate-600 sm:gap-1 sm:pl-3 md:pl-4 lg:flex">
+              <CartHeaderButton />
+              <UserMenu user={user ?? undefined} onLogout={logout} />
             </div>
 
-            {/* Right side: Action buttons (Desktop) */}
-            <div className="hidden lg:flex shrink-0 items-center gap-2 ml-auto">
-              {/* Divider */}
-              <div className="h-5 w-px shrink-0 bg-gray-200 dark:bg-slate-600" aria-hidden />
+            {/* Mobile: spacer */}
+            <div className="min-w-0 flex-1 lg:hidden" aria-hidden="true" />
 
-              {/* Shopping Cart Icon */}
-              <a
-                href={user ? ROUTES.cart : "#"}
-                onClick={handleCartClick}
-                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
-                aria-label="Giỏ hàng"
-              >
-                <div className="relative">
-                  <ShoppingCart className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
-                  {user && cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
-                      {cartCount > 99 ? "99+" : cartCount}
-                    </span>
-                  )}
-                </div>
-                <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
-                  Giỏ hàng
-                </span>
-                <span className="absolute bottom-1.5 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 group-hover:w-[70%] dark:from-blue-400 dark:to-blue-500" />
-              </a>
-
-              <a
-                href={user ? ROUTES.profile : "#"}
-                onClick={(e) => {
-                  if (!user) handleOrderHistoryClick(e);
-                  else {
-                    e.preventDefault();
-                    window.history.pushState({}, "", ROUTES.profile);
-                    window.dispatchEvent(new PopStateEvent("popstate"));
-                  }
-                }}
-                className="group relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 py-2.5 transition-all duration-300 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 dark:hover:bg-slate-800/80 dark:hover:shadow-slate-900/50 active:scale-[0.98] min-h-[44px] lg:gap-1.5 lg:px-3"
-              >
-                <ClipboardList className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110 dark:text-slate-400 dark:group-hover:text-blue-400" />
-                <span className="text-sm font-semibold tracking-tight text-gray-700 transition-colors duration-300 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-300 whitespace-nowrap">
-                  Lịch sử đơn hàng
-                </span>
-                <span className="absolute bottom-1.5 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 group-hover:w-[70%] dark:from-blue-400 dark:to-blue-500" />
-              </a>
-
-            </div>
-
-            {/* Mobile: Menu button (moved to right) */}
-            <div className="flex lg:hidden shrink-0 items-center gap-2">
+            {/* Mobile: giỏ + tài khoản + menu */}
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 lg:hidden">
+              <CartHeaderButton />
+              <UserMenu user={user ?? undefined} onLogout={logout} />
               <button
+                type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className={`flex shrink-0 items-center justify-center rounded-xl p-2.5 transition-all duration-300 min-h-[44px] min-w-[44px] ${
                   isMobileMenuOpen
@@ -338,26 +223,6 @@ const handleMobileMenuClose = () => {
               {/* Footer Actions */}
               <div className="border-t border-gray-200/80 dark:border-slate-700/80 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-slate-900/50 px-4 py-5 space-y-2">
                 <a
-                  href={user ? ROUTES.cart : "#"}
-                  onClick={(e) => {
-                    handleCartClick(e);
-                    handleMobileMenuClose();
-                  }}
-                  className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
-                >
-                  <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-300">
-                    <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
-                    {user && cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
-                        {cartCount > 99 ? "99+" : cartCount}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-base font-semibold text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400 transition-colors duration-300">
-                    Giỏ hàng
-                  </span>
-                </a>
-                <a
                   href="#lien-he"
                   onClick={handleMobileMenuClose}
                   className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
@@ -367,26 +232,6 @@ const handleMobileMenuClose = () => {
                   </div>
                   <span className="text-base font-semibold text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400 transition-colors duration-300">
                     Hỗ trợ
-                  </span>
-                </a>
-                <a
-                  href={user ? ROUTES.profile : "#"}
-                  onClick={(e) => {
-                    if (!user) handleOrderHistoryClick(e);
-                    else {
-                      e.preventDefault();
-                      window.history.pushState({}, "", ROUTES.profile);
-                      window.dispatchEvent(new PopStateEvent("popstate"));
-                      handleMobileMenuClose();
-                    }
-                  }}
-                  className="group flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:from-blue-900/20 dark:hover:to-blue-900/10 dark:hover:shadow-blue-900/20 active:scale-[0.98] min-h-[52px]"
-                >
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-300">
-                    <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <span className="text-base font-semibold text-gray-700 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400 transition-colors duration-300">
-                    Lịch sử đơn hàng
                   </span>
                 </a>
               </div>

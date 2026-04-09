@@ -1,6 +1,48 @@
 import type { FieldErrors, RegisterFormData } from "../components/RegisterForm";
+import { ensureCsrfToken } from "../api/auth";
 import { getApiBase } from "@/lib/api";
 import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
+
+const POST_JSON_OPTS = { timeoutMs: 15000, retries: 1 } as const;
+
+async function jsonPostHeaders(forceRefreshCsrf = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const csrf = await ensureCsrfToken(forceRefreshCsrf);
+  if (csrf) headers["x-csrf-token"] = csrf;
+  return headers;
+}
+
+function isCsrfExpiredError(status: number, body: unknown): boolean {
+  if (status !== 403) return false;
+  const code = (body as { code?: string })?.code;
+  return typeof code === "string" && code.startsWith("CSRF_");
+}
+
+/**
+ * POST JSON + CSRF; nếu cookie CSRF còn nhưng Redis hết hạn → GET csrf-token lại và thử một lần.
+ */
+async function postJsonWithCsrfRetry(url: string, body: Record<string, unknown>): Promise<Response> {
+  const serialized = JSON.stringify(body);
+  let headers = await jsonPostHeaders(false);
+  let res = await fetchWithTimeoutAndRetry(
+    url,
+    { method: "POST", headers, credentials: "include", body: serialized },
+    POST_JSON_OPTS
+  );
+  const probe = await res
+    .clone()
+    .json()
+    .catch(() => ({}));
+  if (isCsrfExpiredError(res.status, probe)) {
+    headers = await jsonPostHeaders(true);
+    res = await fetchWithTimeoutAndRetry(
+      url,
+      { method: "POST", headers, credentials: "include", body: serialized },
+      POST_JSON_OPTS
+    );
+  }
+  return res;
+}
 
 /** Check if CAPTCHA is required */
 export const checkCaptchaRequired = async (): Promise<{
@@ -106,6 +148,7 @@ export const loginUser = async (data: {
     username: string;
     firstName: string;
     lastName: string;
+    roleCode?: string;
   };
 }> => {
   try {
@@ -140,5 +183,74 @@ export const loginUser = async (data: {
     };
   } catch {
     return { ok: false, error: "Không thể kết nối đến server!" };
+  }
+};
+
+/** Gửi mã OTP đặt lại mật khẩu (email hoặc tên đăng nhập). */
+export const requestPasswordReset = async (
+  usernameOrEmail: string
+): Promise<{ ok: boolean; message?: string; error?: string }> => {
+  try {
+    const response = await postJsonWithCsrfRetry(`${getApiBase()}/api/auth/forgot-password`, {
+      usernameOrEmail: usernameOrEmail.trim(),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: typeof result.error === "string" ? result.error : "Không thể gửi mã xác minh",
+      };
+    }
+    return { ok: true, message: typeof result.message === "string" ? result.message : undefined };
+  } catch {
+    return { ok: false, error: "Không thể kết nối đến server" };
+  }
+};
+
+/** Xác minh OTP trước bước đặt mật khẩu (không xóa mã trên server). */
+export const verifyPasswordResetOtp = async (data: {
+  usernameOrEmail: string;
+  otp: string;
+}): Promise<{ ok: boolean; message?: string; error?: string }> => {
+  try {
+    const response = await postJsonWithCsrfRetry(`${getApiBase()}/api/auth/verify-reset-otp`, {
+      usernameOrEmail: data.usernameOrEmail.trim(),
+      otp: data.otp.trim().replace(/\s/g, ""),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: typeof result.error === "string" ? result.error : "Mã OTP không hợp lệ",
+      };
+    }
+    return { ok: true, message: typeof result.message === "string" ? result.message : undefined };
+  } catch {
+    return { ok: false, error: "Không thể kết nối đến server" };
+  }
+};
+
+/** Xác minh OTP và đặt mật khẩu mới (`usernameOrEmail` trùng bước gửi mã). */
+export const resetPasswordWithOtp = async (data: {
+  usernameOrEmail: string;
+  otp: string;
+  newPassword: string;
+}): Promise<{ ok: boolean; message?: string; error?: string }> => {
+  try {
+    const response = await postJsonWithCsrfRetry(`${getApiBase()}/api/auth/reset-password`, {
+      usernameOrEmail: data.usernameOrEmail.trim(),
+      otp: data.otp.trim(),
+      newPassword: data.newPassword,
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: typeof result.error === "string" ? result.error : "Đặt lại mật khẩu thất bại",
+      };
+    }
+    return { ok: true, message: typeof result.message === "string" ? result.message : undefined };
+  } catch {
+    return { ok: false, error: "Không thể kết nối đến server" };
   }
 };

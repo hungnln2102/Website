@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { LogIn, LogOut, User, ChevronDown, Wallet } from "lucide-react";
-import { ModeToggle } from "@/components/mode-toggle";
+import { LogIn, LogOut, User, ChevronDown, Wallet, ShoppingBag } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
 interface AuthUser {
@@ -39,9 +38,9 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
   };
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 md:gap-4">
+    <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5 md:gap-3">
       {user ? (
-        <div ref={userMenuRef} className="relative">
+        <div ref={userMenuRef} className="relative shrink-0">
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-2 py-2 transition-all duration-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 min-h-[36px] sm:min-h-[40px] sm:gap-2 sm:px-3"
@@ -64,7 +63,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           </button>
 
           {isUserMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-200 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div className="absolute right-0 top-full z-[200] mt-2 w-56 rounded-xl border border-gray-200 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-800">
               <div className="border-b border-gray-100 px-4 py-3 dark:border-slate-700">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {user.lastName} {user.firstName}
@@ -78,6 +77,13 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
                 >
                   <User className="h-4 w-4" />
                   Tài khoản của tôi
+                </button>
+                <button
+                  onClick={() => navigate(`${ROUTES.profile}?tab=orders`)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  <ShoppingBag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  Lịch sử đơn hàng
                 </button>
                 <button
                   onClick={() => navigate(ROUTES.topup)}
@@ -109,9 +115,6 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           </span>
         </button>
       )}
-      <div className="flex shrink-0" aria-hidden="true">
-        <ModeToggle />
-      </div>
     </div>
   );
 }

@@ -3,6 +3,17 @@
     "neural-memory": {
       "command": "nmem-mcp",
       "args": []
+    },
+    "admin-store-skills-fs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "../.agents",
+        "../admin_orderlist/.agents",
+        ".agent"
+      ]
     }
   }
 }
+

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Receipt, X } from "lucide-react";
 import { fetchUserTransactions } from "@/lib/api";
@@ -21,7 +22,6 @@ function formatVnd(v: number): string {
   return `${v.toLocaleString("vi-VN")}đ`;
 }
 
-/** Giao dịch dùng Mcoin (Ví Mcoin) → số tiền hiển thị Mcoin; còn lại (QR/chuyển khoản) → VND */
 function isMcoinTransaction(t: WalletTransactionDto): boolean {
   const m = (t.method ?? "").toLowerCase();
   return (
@@ -33,16 +33,13 @@ function isMcoinTransaction(t: WalletTransactionDto): boolean {
   );
 }
 
-/** Số dư trong lịch sử giao dịch luôn hiển thị theo Mcoin (đơn vị ví) */
-function formatBalance(_t: WalletTransactionDto, balanceAfter: number | undefined): string {
+function formatBalance(balanceAfter: number | undefined): string {
   return formatMcoin(balanceAfter ?? 0);
 }
 
-function formatAmount(t: WalletTransactionDto): string {
+function formatAmountSigned(t: WalletTransactionDto): string {
   const sign = t.direction === "DEBIT" ? "-" : "+";
-  const value = isMcoinTransaction(t)
-    ? formatMcoin(t.amount)
-    : formatVnd(t.amount);
+  const value = isMcoinTransaction(t) ? formatMcoin(t.amount) : formatVnd(t.amount);
   return `${sign}${value}`;
 }
 
@@ -61,42 +58,84 @@ function getMethodLabel(method: string | null): string {
   return map[method] ?? method;
 }
 
-/** Trạng thái = type từ wallet_transactions (PURCHASE, TOPUP, REFUND, ADJUST) */
 function getTypeLabel(type: string | null): string {
   if (!type) return "—";
   const map: Record<string, string> = {
-    PURCHASE: "Thanh toán",
-    TOPUP: "Nạp tiền",
-    REFUND: "Hoàn tiền",
+    PURCHASE: "Thanh toán đơn",
+    TOPUP: "Nạp Mcoin",
+    REFUND: "Hoàn Mcoin",
     ADJUST: "Điều chỉnh",
   };
   return map[type] ?? type;
 }
 
-function getTypeCls(type: string | null): string {
-  if (type === "TOPUP" || type === "REFUND") return "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
-  if (type === "PURCHASE") return "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30";
-  if (type === "ADJUST") return "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-600/30 dark:text-slate-400 dark:border-slate-500/30";
-  return "bg-slate-100 text-slate-600 dark:bg-slate-600/30 dark:text-slate-400";
+function normType(t: WalletTransactionDto): string {
+  return (t.type || "").toUpperCase();
+}
+
+function isOrderPayment(t: WalletTransactionDto): boolean {
+  return normType(t) === "PURCHASE";
+}
+
+function isTopupSection(t: WalletTransactionDto): boolean {
+  return (t.direction || "").toUpperCase() === "CREDIT";
+}
+
+const tableShell =
+  "overflow-hidden rounded-2xl border border-gray-200 bg-gray-50/90 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/35 dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]";
+
+const thClass =
+  "px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-600 bg-gray-100 dark:text-slate-400 dark:bg-slate-800/90";
+
+const tdClass = "px-3 py-3 text-sm text-gray-800 dark:text-slate-200";
+
+const badgeTopup =
+  "inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-600 border border-emerald-500/25 dark:text-emerald-300";
+const badgeSpend =
+  "inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-rose-500/15 text-rose-600 border border-rose-500/25 dark:text-rose-300";
+const badgeOrder =
+  "inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-500/15 text-blue-600 border border-blue-500/25 dark:text-blue-300";
+
+function typeBadgeClass(t: WalletTransactionDto): string {
+  if (isOrderPayment(t)) return badgeOrder;
+  if (isTopupSection(t)) return badgeTopup;
+  return badgeSpend;
+}
+
+function amountClassName(t: WalletTransactionDto): string {
+  const credit = (t.direction || "").toUpperCase() === "CREDIT";
+  return credit
+    ? `${tdClass} font-semibold text-emerald-500 dark:text-emerald-400`
+    : `${tdClass} font-semibold text-rose-500 dark:text-rose-400`;
 }
 
 export function TransactionHistory() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["user-transactions"],
+    queryKey: ["user-transactions", 100],
     queryFn: async () => {
-      const res = await fetchUserTransactions();
-      if (!res.success || !res.data) return [];
-      return res.data;
+      const res = await fetchUserTransactions({ limit: 100 });
+      if (!res.success) {
+        throw new Error(res.error || "Không thể tải lịch sử giao dịch");
+      }
+      return res.data ?? [];
     },
   });
-  const transactions: WalletTransactionDto[] = data ?? [];
+
+  const sortedRows = useMemo(() => {
+    const list = data ?? [];
+    return [...list].sort((a, b) => {
+      const tb = new Date(b.createdAt).getTime();
+      const ta = new Date(a.createdAt).getTime();
+      return tb - ta;
+    });
+  }, [data]);
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="mb-5">
+      <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lịch sử giao dịch</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Các giao dịch Mcoin của bạn: nạp tiền, thanh toán đơn hàng, hoàn tiền
+          Nạp Mcoin, tiêu Mcoin và thanh toán đơn hàng bằng ví — gom trong một bảng, mới nhất lên trên.
         </p>
       </div>
 
@@ -110,111 +149,101 @@ export function TransactionHistory() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
             <X className="h-8 w-8 text-red-500 dark:text-red-400" />
           </div>
-          <p className="text-red-500 dark:text-red-400">Không thể tải lịch sử giao dịch. Vui lòng thử lại.</p>
+          <p className="text-red-500 dark:text-red-400">
+            {error instanceof Error ? error.message : "Không thể tải lịch sử giao dịch. Vui lòng thử lại."}
+          </p>
         </div>
-      ) : transactions.length === 0 ? (
-        <div className="py-12 text-center">
-          <Receipt className="w-16 h-16 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
+      ) : sortedRows.length === 0 ? (
+        <div className="rounded-2xl border border-gray-200 bg-gray-50/90 py-12 text-center dark:border-slate-700/80 dark:bg-slate-900/35">
+          <Receipt className="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-slate-600" />
           <p className="text-gray-500 dark:text-slate-400">Bạn chưa có giao dịch nào</p>
         </div>
       ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900/30">
-            <table className="w-full text-sm text-left">
+        <section className={tableShell} aria-labelledby="tx-all-heading">
+          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-100/90 to-transparent px-4 py-4 dark:border-slate-700/70 dark:from-slate-800/50 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 id="tx-all-heading" className="text-base font-bold text-gray-900 dark:text-white">
+                Tất cả giao dịch
+              </h3>
+              <span className="rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-slate-700/80 dark:text-slate-300">
+                {sortedRows.length} giao dịch
+              </span>
+            </div>
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[920px] text-left">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/80">
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Mã giao dịch</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Số dư</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Số tiền</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Thời gian thanh toán</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Phương thức</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Khuyến mãi</th>
-                  <th className="px-3 py-3.5 font-semibold text-gray-600 dark:text-slate-300">Trạng thái</th>
+                <tr className="border-b border-gray-200 dark:border-slate-700/60">
+                  <th className={thClass}>Thời gian</th>
+                  <th className={thClass}>Mã giao dịch</th>
+                  <th className={thClass}>Mã đơn</th>
+                  <th className={thClass}>Số tiền</th>
+                  <th className={thClass}>Số dư sau</th>
+                  <th className={thClass}>Loại</th>
+                  <th className={thClass}>Phương thức</th>
+                  <th className={thClass}>Khuyến mãi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
-                {transactions.map((t) => (
-                  <tr
-                    key={t.id}
-                    className="bg-white transition-colors hover:bg-blue-50/30 dark:bg-slate-900/50 dark:hover:bg-slate-800/50"
-                  >
-                    <td className="px-3 py-3.5 font-mono text-xs text-gray-900 dark:text-white">
-                      {t.id}
-                    </td>
-                    <td className="px-3 py-3.5 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatBalance(t, t.balanceAfter)}
-                    </td>
-                    <td
-                      className={`px-3 py-3.5 font-semibold whitespace-nowrap ${
-                        t.direction === "DEBIT" ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
-                      }`}
-                    >
-                      {formatAmount(t)}
-                    </td>
-                    <td className="px-3 py-3.5 text-gray-600 dark:text-slate-400">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700/40">
+                {sortedRows.map((t) => (
+                  <tr key={t.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/30">
+                    <td className={`${tdClass} whitespace-nowrap text-gray-500 dark:text-slate-400`}>
                       {formatDateTime(t.createdAt)}
                     </td>
-                    <td className="px-3 py-3.5 text-gray-600 dark:text-slate-400">
-                      {getMethodLabel(t.method)}
+                    <td className={`${tdClass} font-mono text-xs text-gray-900 dark:text-white`}>{t.id}</td>
+                    <td className={`${tdClass} font-mono text-xs text-amber-800 dark:text-amber-200/90`}>
+                      {t.orderId ?? "—"}
                     </td>
-                    <td className="px-3 py-3.5 text-gray-600 dark:text-slate-400">
-                      {t.promoCode ?? "—"}
+                    <td className={amountClassName(t)}>{formatAmountSigned(t)}</td>
+                    <td className={`${tdClass} whitespace-nowrap font-medium`}>{formatBalance(t.balanceAfter)}</td>
+                    <td className={tdClass}>
+                      <span className={typeBadgeClass(t)}>{getTypeLabel(t.type)}</span>
                     </td>
-                    <td className="px-3 py-3.5">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getTypeCls(t.type)}`}>
-                        {getTypeLabel(t.type)}
-                      </span>
-                    </td>
+                    <td className={`${tdClass} text-gray-600 dark:text-slate-400`}>{getMethodLabel(t.method)}</td>
+                    <td className={`${tdClass} text-gray-600 dark:text-slate-400`}>{t.promoCode ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Mobile cards */}
-          <div className="space-y-3 md:hidden">
-            {transactions.map((t) => (
+          <div className="space-y-3 p-4 md:hidden">
+            {sortedRows.map((t) => (
               <div
                 key={t.id}
-                className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
+                className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/40"
               >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-mono text-sm font-semibold text-gray-900 dark:text-white">
-                    {t.id}
-                  </span>
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getTypeCls(t.type)}`}>
-                    {getTypeLabel(t.type)}
-                  </span>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-gray-900 dark:text-white">{t.id}</span>
+                  <span className={typeBadgeClass(t)}>{getTypeLabel(t.type)}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  <span className="text-gray-500 dark:text-slate-400">Số dư sau</span>
-                  <span className="font-medium text-gray-900 dark:text-white text-right">
-                    {formatBalance(t, t.balanceAfter)}
-                  </span>
-                  <span className="text-gray-500 dark:text-slate-400">{isMcoinTransaction(t) ? "Mcoin" : "Số tiền"}</span>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <span className="text-gray-500 dark:text-slate-500">Thời gian</span>
+                  <span className="text-right text-gray-800 dark:text-slate-300">{formatDateTime(t.createdAt)}</span>
+                  <span className="text-gray-500 dark:text-slate-500">Mã đơn</span>
+                  <span className="text-right font-mono text-amber-800 dark:text-amber-200/90">{t.orderId ?? "—"}</span>
+                  <span className="text-gray-500 dark:text-slate-500">Số tiền</span>
                   <span
-                    className={`font-semibold text-right ${
-                      t.direction === "DEBIT" ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                    className={`text-right font-semibold ${
+                      (t.direction || "").toUpperCase() === "CREDIT"
+                        ? "text-emerald-500 dark:text-emerald-400"
+                        : "text-rose-500 dark:text-rose-400"
                     }`}
                   >
-                    {formatAmount(t)}
+                    {formatAmountSigned(t)}
                   </span>
-                  <span className="text-gray-500 dark:text-slate-400">Thời gian thanh toán</span>
-                  <span className="text-gray-700 dark:text-slate-300 text-right">{formatDateTime(t.createdAt)}</span>
-                  <span className="text-gray-500 dark:text-slate-400">Phương thức</span>
-                  <span className="text-gray-700 dark:text-slate-300 text-right">{getMethodLabel(t.method)}</span>
-                  {t.promoCode && (
-                    <>
-                      <span className="text-gray-500 dark:text-slate-400">Khuyến mãi</span>
-                      <span className="text-gray-700 dark:text-slate-300 text-right">{t.promoCode}</span>
-                    </>
-                  )}
+                  <span className="text-gray-500 dark:text-slate-500">Số dư sau</span>
+                  <span className="text-right font-medium text-gray-900 dark:text-slate-200">{formatBalance(t.balanceAfter)}</span>
+                  <span className="text-gray-500 dark:text-slate-500">Phương thức</span>
+                  <span className="text-right text-gray-600 dark:text-slate-400">{getMethodLabel(t.method)}</span>
+                  <span className="text-gray-500 dark:text-slate-500">Khuyến mãi</span>
+                  <span className="text-right text-gray-600 dark:text-slate-400">{t.promoCode ?? "—"}</span>
                 </div>
               </div>
             ))}
           </div>
-        </>
+        </section>
       )}
     </div>
   );

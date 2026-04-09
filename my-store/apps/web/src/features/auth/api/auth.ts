@@ -5,9 +5,89 @@
 import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import { getApiBase } from "@/lib/api/client";
 
+/** Phải khớp key lưu user trong useAuth (phiên tab). */
+export const MAVRYK_AUTH_SESSION_KEY = "mavryk_auth_session";
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.sessionStorage.getItem("accessToken");
+  return (
+    window.sessionStorage.getItem("accessToken") ||
+    window.localStorage.getItem("accessToken")
+  );
+}
+
+/** Xóa toàn bộ dữ liệu đăng nhập client. */
+export function clearClientAuthStorage(): void {
+  if (typeof window === "undefined") return;
+  for (const s of [window.sessionStorage, window.localStorage]) {
+    s.removeItem("accessToken");
+    s.removeItem("refreshToken");
+    s.removeItem("auth_data");
+    s.removeItem(MAVRYK_AUTH_SESSION_KEY);
+  }
+}
+
+const STORAGE_PROBE_KEY = "__mavryk_storage_probe__";
+
+function probeStorageWritable(store: Storage): boolean {
+  try {
+    const t = String(Date.now());
+    store.setItem(STORAGE_PROBE_KEY, t);
+    if (store.getItem(STORAGE_PROBE_KEY) !== t) return false;
+    store.removeItem(STORAGE_PROBE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Cặp storage: ưu tiên phiên tab (sessionStorage), lỗi thì localStorage (Safari private / quota).
+ */
+export function getSessionAuthStoragePair(): { primary: Storage; secondary: Storage } {
+  if (typeof window === "undefined") {
+    throw new Error("getSessionAuthStoragePair: no window");
+  }
+
+  if (probeStorageWritable(window.sessionStorage)) {
+    return { primary: window.sessionStorage, secondary: window.localStorage };
+  }
+  if (probeStorageWritable(window.localStorage)) {
+    return { primary: window.localStorage, secondary: window.sessionStorage };
+  }
+  throw new Error("Không ghi được storage trên trình duyệt này.");
+}
+
+/**
+ * Lưu Bearer + refresh vào cùng cặp storage với mavryk_auth_session (chỉ phiên tab).
+ * @returns false nếu không ghi được storage (trình duyệt chặn).
+ */
+export function persistClientTokens(
+  accessToken: string | undefined,
+  refreshToken: string | undefined
+): boolean {
+  if (typeof window === "undefined") return false;
+  let primary: Storage;
+  let secondary: Storage;
+  try {
+    ({ primary, secondary } = getSessionAuthStoragePair());
+  } catch {
+    return false;
+  }
+
+  try {
+    if (accessToken) primary.setItem("accessToken", accessToken);
+    else primary.removeItem("accessToken");
+
+    if (refreshToken) primary.setItem("refreshToken", refreshToken);
+    else primary.removeItem("refreshToken");
+
+    secondary.removeItem("accessToken");
+    secondary.removeItem("refreshToken");
+  } catch {
+    return false;
+  }
+  return true;
 }
 
 export const AUTH_EXPIRED_EVENT = "auth:session-expired";
@@ -51,9 +131,7 @@ export async function ensureCsrfToken(forceRefresh: boolean = false): Promise<st
 
 function handleUnauthorized(): void {
   if (typeof window !== "undefined") {
-    window.sessionStorage.removeItem("accessToken");
-    window.sessionStorage.removeItem("refreshToken");
-    window.sessionStorage.removeItem("auth_data");
+    clearClientAuthStorage();
     window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
   }
 }

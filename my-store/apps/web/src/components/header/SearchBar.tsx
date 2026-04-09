@@ -13,6 +13,8 @@ interface SearchBarProps {
   onProductClick?: (slug: string) => void;
   onCategoryClick?: (slug: string) => void;
   isScrolled?: boolean;
+  /** Cụm header + giỏ: bỏ flex-1 / margin ngang để khớp layout cha */
+  embeddedInHeader?: boolean;
 }
 
 export function SearchBar({
@@ -24,6 +26,7 @@ export function SearchBar({
   onProductClick,
   onCategoryClick,
   isScrolled = false,
+  embeddedInHeader = false,
 }: SearchBarProps) {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -59,13 +62,14 @@ export function SearchBar({
     void import("@/components/SearchDropdown");
   };
 
-  return (
-    <div
-      ref={searchContainerRef}
-      className={`relative mx-1 flex min-w-0 flex-1 max-w-full transition-all duration-500 z-[100] sm:mx-2 md:mx-4 md:max-w-md ${
+  const rootLayout = embeddedInHeader
+    ? "relative z-[100] flex min-w-0 w-full max-w-full transition-all duration-500"
+    : `relative mx-1 flex min-w-0 flex-1 max-w-full transition-all duration-500 z-[100] sm:mx-2 md:mx-4 md:max-w-md ${
         isScrolled ? "md:max-w-lg" : ""
-      }`}
-    >
+      }`;
+
+  return (
+    <div ref={searchContainerRef} className={rootLayout}>
       <div className="relative w-full group">
         {/* Glow effect for light mode */}
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 rounded-xl opacity-0 group-focus-within:opacity-20 blur-sm transition-opacity duration-300 dark:hidden" />

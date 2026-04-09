@@ -16,6 +16,10 @@ export type ProductDto = {
   image_alt?: string | null;
   image_url: string;
   base_price: number;
+  /** Giá thấp nhất trong gói (hiển thị "TỪ … đ"). */
+  from_price?: number;
+  /** MAVL / MAVC / … khớp phản hồi GET /products. */
+  price_scope?: string;
   discount_percentage: number;
   has_promo?: boolean;
   is_active?: boolean;
@@ -190,6 +194,8 @@ export type UserProfileDto = {
   firstName: string | null;
   lastName: string | null;
   dateOfBirth: string | null;
+  /** ISO — sau thời điểm này mới được đổi ngày sinh (cooldown 365 ngày). Chỉ có khi đang trong thời gian khóa. */
+  dateOfBirthNextEditableAt?: string | null;
   createdAt: string;
   balance: number;
   customerType: string;

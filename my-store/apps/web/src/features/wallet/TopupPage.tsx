@@ -6,8 +6,17 @@ import { toast } from "sonner";
 import { Wallet, AlertCircle } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import { fetchProducts, fetchCategories, fetchTopupPackages, fetchTopupTransferCode, getAuthToken, authFetch, getApiBase } from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks";
+import {
+  fetchProducts,
+  fetchCategories,
+  fetchTopupPackages,
+  fetchTopupTransferCode,
+  getAuthToken,
+  authFetch,
+  getApiBase,
+  productsQueryKey,
+} from "@/lib/api";
 import { useScroll } from "@/hooks/useScroll";
 import { BANK_CONFIG, TOPUP_PACKAGES_FALLBACK, TOPUP_ICONS, TOPUP_COLORS, type TopupPackageItem } from "./constants";
 import { formatTopupCurrency, getSelectedAmount, getSelectedBonus, formatCustomAmountInput } from "./utils";
@@ -36,7 +45,10 @@ export default function TopupPage() {
   } | null>(null);
   const [countdown, setCountdown] = useState(5);
 
-  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  const { data: products = [] } = useQuery({
+    queryKey: productsQueryKey(user?.roleCode),
+    queryFn: fetchProducts,
+  });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   const { data: topupPackagesFromApi = [] } = useQuery({

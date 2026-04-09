@@ -6,15 +6,22 @@ import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
 import { getRegistrationCycleBounds } from "../../config/tier-cycle.config";
 import { loginAttemptsMap } from "../../config/redis";
-import { setCsrfToken, clearCsrfToken } from "../../shared/middleware/csrf";
+import { setCsrfToken, clearCsrfToken, csrfCookieSecure } from "../../shared/middleware/csrf";
 import { authService } from "./auth.service";
 import { auditService } from "../user/audit.service";
 import { refreshTokenService } from "./refresh-token.service";
 import { tokenBlacklistService } from "../../shared/services/token-blacklist.service";
 import { captchaService } from "./captcha.service";
 import { passwordHistoryService } from "./password-history.service";
+import * as passwordResetService from "../notification/password-reset.service";
+import {
+  jwtShoppingRoleFromPriceScope,
+  normalizeProductListPriceScope,
+} from "../../shared/utils/role-code";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
+const ROLES_TABLE = `${DB_SCHEMA.ROLES!.SCHEMA}.${DB_SCHEMA.ROLES!.TABLE}`;
+const COLS_ROLE = DB_SCHEMA.ROLES!.COLS as { ID: string; CODE: string };
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
 const COLS_PROFILE = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as {
   ACCOUNT_ID: string;
@@ -22,6 +29,7 @@ const COLS_PROFILE = DB_SCHEMA.CUSTOMER_PROFILES!.COLS as {
   FIRST_NAME: string;
   LAST_NAME: string;
   DATE_OF_BIRTH: string;
+  DATE_OF_BIRTH_CHANGED_AT: string;
   CREATED_AT: string;
   UPDATED_AT: string;
 };
@@ -265,9 +273,13 @@ export async function register(req: Request, res: Response): Promise<void> {
       birthDate &&
       /^\d{4}-\d{2}-\d{2}$/.test(birthDate) &&
       !Number.isNaN(new Date(birthDate).getTime());
+    const dobCh = COLS_PROFILE.DATE_OF_BIRTH_CHANGED_AT;
     await pool.query(
-      `INSERT INTO ${PROFILE_TABLE} (${COLS_PROFILE.ACCOUNT_ID}, ${COLS_PROFILE.TIER_ID}, ${COLS_PROFILE.FIRST_NAME}, ${COLS_PROFILE.LAST_NAME}, ${COLS_PROFILE.DATE_OF_BIRTH}, ${COLS_PROFILE.CREATED_AT}, ${COLS_PROFILE.UPDATED_AT})
-       VALUES ($1, 1, $2, $3, $4, NOW(), NOW())`,
+      `INSERT INTO ${PROFILE_TABLE} (
+         ${COLS_PROFILE.ACCOUNT_ID}, ${COLS_PROFILE.TIER_ID},
+         ${COLS_PROFILE.FIRST_NAME}, ${COLS_PROFILE.LAST_NAME}, ${COLS_PROFILE.DATE_OF_BIRTH},
+         ${dobCh}, ${COLS_PROFILE.CREATED_AT}, ${COLS_PROFILE.UPDATED_AT}
+       ) VALUES ($1, 1, $2, $3, $4, CASE WHEN $4 IS NOT NULL THEN NOW() ELSE NULL END, NOW(), NOW())`,
       [newUser.id, sanitizedFirstName, sanitizedLastName, birthDateValid ? birthDate : null]
     );
 
@@ -347,34 +359,18 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Step 1: Check if username exists (by username only)
-    const usernameCheck = await pool.query(
-      `SELECT 1 FROM ${ACCOUNT_TABLE} WHERE LOWER(username) = LOWER($1) LIMIT 1`,
-      [identifier]
-    );
-
-    if (usernameCheck.rows.length === 0) {
-      // username không tồn tại → không có userId, không cần ghi DB
-      await recordFailedAttempt(identifier, 0);
-      await captchaService.recordFailedAttempt(ip);
-      await auditService.logAuth("LOGIN_FAILED", null, req, { identifier, reason: "user_not_found" }, "failed");
-      res.status(401).json({
-        error: "Tài khoản không tồn tại, vui lòng đăng kí mới",
-        requireCaptcha: await captchaService.requiresCaptcha(ip),
-      });
-      return;
-    }
-
-    // Step 2: Get full user data for password verification
+    // Tìm tài khoản theo tên đăng nhập hoặc email (khớp nhãn form "Tài khoản/Email")
     const result = await pool.query(
       `SELECT a.id, a.username, a.email, a.password_hash, a.is_active,
               a.suspended_until, a.ban_reason, a.created_at,
               cp.first_name, cp.last_name,
-              COALESCE(w.balance, 0) as balance
+              COALESCE(w.balance, 0) as balance,
+              r.${COLS_ROLE.CODE} AS role_code
        FROM ${ACCOUNT_TABLE} a
        LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
        LEFT JOIN ${WALLET_SCHEMA}.${WALLET_TABLE} w ON w.account_id = a.id
-       WHERE LOWER(a.username) = LOWER($1)
+       LEFT JOIN ${ROLES_TABLE} r ON r.${COLS_ROLE.ID} = a.${DB_SCHEMA.ACCOUNT!.COLS.ROLE_ID}
+       WHERE LOWER(a.username) = LOWER($1) OR LOWER(a.email) = LOWER($1)
        LIMIT 1`,
       [identifier]
     );
@@ -384,7 +380,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       await captchaService.recordFailedAttempt(ip);
       await auditService.logAuth("LOGIN_FAILED", null, req, { identifier, reason: "user_not_found" }, "failed");
       res.status(401).json({
-        error: "Tài khoản không tồn tại",
+        error: "Tài khoản không tồn tại, vui lòng đăng kí mới",
         requireCaptcha: await captchaService.requiresCaptcha(ip),
       });
       return;
@@ -441,9 +437,13 @@ export async function login(req: Request, res: Response): Promise<void> {
     await clearFailedAttempts(identifier, user.id);
     await captchaService.clearFailedAttempts(ip);
 
+    const roleCode = normalizeProductListPriceScope(user.role_code);
+    const role = jwtShoppingRoleFromPriceScope(roleCode);
     const accessToken = authService.generateAccessToken({
       userId: String(user.id),
       email: user.email,
+      role,
+      roleCode,
     });
     const refreshToken = await refreshTokenService.createToken({
       userId: user.id,
@@ -453,8 +453,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     await auditService.logAuth("LOGIN_SUCCESS", user.id, req, { device: getDeviceInfo(req) });
     const csrfToken = await setCsrfToken(res, String(user.id));
 
-    // httpOnly cookie: token không đọc được bởi JS, giảm rủi ro XSS
-    const isProduction = process.env.NODE_ENV === "production";
+    // httpOnly cookie: token không đọc được bởi JS; Secure theo HTTPS thực tế (tránh mất cookie trên http://localhost khi NODE_ENV=production)
     const cookieOptions: {
       httpOnly: boolean;
       secure: boolean;
@@ -463,7 +462,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       path: string;
     } = {
       httpOnly: true,
-      secure: isProduction,
+      secure: csrfCookieSecure(req),
       sameSite: "lax",
       maxAge: 15 * 60 * 1000, // 15 phút, khớp access token
       path: "/",
@@ -481,6 +480,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         lastName: user.last_name,
         createdAt: user.created_at,
         balance: parseFloat(user.balance) || 0,
+        roleCode,
       },
       accessToken,
       refreshToken,
@@ -489,6 +489,121 @@ export async function login(req: Request, res: Response): Promise<void> {
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "Lỗi đăng nhập" });
+  }
+}
+
+/**
+ * POST /api/auth/forgot-password
+ * Body: { usernameOrEmail: string } hoặc { email: string }
+ */
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  try {
+    const body = req.body as { email?: string; usernameOrEmail?: string };
+    const id = String(body.email ?? body.usernameOrEmail ?? "").trim();
+    if (!id) {
+      res.status(400).json({ error: "Vui lòng nhập email hoặc tên đăng nhập" });
+      return;
+    }
+    await passwordResetService.requestPasswordReset(id);
+    res.json({
+      message:
+        "Nếu tài khoản tồn tại, chúng tôi đã gửi mã OTP gồm 6 chữ số đến email đăng ký. Mã có hiệu lực 15 phút.",
+    });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: "Không thể gửi mã xác minh. Vui lòng thử lại sau." });
+  }
+}
+
+/**
+ * POST /api/auth/verify-reset-otp
+ * Body: { usernameOrEmail: string, otp: string } — chỉ kiểm tra mã, không tiêu thụ OTP.
+ */
+export async function verifyResetOtp(req: Request, res: Response): Promise<void> {
+  try {
+    const body = req.body as { email?: string; usernameOrEmail?: string; otp?: string };
+    const id = String(body.usernameOrEmail ?? body.email ?? "").trim();
+    const otp = body.otp;
+    if (!id || otp == null || String(otp).trim() === "") {
+      res.status(400).json({ error: "Thiếu tài khoản/email hoặc mã OTP" });
+      return;
+    }
+
+    const result = await passwordResetService.verifyPasswordResetOtpOnly({
+      usernameOrEmail: id,
+      otp: String(otp),
+    });
+
+    if (!result.ok) {
+      res.status(400).json({ error: "Mã OTP không đúng hoặc đã hết hạn" });
+      return;
+    }
+
+    res.json({ ok: true, message: "Mã OTP hợp lệ" });
+  } catch (err) {
+    console.error("Verify reset OTP error:", err);
+    res.status(500).json({ error: "Không thể xác minh mã" });
+  }
+}
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { usernameOrEmail: string, otp: string, newPassword: string } hoặc { email, ... } (tương thích cũ)
+ */
+export async function resetPasswordWithOtp(req: Request, res: Response): Promise<void> {
+  try {
+    const body = req.body as {
+      email?: string;
+      usernameOrEmail?: string;
+      otp?: string;
+      newPassword?: string;
+    };
+    const id = String(body.usernameOrEmail ?? body.email ?? "").trim();
+    const { otp, newPassword } = body;
+    if (!id || !otp || !newPassword) {
+      res.status(400).json({ error: "Thiếu tài khoản/email, mã OTP hoặc mật khẩu mới" });
+      return;
+    }
+
+    const result = await passwordResetService.verifyOtpAndResetPassword({
+      usernameOrEmail: id,
+      otp: String(otp),
+      newPassword,
+      isPasswordReused: (uid, plain) => passwordHistoryService.isPasswordReused(uid, plain),
+      onSuccess: async (userId, newHash, oldHash) => {
+        await pool.query(`UPDATE ${ACCOUNT_TABLE} SET password_hash = $1, updated_at = NOW() WHERE id = $2`, [
+          newHash,
+          userId,
+        ]);
+        await passwordHistoryService.addToHistory(userId, oldHash);
+        await refreshTokenService.revokeAllUserTokens(userId);
+        await auditService.logAuth("PASSWORD_RESET_SUCCESS", userId, req);
+      },
+    });
+
+    if (!result.ok) {
+      if (result.error === "weak_password") {
+        res.status(400).json({
+          error: "Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số",
+        });
+        return;
+      }
+      if (result.error === "password_reused") {
+        res.status(400).json({
+          error: "Không thể dùng mật khẩu đã dùng gần đây. Vui lòng chọn mật khẩu khác.",
+        });
+        return;
+      }
+      res.status(400).json({ error: "Mã OTP không đúng hoặc đã hết hạn" });
+      return;
+    }
+
+    res.json({
+      message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.",
+    });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ error: "Không thể đặt lại mật khẩu" });
   }
 }
 
@@ -520,7 +635,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
     }
     await auditService.logAuth("LOGOUT", userId, req);
     clearCsrfToken(res);
-    res.clearCookie("mavryk_at", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
+    res.clearCookie("mavryk_at", { path: "/", httpOnly: true, secure: csrfCookieSecure(req), sameSite: "lax" });
     res.json({ message: "Đăng xuất thành công", success: true });
   } catch (err) {
     console.error("Logout error:", err);

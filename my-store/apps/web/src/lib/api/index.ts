@@ -2,10 +2,15 @@
  * API barrel – re-exports all API modules and types so `import { ... } from "@/lib/api"` works.
  */
 
-export { getAuthToken, AUTH_EXPIRED_EVENT, authFetch } from "@/features/auth/api/auth";
+export {
+  getAuthToken,
+  clearClientAuthStorage,
+  AUTH_EXPIRED_EVENT,
+  authFetch,
+} from "@/features/auth/api/auth";
 export { getApiBase, handleApiError } from "./client";
 
-export { fetchProducts } from "@/features/product/api/products.api";
+export { fetchProducts, productsQueryKey } from "@/features/product/api/products.api";
 export { fetchPromotions } from "@/features/catalog/api/promotions.api";
 export { fetchCategories } from "@/features/catalog/api/categories.api";
 export { fetchProductPackages } from "@/features/product/api/product-packages.api";

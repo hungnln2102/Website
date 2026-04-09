@@ -8,6 +8,8 @@ import { notifyNewOrder } from "./telegram.service";
 import type { TelegramOrderLine } from "./telegram.service";
 import { insertOrderListFromPayment } from "../order/order-list.service";
 import type { OrderListItemInput } from "../order/order-list.service";
+import * as customerEmail from "../notification/customer-email.service";
+import { getAccountEmailById } from "../notification/customer-email-lookup";
 
 export type PaymentMethod = "Mcoin" | "QR";
 
@@ -77,6 +79,23 @@ export function handlePaymentSuccess(params: HandlePaymentSuccessParams): void {
     }).catch((err) => {
       console.error("[PaymentSuccess] Telegram notification failed:", err);
     });
+  }
+
+  if (customerEmail.isCustomerEmailConfigured()) {
+    getAccountEmailById(accountId)
+      .then((acc) => {
+        if (!acc?.email) return;
+        return customerEmail.sendOrderPaymentSuccessEmail({
+          to: acc.email,
+          username: acc.username,
+          orderIds,
+          totalAmount,
+          paymentMethod,
+        });
+      })
+      .catch((err) => {
+        console.error("[PaymentSuccess] customer payment email failed:", err);
+      });
   }
 
   console.log("[PaymentSuccess]", paymentMethod, "orderIds:", orderIds.length);

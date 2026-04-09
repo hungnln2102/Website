@@ -8,6 +8,7 @@ import { getPromotionsList } from "./promotions.service";
 import { getCategoriesList } from "./categories.service";
 import { getProductPackages } from "./product-packages.service";
 import { cache } from "../../shared/utils/cache";
+import { normalizeProductListPriceScope, PRODUCT_LIST_PRICE_SCOPES } from "../../shared/utils/role-code";
 
 // ── Cache config ────────────────────────────────────────────────────
 // TTL dài hơn để giảm truy vấn DB khi Redis không dùng (cache in-memory)
@@ -17,7 +18,7 @@ const CATEGORIES_TTL = 900;  // 15 phút
 const PACKAGES_TTL = 300;    // 5 phút
 
 const CACHE_KEYS = {
-  products: "products:list",
+  products: (scope: string) => `products:list:${scope}`,
   promotions: "promotions:list",
   categories: "categories:list",
   packages: (name: string) => `packages:${name.toLowerCase()}`,
@@ -28,6 +29,10 @@ function setPublicCacheHeaders(res: Response, maxAgeSeconds: number, staleSecond
     "Cache-Control",
     `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${staleSeconds}`
   );
+}
+
+function setPrivateNoStore(res: Response) {
+  res.setHeader("Cache-Control", "private, no-store");
 }
 
 async function cachedQuery<T>(
@@ -54,13 +59,17 @@ async function cachedQuery<T>(
 
 // ── Handlers ────────────────────────────────────────────────────────
 
-export async function getProducts(_req: Request, res: Response): Promise<void> {
+export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
-    const products = await cachedQuery(
-      CACHE_KEYS.products, "products", PRODUCTS_TTL, getProductsList,
+    const user = (req as Request & { user?: { roleCode?: string } | null }).user;
+    const scope = normalizeProductListPriceScope(user?.roleCode);
+    const cacheKey = CACHE_KEYS.products(scope);
+    const products = await cachedQuery(cacheKey, `products:${scope}`, PRODUCTS_TTL, () =>
+      getProductsList(scope),
     );
-    setPublicCacheHeaders(res, 60, PRODUCTS_TTL);
-    res.json({ data: products });
+    if (user) setPrivateNoStore(res);
+    else setPublicCacheHeaders(res, 60, PRODUCTS_TTL);
+    res.json({ data: products, price_scope: scope });
   } catch (err) {
     console.error("Fetch products error:", err);
     res.status(500).json({ error: "Failed to fetch products" });
@@ -129,7 +138,11 @@ export function invalidateCache(req: Request, res: Response): void {
 
   const keys = keysParam.split(",").map((k) => k.trim());
   for (const k of keys) {
-    if (k === "products") cache.delete(CACHE_KEYS.products);
+    if (k === "products") {
+      for (const scope of PRODUCT_LIST_PRICE_SCOPES) {
+        cache.delete(CACHE_KEYS.products(scope));
+      }
+    }
     else if (k === "promotions") cache.delete(CACHE_KEYS.promotions);
     else if (k === "categories") cache.delete(CACHE_KEYS.categories);
     else if (k === "all") cache.clear();

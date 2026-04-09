@@ -15,6 +15,8 @@ type ProductCardProps = Product & {
   from_price?: number;
   onClick: () => void;
   variant?: "default" | "minimal" | "deal";
+  /** Dùng với variant minimal: thẻ nhỏ gọn (panel danh mục). */
+  compact?: boolean;
   hidePriceAndDescription?: boolean;
   isNew?: boolean;
   sold_count_30d?: number;
@@ -35,6 +37,7 @@ export default function ProductCard({
   package_count,
   onClick,
   variant = "default",
+  compact = false,
   hidePriceAndDescription = false,
   isNew = false,
   sold_count_30d = 0,
@@ -129,7 +132,9 @@ export default function ProductCard({
     return (
       <div
         onClick={onClick}
-        className="group relative cursor-pointer overflow-hidden rounded-lg border border-gray-200/40 bg-white transition-all duration-300 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-700"
+        className={`group relative cursor-pointer overflow-hidden border border-gray-200/40 bg-white transition-all duration-300 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-700 ${
+          compact ? "rounded-md shadow-sm hover:shadow" : "rounded-lg hover:shadow-md"
+        }`}
       >
         <div className="relative aspect-square overflow-hidden">
           <LazyImage
@@ -140,19 +145,37 @@ export default function ProductCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {hasDiscount && (
-            <div className="absolute right-2 top-2 rounded-md bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+            <div
+              className={`absolute rounded bg-red-500 font-bold text-white ${
+                compact ? "right-0.5 top-0.5 px-1 py-px text-[8px] leading-none" : "right-2 top-2 rounded-md px-2 py-0.5 text-[10px]"
+              }`}
+            >
               -{discount_percentage}%
             </div>
           )}
         </div>
 
-        <div className="p-3">
-          <h3 className="product-card__title product-card__title--minimal mb-1 text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
+        <div
+          className={
+            compact
+              ? "flex min-h-[2.25rem] flex-col justify-center px-2 py-2"
+              : "p-3"
+          }
+        >
+          <h3
+            className={`product-card__title product-card__title--minimal text-gray-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400 ${
+              compact ? "product-card__title--minimal-compact line-clamp-2" : "mb-1"
+            }`}
+          >
             {name}
           </h3>
 
           {hasVisibleDescription && (
-            <p className="mb-2 line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-slate-400">
+            <p
+              className={`line-clamp-2 leading-tight text-gray-500 dark:text-slate-400 ${
+                compact ? "mb-0 text-[10px]" : "mb-2 text-[11px]"
+              }`}
+            >
               {shortDescription}
             </p>
           )}

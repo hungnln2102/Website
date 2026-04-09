@@ -10,9 +10,15 @@ import { refreshTokenService } from "./refresh-token.service";
 import { captchaService } from "./captcha.service";
 import { auditService } from "../user/audit.service";
 import { setCsrfToken } from "../../shared/middleware/csrf";
+import {
+  jwtShoppingRoleFromPriceScope,
+  normalizeProductListPriceScope,
+} from "../../shared/utils/role-code";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const PROFILE_TABLE = `${DB_SCHEMA.CUSTOMER_PROFILES!.SCHEMA}.${DB_SCHEMA.CUSTOMER_PROFILES!.TABLE}`;
+const ROLES_TABLE = `${DB_SCHEMA.ROLES!.SCHEMA}.${DB_SCHEMA.ROLES!.TABLE}`;
+const COLS_ROLE = DB_SCHEMA.ROLES!.COLS as { ID: string; CODE: string };
 
 function getClientIP(req: Request): string {
   return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
@@ -61,9 +67,11 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     }
     const result = await pool.query(
       `SELECT a.id, a.username, a.email, a.is_active,
-              cp.first_name, cp.last_name
+              cp.first_name, cp.last_name,
+              r.${COLS_ROLE.CODE} AS role_code
        FROM ${ACCOUNT_TABLE} a
        LEFT JOIN ${PROFILE_TABLE} cp ON cp.account_id = a.id
+       LEFT JOIN ${ROLES_TABLE} r ON r.${COLS_ROLE.ID} = a.${DB_SCHEMA.ACCOUNT!.COLS.ROLE_ID}
        WHERE a.id = $1 LIMIT 1`,
       [tokenData.userId]
     );
@@ -85,9 +93,13 @@ export async function refresh(req: Request, res: Response): Promise<void> {
       res.status(401).json({ error: "Không thể làm mới token" });
       return;
     }
+    const roleCode = normalizeProductListPriceScope(user.role_code);
+    const role = jwtShoppingRoleFromPriceScope(roleCode);
     const newAccessToken = authService.generateAccessToken({
       userId: String(user.id),
       email: user.email,
+      role,
+      roleCode,
     });
     await auditService.logAuth("TOKEN_REFRESH", user.id, req);
     res.json({
@@ -99,6 +111,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
+        roleCode,
       },
     });
   } catch (err) {

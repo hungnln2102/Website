@@ -5,7 +5,7 @@ import { ServicesSidebar } from "./ServicesSidebar";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import {
   activateRenewAdobeWebsiteProfile,
@@ -76,7 +76,7 @@ export default function RenewAdobePage() {
   const [urlAccess, setUrlAccess] = useState<string | null>(null);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
   const { data: categories = [] } = useQuery({

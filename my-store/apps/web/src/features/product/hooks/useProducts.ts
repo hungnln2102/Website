@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { fetchProducts } from "@/lib/api";
+import { fetchProducts, productsQueryKey } from "@/lib/api";
 import type { ProductDto } from "@/lib/types";
-import { QUERY_KEYS } from "@/lib/constants";
+import { useAuth } from "@/features/auth/hooks";
 
 export interface NormalizedProduct {
   id: string;
@@ -28,12 +28,13 @@ export interface NormalizedProduct {
  * Custom hook to fetch and normalize products
  */
 export const useProducts = () => {
+  const { user } = useAuth();
   const {
     data: products = [],
     isLoading,
     error: fetchError,
   } = useQuery({
-    queryKey: QUERY_KEYS.products,
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 

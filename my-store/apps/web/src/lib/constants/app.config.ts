@@ -26,6 +26,7 @@ export const ROUTES = {
   cart: "/cart",
   login: "/login",
   register: "/register", // query ?register hoặc segment register tùy router
+  forgotPassword: "/forgot-password",
   profile: "/profile",
   topup: "/topup",
   /** Trung tâm gói — vào đây trước; các dịch vụ con: /system/... */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
@@ -13,11 +13,24 @@ import { PromoCodeSection } from "./components/PromoCodeSection";
 import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 import { PROFILE_TABS, type ProfileTabId } from "./config/tabs";
 import { fetchUserProfile } from "./api/fetchProfile";
+
+function readProfileTabFromLocation(): ProfileTabId {
+  if (typeof window === "undefined") return "account";
+  const raw = new URLSearchParams(window.location.search).get("tab");
+  if (raw && PROFILE_TABS.some((t) => t.id === raw)) {
+    return raw as ProfileTabId;
+  }
+  return "account";
+}
+
+function profileUrlForTab(tabId: ProfileTabId): string {
+  return tabId === "account" ? ROUTES.profile : `${ROUTES.profile}?tab=${encodeURIComponent(tabId)}`;
+}
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -35,12 +48,27 @@ export default function ProfilePage({
 }: ProfilePageProps) {
   const isScrolled = useScroll();
   const { user, logout, updateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<ProfileTabId>("account");
+  const [activeTab, setActiveTab] = useState<ProfileTabId>(() => readProfileTabFromLocation());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const selectTab = useCallback((id: ProfileTabId) => {
+    setActiveTab(id);
+    const href = profileUrlForTab(id);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current !== href) {
+      window.history.replaceState({}, "", href);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setActiveTab(readProfileTabFromLocation());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // Fetch products and categories for header
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 
@@ -61,18 +89,39 @@ export default function ProfilePage({
   // Sync profile data from API to auth state (for header display)
   useEffect(() => {
     if (profileData) {
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (profileData.balance !== undefined && profileData.balance !== user?.balance) {
         updates.balance = profileData.balance;
       }
       if (profileData.createdAt && profileData.createdAt !== user?.createdAt) {
         updates.createdAt = profileData.createdAt;
       }
+      if (profileData.username && profileData.username !== user?.username) {
+        updates.username = profileData.username;
+      }
+      if (profileData.email && profileData.email !== user?.email) {
+        updates.email = profileData.email;
+      }
+      if (profileData.firstName != null && profileData.firstName !== user?.firstName) {
+        updates.firstName = profileData.firstName;
+      }
+      if (profileData.lastName != null && profileData.lastName !== user?.lastName) {
+        updates.lastName = profileData.lastName;
+      }
       if (Object.keys(updates).length > 0) {
-        updateUser(updates);
+        updateUser(updates as Parameters<typeof updateUser>[0]);
       }
     }
-  }, [profileData, user?.balance, user?.createdAt, updateUser]);
+  }, [
+    profileData,
+    user?.balance,
+    user?.createdAt,
+    user?.username,
+    user?.email,
+    user?.firstName,
+    user?.lastName,
+    updateUser,
+  ]);
 
   const handleCategoryClick = (catSlug: string) => {
     window.history.pushState({}, "", ROUTES.category(catSlug));
@@ -179,7 +228,7 @@ export default function ProfilePage({
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => selectTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
                         isActive
                           ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
@@ -217,7 +266,7 @@ export default function ProfilePage({
                     <button
                       key={tab.id}
                       onClick={() => {
-                        setActiveTab(tab.id);
+                        selectTab(tab.id);
                         setMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${

@@ -10,6 +10,21 @@ import type {
 
 const API_BASE = getApiBase();
 
+/** Dev: `API_BASE` rỗng → `/api/…`. Không dùng `new URL('/api/…')` vì thiếu base sẽ throw Invalid URL. */
+function userApiPath(path: string, search?: Record<string, string | number | undefined>): string {
+  const p = path.replace(/^\//, "");
+  const prefix = API_BASE.replace(/\/$/, "");
+  const base = prefix ? `${prefix}/${p}` : `/${p}`;
+  const qs = new URLSearchParams();
+  if (search) {
+    for (const [k, v] of Object.entries(search)) {
+      if (v !== undefined) qs.set(k, String(v));
+    }
+  }
+  const q = qs.toString();
+  return q ? `${base}?${q}` : base;
+}
+
 /** Kết quả chuẩn { success, error? } cho các API cập nhật */
 type ApiResult = { success: boolean; error?: string; message?: string };
 
@@ -50,9 +65,9 @@ export async function fetchUserTransactions(params?: { limit?: number }): Promis
   error?: string;
 }> {
   try {
-    const url = new URL(`${API_BASE}/api/user/transactions`);
-    if (params?.limit != null) url.searchParams.set("limit", String(params.limit));
-    const res = await authFetch(url.toString());
+    const res = await authFetch(
+      userApiPath("api/user/transactions", params?.limit != null ? { limit: params.limit } : undefined)
+    );
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       return { success: false, error: (body as any).error || "Không thể tải lịch sử giao dịch." };
@@ -69,6 +84,11 @@ export async function fetchUserTransactions(params?: { limit?: number }): Promis
 export async function updateProfile(payload: {
   firstName: string;
   lastName: string;
+  /** YYYY-MM-DD; gửi "" để xóa ngày sinh */
+  dateOfBirth?: string | null;
+  email?: string;
+  /** Bắt buộc khi đổi email */
+  currentPassword?: string;
 }): Promise<ApiResult> {
   try {
     const res = await authFetch(`${API_BASE}/api/user/profile`, {
@@ -191,9 +211,9 @@ export async function getActivity(params?: { limit?: number }): Promise<{
   error?: string;
 }> {
   try {
-    const url = new URL(`${API_BASE}/api/user/activity`);
-    if (params?.limit != null) url.searchParams.set("limit", String(params.limit));
-    const res = await authFetch(url.toString());
+    const res = await authFetch(
+      userApiPath("api/user/activity", params?.limit != null ? { limit: params.limit } : undefined)
+    );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return { success: false, error: (data as any).error || "Không thể tải lịch sử hoạt động." };

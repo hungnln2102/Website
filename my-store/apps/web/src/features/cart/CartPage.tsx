@@ -12,7 +12,7 @@ import Footer from "@/components/Footer";
 import { useCartPageData } from "./hooks/useCartPageData";
 import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 import { confirmBalancePayment } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
@@ -35,7 +35,7 @@ export default function CartPage({
 
   // Fetch products and categories for header
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 

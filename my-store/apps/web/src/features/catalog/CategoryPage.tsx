@@ -67,10 +67,12 @@ export default function CategoryPage({
     paginatedProducts,
     totalPages,
     totalCount,
+    loadMore,
   } = useProductSort({
     products: categoryProducts,
     searchQuery,
     defaultSort: "newest",
+    rowsPerReveal: 2,
   });
 
   // Category not found
@@ -106,7 +108,6 @@ export default function CategoryPage({
       searchPlaceholder="Tìm kiếm sản phẩm..."
       products={products}
       categories={categories}
-      selectedCategory={categorySlug}
     >
       {/* Page Header */}
       <div className="mb-6">
@@ -127,6 +128,7 @@ export default function CategoryPage({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        loadMore={loadMore}
         emptyIcon={Package}
         emptyTitle="Chưa có sản phẩm"
         emptyMessage="Danh mục này hiện chưa có sản phẩm nào."

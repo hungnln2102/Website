@@ -1,6 +1,14 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProductPackages, fetchProducts, fetchProductInfo, fetchCategories, type CategoryDto } from "@/lib/api";
+import {
+  fetchProductPackages,
+  fetchProducts,
+  fetchProductInfo,
+  fetchCategories,
+  productsQueryKey,
+  type CategoryDto,
+} from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { productsMock, productPackagesMock, reviewsMock } from "@/lib/mockData";
 import { slugify } from "@/lib/utils";
@@ -13,6 +21,7 @@ export function useProductData(
   selectedDuration: string | null
 ) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const legacyPackageQuery = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -26,7 +35,7 @@ export function useProductData(
     isLoading: loadingProducts,
     error: productsError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 

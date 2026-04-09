@@ -95,6 +95,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       PCT_CTV: "pct_ctv",
       PCT_KHACH: "pct_khach",
       PCT_PROMO: "pct_promo",
+      PCT_STU: "pct_stu",
     },
   },
 
@@ -471,6 +472,17 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
+  /** Vai trò tài khoản: cột code (MAVC, MAVL, …) — bảng phổ biến `identity.roles`. */
+  ROLES: {
+    SCHEMA: SCHEMA_IDENTITY,
+    TABLE: "roles",
+    COLS: {
+      ID: "id",
+      CODE: "code",
+      NAME: "name",
+    },
+  },
+
 
   PASSWORD_HISTORY: {
     SCHEMA: SCHEMA_IDENTITY,
@@ -510,6 +522,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       FIRST_NAME: "first_name",
       LAST_NAME: "last_name",
       DATE_OF_BIRTH: "date_of_birth",
+      DATE_OF_BIRTH_CHANGED_AT: "date_of_birth_changed_at",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
     },
@@ -699,6 +712,7 @@ export const TABLES = {
   INPUTS:             t("INPUTS"),
   // Identity
   ACCOUNT:            t("ACCOUNT"),
+  ROLES:              t("ROLES"),
   PASSWORD_HISTORY:   t("PASSWORD_HISTORY"),
   REFRESH_TOKEN:      t("REFRESH_TOKEN"),
   // Customer

@@ -2,8 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 import { Turnstile, resetTurnstile } from "./Turnstile";
 import { validateLoginForm, type LoginFormData as LoginFormDataBase, type LoginFieldErrors } from "../lib/loginValidation";
+
+function goForgotPassword() {
+  window.history.pushState({}, "", ROUTES.forgotPassword);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
 export interface LoginFormData extends LoginFormDataBase {
   captchaToken?: string;
@@ -161,19 +167,14 @@ export function LoginForm({
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600" />
-              <span className="ml-2 text-sm text-gray-600 dark:text-slate-400">
-                Ghi nhớ đăng nhập
-              </span>
-            </label>
-            <a
-              href="#quen-mat-khau"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={goForgotPassword}
+              className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           {/* CAPTCHA Section - Cloudflare Turnstile */}

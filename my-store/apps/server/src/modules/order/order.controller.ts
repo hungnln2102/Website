@@ -5,6 +5,8 @@ import type { Request, Response } from "express";
 import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
 import { updateOrderDone, cancelOrder } from "./order-list.service";
+import * as customerEmail from "../notification/customer-email.service";
+import { getAccountEmailByOrderId } from "../notification/customer-email-lookup";
 
 function getApiKey(req: Request): string | undefined {
   const header = req.headers["x-api-key"];
@@ -59,6 +61,29 @@ export async function notifyDone(req: Request, res: Response): Promise<void> {
     if (count === 0) {
       res.status(404).json({ success: false, error: "Order not found in order_list" });
       return;
+    }
+    if (customerEmail.isCustomerEmailConfigured()) {
+      const slotRaw = req.body?.slot;
+      const slot = slotRaw != null && slotRaw !== "" ? String(slotRaw) : undefined;
+      const infoRaw = req.body?.information_order;
+      const infoSnippet =
+        infoRaw != null && infoRaw !== ""
+          ? typeof infoRaw === "string"
+            ? infoRaw
+            : JSON.stringify(infoRaw)
+          : undefined;
+      getAccountEmailByOrderId(id_order)
+        .then((acc) => {
+          if (!acc?.email) return;
+          return customerEmail.sendOrderFulfilledEmail({
+            to: acc.email,
+            username: acc.username,
+            idOrder: id_order,
+            slot,
+            infoSnippet,
+          });
+        })
+        .catch((e) => console.error("[orders] notify-done customer email:", e));
     }
     res.status(200).json({ success: true, updated: count });
   } catch (err) {

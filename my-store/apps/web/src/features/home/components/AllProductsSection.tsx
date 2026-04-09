@@ -1,10 +1,10 @@
 "use client";
 
-import { Package, ArrowRight } from "lucide-react";
+import { ChevronDown, Package, ArrowRight } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import Pagination from "@/components/Pagination";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
+import type { ProductSortLoadMore } from "@/features/catalog/hooks/useProductSort";
 
 interface Product {
   id: string;
@@ -36,11 +36,9 @@ interface AllProductsSectionProps {
   loading: boolean;
   searchQuery: string;
   selectedCategory: string | null;
-  currentPage: number;
-  totalPages: number;
   isPreviewMode: boolean;
+  loadMore?: ProductSortLoadMore | null;
   onProductClick: (slug: string) => void;
-  onPageChange: (page: number) => void;
 }
 
 export function AllProductsSection({
@@ -49,11 +47,9 @@ export function AllProductsSection({
   loading,
   searchQuery,
   selectedCategory,
-  currentPage,
-  totalPages,
   isPreviewMode,
+  loadMore = null,
   onProductClick,
-  onPageChange,
 }: AllProductsSectionProps) {
   const handleViewAll = () => {
     if (typeof window !== "undefined") {
@@ -124,16 +120,16 @@ export function AllProductsSection({
 
           {/* Content */}
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {[...Array(10)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 auto-rows-fr">
+              <div className="grid auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {products.map((product) => (
-                  <div key={product.id} className="w-full sm:max-w-[300px] h-full">
+                  <div key={product.id} className="h-full w-full sm:max-w-[300px]">
                     <ProductCard
                       {...product}
                       onClick={() => onProductClick(product.slug)}
@@ -141,15 +137,18 @@ export function AllProductsSection({
                   </div>
                 ))}
               </div>
-              {!isPreviewMode && totalPages > 1 && (
-                <div className="mt-8">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={onPageChange}
-                  />
+              {!isPreviewMode && loadMore ? (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={loadMore.onLoadMore}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-600 bg-white px-6 py-3 text-sm font-semibold text-blue-600 shadow-sm transition-colors hover:bg-blue-50 dark:border-blue-500 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                  >
+                    Xem thêm {loadMore.remainingCount} {loadMore.itemLabel}
+                    <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                  </button>
                 </div>
-              )}
+              ) : null}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200/60 bg-slate-50/50 py-16 text-center dark:border-slate-700/60 dark:bg-slate-900/30">

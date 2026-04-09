@@ -329,7 +329,7 @@ async function start() {
         import("./shared/utils/cache"),
       ]);
       await Promise.all([
-        getProductsList().then((data) => { cache.set("products:list", data, 600); }),
+        getProductsList("MAVL").then((data) => { cache.set("products:list:MAVL", data, 600); }),
         getPromotionsList().then((data) => { cache.set("promotions:list", data, 600); }),
         getCategoriesList().then((data) => { cache.set("categories:list", data, 900); }),
       ]);

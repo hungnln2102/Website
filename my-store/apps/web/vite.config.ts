@@ -99,6 +99,11 @@ export default defineConfig({
     },
   },
   server: {
+    /**
+     * Mặc định Vite dùng `localhost` — trên một số máy (Edge/Windows) chỉ bám IPv6.
+     * `host: true` lắng nghe mọi interface (gồm 127.0.0.1) để dev qua IP cố định khớp cấu hình.
+     */
+    host: true,
     port: 4001,
     strictPort: true,
     hmr: { overlay: true },

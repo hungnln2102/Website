@@ -8,8 +8,8 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuBar from "@/components/MenuBar";
 import Footer from "@/components/Footer";
 import { useScroll } from "@/hooks/useScroll";
+import { fetchProducts, fetchCategories, productsQueryKey, type CategoryDto } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks";
-import { fetchProducts, fetchCategories, type CategoryDto } from "@/lib/api";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
 import { APP_CONFIG, ROUTES } from "@/lib/constants";
 import { generateBreadcrumbSchema } from "@/lib/seo";
@@ -48,10 +48,10 @@ export default function NewsDetailPage({
   setSearchQuery,
 }: NewsDetailPageProps) {
   const isScrolled = useScroll();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: productsQueryKey(user?.roleCode),
     queryFn: fetchProducts,
   });
 
@@ -210,15 +210,9 @@ export default function NewsDetailPage({
           }))}
           onProductClick={onProductClick}
           onCategoryClick={handleCategoryClick}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories as CategoryDto[]}
-          selectedCategory={null}
-          onSelectCategory={handleCategoryClick}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       <main id="main-content" className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -270,11 +264,11 @@ export default function NewsDetailPage({
             <article className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-[0_20px_40px_rgba(2,6,23,0.35)]">
               <div className={`h-2 w-full bg-gradient-to-r ${article.accentClass}`} aria-hidden="true" />
               {article.coverImageUrl ? (
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-900/90">
+                <div className="w-full overflow-hidden bg-slate-100 dark:bg-slate-900/90">
                   <img
                     src={article.coverImageUrl}
                     alt=""
-                    className="h-full w-full object-contain object-center"
+                    className="news-card-cover-img"
                     loading="eager"
                   />
                 </div>
@@ -321,10 +315,10 @@ export default function NewsDetailPage({
                   >
                     <div className={`h-1.5 w-full bg-gradient-to-r ${item.accentClass}`} aria-hidden="true" />
                     <div
-                      className={`relative h-26 w-full overflow-hidden ${
+                      className={`relative w-full overflow-hidden ${
                         item.coverImageUrl
-                          ? 'bg-slate-900/90 dark:bg-slate-950'
-                          : `bg-gradient-to-br ${item.accentClass}`
+                          ? "bg-slate-900/90 dark:bg-slate-950"
+                          : `flex min-h-[7.5rem] items-center justify-center bg-gradient-to-br ${item.accentClass}`
                       }`}
                       aria-hidden="true"
                     >
@@ -332,7 +326,7 @@ export default function NewsDetailPage({
                         <img
                           src={item.coverImageUrl}
                           alt=""
-                          className="h-full w-full object-contain object-center"
+                          className="news-card-cover-img"
                           loading="lazy"
                         />
                       ) : (
@@ -367,7 +361,7 @@ export default function NewsDetailPage({
                       <button
                         type="button"
                         onClick={() => navigateAppRoute(ROUTES.newsArticle(item.slug))}
-                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                        className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                       >
                         Xem chi tiết
                         <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

@@ -28,6 +28,7 @@ import {
   AllProductsSection,
   ErrorStates,
   StoreStatsSection,
+  HomeHeroCategoryBanner,
 } from "./components";
 
 const HomeSupportShareSection = lazy(() =>
@@ -76,13 +77,11 @@ export default function HomePage({
 
   const {
     selectedCategory,
-    currentPage,
     newProducts,
     bestSellingProducts,
     displayedProducts,
-    totalPages,
     isPreviewMode,
-    setCurrentPage,
+    productsLoadMore,
     handleCategorySelect,
     handleLogoClick,
   } = useHomeFilters({
@@ -195,15 +194,9 @@ export default function HomePage({
           }))}
           onProductClick={onProductClick}
           onCategoryClick={(slug) => handleCategorySelect(slug)}
-          user={user}
-          onLogout={logout}
+          omitNavActions
         />
-        <MenuBar
-          isScrolled={isScrolled}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleCategorySelect}
-        />
+        <MenuBar isScrolled={isScrolled} />
       </div>
 
       <MetaTags metadata={seoMetadata} />
@@ -213,8 +206,15 @@ export default function HomePage({
         id="main-content"
         className="relative z-0 mx-auto flex max-w-[90rem] flex-col px-3 pt-6 pb-8 sm:px-6 sm:pt-10 lg:px-8"
       >
-        <section className="mb-6 overflow-hidden rounded-xl shadow-lg shadow-blue-900/5 sm:mb-8 sm:rounded-2xl sm:shadow-xl">
-          <BannerSlider />
+        <section className="mb-6 sm:mb-8">
+          <HomeHeroCategoryBanner
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleCategorySelect}
+            onProductClick={onProductClick}
+          >
+            <BannerSlider fillRow />
+          </HomeHeroCategoryBanner>
         </section>
 
         {!searchQuery && (
@@ -267,11 +267,9 @@ export default function HomePage({
           loading={loading}
           searchQuery={searchQuery}
           selectedCategory={selectedCategory}
-          currentPage={currentPage}
-          totalPages={totalPages}
           isPreviewMode={isPreviewMode}
+          loadMore={productsLoadMore}
           onProductClick={onProductClick}
-          onPageChange={setCurrentPage}
         />
 
         <Suspense fallback={<div className="mt-5 mb-4 min-h-[32rem] sm:min-h-[24rem]" aria-hidden="true" />}>

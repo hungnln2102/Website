@@ -4,11 +4,13 @@
  */
 export {
   getAuthToken,
+  clearClientAuthStorage,
   AUTH_EXPIRED_EVENT,
   authFetch,
   getApiBase,
   handleApiError,
   fetchProducts,
+  productsQueryKey,
   fetchPromotions,
   fetchCategories,
   fetchProductPackages,

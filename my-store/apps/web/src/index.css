@@ -142,6 +142,14 @@
 }
 
 @layer components {
+  /* Ảnh bìa thẻ tin / chi tiết: full chiều ngang ô chứa, không tràn; height:auto giữ tỉ lệ */
+  .news-card-cover-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
   .product-card__title {
     display: -webkit-box;
     overflow: hidden;
@@ -159,6 +167,15 @@
     font-weight: 750;
     line-height: 1.24;
     letter-spacing: -0.02em;
+  }
+
+  /* Flyout / dense grid: không giữ min-height cao + không dùng text-[11px] để tránh “ô trắng” quá lớn so với chữ */
+  .product-card__title--minimal.product-card__title--minimal-compact {
+    min-height: unset;
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.35;
+    letter-spacing: -0.014em;
   }
 
   .product-card__title--default {
