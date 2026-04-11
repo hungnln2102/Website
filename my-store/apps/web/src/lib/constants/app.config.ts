@@ -31,9 +31,8 @@ export const ROUTES = {
   topup: "/topup",
   /** Trung tâm gói — vào đây trước; các dịch vụ con: /system/... */
   otp: "/system",
-  fixAdobeEdu: "/system",
+  fixAdobeEdu: "/system/adobe-edu",
   renewAdobe: "/system/renew-adobe",
-  renewZoom: "/system/renew-zoom",
   netflix: "/system/netflix",
   adobeGuide: "/huong-dan-adobe",
   paymentSuccess: "/payment/success",
@@ -65,8 +64,8 @@ export function isSystemHubPath(pathname: string): boolean {
   if (
     noTrail === "/check-profile" ||
     noTrail === "/otp" ||
+    noTrail === "/system/adobe-edu" ||
     noTrail === "/renew-adobe" ||
-    noTrail === "/renew-zoom" ||
     noTrail === "/netflix"
   ) {
     return true;

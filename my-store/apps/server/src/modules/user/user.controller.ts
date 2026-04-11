@@ -249,7 +249,13 @@ export async function getOrders(req: Request, res: Response): Promise<void> {
               v.${COLS_V.VARIANT_NAME} as product_display_name
        FROM ${ORDER_CUSTOMER_TABLE} oc
        INNER JOIN ${ORDER_LIST_TABLE} ol ON ol.id_order = oc.id_order
-       LEFT JOIN ${VARIANT_TABLE} v ON ol.id_product = v.${COLS_V.ID}
+       LEFT JOIN ${VARIANT_TABLE} v ON (
+         TRIM(BOTH FROM ol.id_product::text) = TRIM(BOTH FROM v.${COLS_V.VARIANT_NAME}::text)
+         OR (
+           TRIM(BOTH FROM ol.id_product::text) ~ '^[0-9]+$'
+           AND v.${COLS_V.ID} = TRIM(BOTH FROM ol.id_product::text)::int
+         )
+       )
        WHERE oc.${COLS_OC.ACCOUNT_ID} = $1
        ORDER BY ol.order_date DESC
        LIMIT 200`,

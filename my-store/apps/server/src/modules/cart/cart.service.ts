@@ -3,6 +3,7 @@ import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
 import { calculatePrices } from "../../shared/utils/pricing";
 import type { OrderListItemInput } from "../order/order-list.service";
+import { MARGIN_PIVOT_SQL } from "../product/product-sql.shared";
 
 const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
 const CART_TABLE = DB_SCHEMA.CART_ITEMS!.TABLE;
@@ -273,12 +274,13 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
        v.image_url AS image_url, d.description, d.rules AS purchase_rules,
-       COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
+       COALESCE(margins.pct_ctv, 0) AS pct_ctv, COALESCE(margins.pct_khach, 0) AS pct_khach, margins.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${CART_FULL} c
      LEFT JOIN ${schema}.variant v ON v.id::text = c.variant_id::text
      LEFT JOIN ${schema}.product p ON p.id = v.product_id
      LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
+     LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = (v.id)::int
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max
@@ -400,11 +402,12 @@ export async function getVariantProductData(
        v.display_name, v.variant_name,
        SPLIT_PART(v.display_name::text, '--', 2) AS duration,
        v.image_url AS image_url, d.description, d.rules AS purchase_rules,
-       COALESCE(v.pct_ctv, 0) AS pct_ctv, COALESCE(v.pct_khach, 0) AS pct_khach, v.pct_promo,
+       COALESCE(margins.pct_ctv, 0) AS pct_ctv, COALESCE(margins.pct_khach, 0) AS pct_khach, margins.pct_promo,
        COALESCE(COALESCE(sm_v.price_max, sm_fallback.price_max), 0) AS price_max
      FROM ${schema}.variant v
      LEFT JOIN ${schema}.product p ON p.id = v.product_id
      LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
+     LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = v.id
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max
@@ -493,7 +496,7 @@ export async function buildOrderListItemsFromCart(
     const c = cartItems[i]!;
     return {
       id_order,
-      id_product: parseInt(String(c.variantId), 10) || 0,
+      id_product: String(c.variantId ?? "").trim(),
       price: c.price * Math.max(1, c.quantity),
       information_order:
         c.extraInfo && Object.keys(c.extraInfo).length > 0 ? JSON.stringify(c.extraInfo) : null,

@@ -216,7 +216,7 @@ export async function confirmBalancePayment(
     // 5) Success payment chung: ghi order_list + Telegram (component dùng chung Mcoin & QR)
     const orderListItems = items.map((item, i) => ({
       id_order: orderIds[i]!,
-      id_product: parseInt(String(item.id_product), 10) || 0,
+      id_product: String(item.id_product ?? "").trim(),
       price: item.price * Math.max(1, item.quantity || 1),
       information_order:
         item.extraInfo && Object.keys(item.extraInfo).length > 0 ? JSON.stringify(item.extraInfo) : null,

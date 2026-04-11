@@ -67,6 +67,21 @@ BEGIN
 END $$;
 
 -- -----------------------------------------------------------------------------
+-- 4b. order_list.id_product — đồng bộ admin_orderlist: VARCHAR(255), thường là variant.variant_name
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'orders' AND table_name = 'order_list'
+      AND column_name = 'id_product' AND udt_name IN ('int4', 'int8')
+  ) THEN
+    ALTER TABLE orders.order_list
+      ALTER COLUMN id_product TYPE varchar(255) USING id_product::text;
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
 -- 5. Index variant (product_id, is_active)
 -- -----------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_variant_product_active ON product.variant (product_id, is_active);
@@ -86,11 +101,19 @@ SELECT
   CURRENT_TIMESTAMP AS updated_at
 FROM product.variant v
 LEFT JOIN (
-  SELECT ol.id_product::int AS variant_id, COUNT(*)::int AS sales_count
+  SELECT v2.id AS variant_id_inner, COUNT(*)::int AS sales_count
   FROM orders.order_list ol
+  INNER JOIN product.variant v2 ON (
+    TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) = TRIM(BOTH FROM COALESCE(v2.variant_name::text, ''))
+    OR (
+      TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) ~ '^[0-9]+$'
+      AND v2.id = TRIM(BOTH FROM COALESCE(ol.id_product::text, ''))::int
+    )
+  )
   WHERE ol.id_product IS NOT NULL
-  GROUP BY ol.id_product
-) order_totals ON order_totals.variant_id = v.id;
+    AND TRIM(COALESCE(ol.id_product::text, '')) <> ''
+  GROUP BY v2.id
+) order_totals ON order_totals.variant_id_inner = v.id;
 
 CREATE UNIQUE INDEX idx_variant_sold_count_variant_id ON product.variant_sold_count(variant_id);
 CREATE INDEX idx_variant_sold_count_display_name ON product.variant_sold_count(variant_display_name);
@@ -140,8 +163,15 @@ LEFT JOIN (
     COUNT(*)::int AS sold_count_30d,
     SUM(COALESCE(ol.price, 0))::numeric(15, 2) AS revenue_30d
   FROM orders.order_list ol
-  INNER JOIN product.variant v ON ol.id_product = v.id
+  INNER JOIN product.variant v ON (
+    TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) = TRIM(BOTH FROM COALESCE(v.variant_name::text, ''))
+    OR (
+      TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) ~ '^[0-9]+$'
+      AND v.id = TRIM(BOTH FROM COALESCE(ol.id_product::text, ''))::int
+    )
+  )
   WHERE ol.id_product IS NOT NULL
+    AND TRIM(COALESCE(ol.id_product::text, '')) <> ''
     AND ol.order_date >= CURRENT_DATE - INTERVAL '30 days'
     AND ol.status NOT IN ('Đã Hủy', 'Chưa Hoàn', 'Đã Hoàn')
   GROUP BY v.product_id

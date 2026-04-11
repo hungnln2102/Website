@@ -3,6 +3,7 @@
  */
 import prisma from "@my-store/db";
 import { TABLES } from "../../config/db.config";
+import { MARGIN_PIVOT_SQL } from "./product-sql.shared";
 import { sqlRetailPrice } from "../../shared/utils/pricing";
 import { toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
@@ -31,9 +32,9 @@ export async function getProductPackages(packageName: string) {
         v.updated_at AS created_at,
         v.is_active AS is_active,
         v.form_id AS form_id,
-        COALESCE(v.pct_ctv, 0) AS pct_ctv,
-        COALESCE(v.pct_khach, 0) AS pct_khach,
-        v.pct_promo,
+        COALESCE(margins.pct_ctv, 0) AS pct_ctv,
+        COALESCE(margins.pct_khach, 0) AS pct_khach,
+        margins.pct_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sold_count_30d,
         d.short_desc,
@@ -43,6 +44,7 @@ export async function getProductPackages(packageName: string) {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
+      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       WHERE p.package_name ILIKE $1

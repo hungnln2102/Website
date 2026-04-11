@@ -1,27 +1,31 @@
 import { ROUTES } from "@/lib/constants";
-import { GraduationCap, RefreshCw, Video, Tv } from "lucide-react";
+import { GraduationCap, RefreshCw, Tv } from "lucide-react";
+import {
+  isFixAdobeEduPath,
+  isNetflixPath,
+  isRenewAdobePath,
+  normalizePathname,
+} from "@/lib/constants/serviceHubRoutes";
 
 const MENU_ITEMS = [
   { id: "fix-adobe-edu", label: "Gói Adobe Edu", href: ROUTES.fixAdobeEdu, icon: GraduationCap },
   { id: "renew-adobe", label: "Renew Adobe", href: ROUTES.renewAdobe, icon: RefreshCw },
-  { id: "renew-zoom", label: "Renew Zoom", href: ROUTES.renewZoom, icon: Video },
   { id: "netflix", label: "OTP Netflix", href: ROUTES.netflix, icon: Tv },
 ] as const;
 
 export function ServicesSidebar() {
-  const path = typeof window !== "undefined" ? window.location.pathname.replace(/^\/+|\/+$/g, "") : "";
-  const fixAdobePath = ROUTES.fixAdobeEdu.replace(/^\/+|\/+$/g, "");
-  const renewAdobePath = ROUTES.renewAdobe.replace(/^\/+|\/+$/g, "");
-  const renewZoomPath = ROUTES.renewZoom.replace(/^\/+|\/+$/g, "");
-  const netflixPath = ROUTES.netflix.replace(/^\/+|\/+$/g, "");
+  const path =
+    typeof window !== "undefined" ? normalizePathname(window.location.pathname) : "";
+  const fixAdobePath = normalizePathname(ROUTES.fixAdobeEdu);
+  const renewAdobePath = normalizePathname(ROUTES.renewAdobe);
+  const netflixPath = normalizePathname(ROUTES.netflix);
 
   const isActive = (href: string) => {
-    const normalized = href.replace(/^\/+|\/+$/g, "");
+    const normalized = normalizePathname(href);
     if (normalized === fixAdobePath)
-      return path === fixAdobePath || path === "check-profile" || path === "otp";
-    if (normalized === renewAdobePath) return path === renewAdobePath || path === "renew-adobe";
-    if (normalized === renewZoomPath) return path === renewZoomPath || path === "renew-zoom";
-    if (normalized === netflixPath) return path === netflixPath || path === "netflix";
+      return isFixAdobeEduPath(path);
+    if (normalized === renewAdobePath) return isRenewAdobePath(path);
+    if (normalized === netflixPath) return isNetflixPath(path);
     return path === normalized;
   };
 

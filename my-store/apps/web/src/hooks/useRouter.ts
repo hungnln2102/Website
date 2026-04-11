@@ -3,6 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCategories, type CategoryDto } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
+import {
+  isFixAdobeEduPath,
+  isNetflixPath,
+  isRenewAdobePath,
+  matchesAppRoute,
+  normalizePathname,
+} from "@/lib/constants/serviceHubRoutes";
 
 export type View =
   | "home"
@@ -14,7 +21,6 @@ export type View =
   | "all-products"
   | "otp"
   | "renew-adobe"
-  | "renew-zoom"
   | "netflix"
   | "adobe-guide"
   | "login-forgot"
@@ -38,15 +44,14 @@ interface RouteInfo {
 
 const parsePath = (categories: CategoryDto[]): RouteInfo => {
   if (typeof window === "undefined") return { view: "home", slug: null, parentPath: null };
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+  const path = normalizePathname(window.location.pathname);
   if (!path) return { view: "home", slug: null, parentPath: null };
 
-  const aboutPath = ROUTES.about.replace(/^\/+|\/+$/g, "");
-  if (path === aboutPath || path === "about")
+  if (matchesAppRoute(path, ROUTES.about))
     return { view: "about", slug: null, parentPath: ROUTES.home };
 
-  const newsPath = ROUTES.news.replace(/^\/+|\/+$/g, "");
-  if (path === newsPath || path === "tin-tuc")
+  const newsPath = normalizePathname(ROUTES.news);
+  if (matchesAppRoute(path, ROUTES.news))
     return { view: "news", slug: null, parentPath: ROUTES.home };
   if (path.startsWith(`${newsPath}/danh-muc/`)) {
     const categorySlug = decodeURIComponent(path.replace(`${newsPath}/danh-muc/`, ""));
@@ -57,82 +62,82 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
     return { view: "news-detail", slug: articleSlug, parentPath: ROUTES.news };
   }
 
-  const loginPath = ROUTES.login.replace(/^\/+|\/+$/g, "");
-  if (path === loginPath)
+  if (matchesAppRoute(path, ROUTES.login))
     return { view: "login", slug: null, parentPath: ROUTES.home };
 
-  if (path === "register")
+  if (matchesAppRoute(path, ROUTES.register))
     return { view: "login", slug: "register", parentPath: ROUTES.home };
 
-  const forgotPath = ROUTES.forgotPassword.replace(/^\/+|\/+$/g, "");
-  if (path === forgotPath || path === "forgot-password")
+  if (matchesAppRoute(path, ROUTES.forgotPassword))
     return { view: "login-forgot", slug: null, parentPath: ROUTES.login };
 
-  const cartPath = ROUTES.cart.replace(/^\/+|\/+$/g, "");
-  if (path === cartPath || path === "cart")
+  if (matchesAppRoute(path, ROUTES.cart))
     return { view: "cart", slug: null, parentPath: ROUTES.home };
 
-  const profilePath = ROUTES.profile.replace(/^\/+|\/+$/g, "");
-  if (path === profilePath || path === "profile")
+  if (matchesAppRoute(path, ROUTES.profile))
     return { view: "profile", slug: null, parentPath: ROUTES.home };
 
-  const otpPath = ROUTES.otp.replace(/^\/+|\/+$/g, "");
-  const renewAdobePath = ROUTES.renewAdobe.replace(/^\/+|\/+$/g, "");
-  const renewZoomPath = ROUTES.renewZoom.replace(/^\/+|\/+$/g, "");
-  const netflixPath = ROUTES.netflix.replace(/^\/+|\/+$/g, "");
-  if (path === otpPath || path === "check-profile" || path === "otp")
+  if (isFixAdobeEduPath(path))
     return { view: "otp", slug: null, parentPath: ROUTES.home };
 
-  if (path === renewAdobePath || path === "renew-adobe")
+  /** URL Renew Zoom đã bỏ — chuyển về trung tâm gói Adobe Edu. */
+  const legacyZoom = new Set([
+    "system/renew-zoom",
+    "renew-zoom",
+  ]);
+  if (legacyZoom.has(path)) {
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", ROUTES.fixAdobeEdu);
+    }
+    return { view: "otp", slug: null, parentPath: ROUTES.fixAdobeEdu };
+  }
+
+  if (isRenewAdobePath(path))
     return { view: "renew-adobe", slug: null, parentPath: ROUTES.fixAdobeEdu };
-  if (path === renewZoomPath || path === "renew-zoom")
-    return { view: "renew-zoom", slug: null, parentPath: ROUTES.fixAdobeEdu };
-  if (path === netflixPath || path === "netflix")
+  if (isNetflixPath(path))
     return { view: "netflix", slug: null, parentPath: ROUTES.fixAdobeEdu };
 
-  const adobeGuidePath = ROUTES.adobeGuide.replace(/^\/+|\/+$/g, "");
-  if (path === adobeGuidePath || path === "huong-dan-adobe")
-    return { view: "adobe-guide", slug: null, parentPath: ROUTES.otp };
+  if (matchesAppRoute(path, ROUTES.adobeGuide))
+    return { view: "adobe-guide", slug: null, parentPath: ROUTES.fixAdobeEdu };
 
-  const topupPath = ROUTES.topup.replace(/^\/+|\/+$/g, "");
-  if (path === topupPath || path === "topup")
+  if (matchesAppRoute(path, ROUTES.topup))
     return { view: "topup", slug: null, parentPath: ROUTES.home };
 
-  if (path === "payment/success")
+  if (matchesAppRoute(path, ROUTES.paymentSuccess))
     return { view: "payment-success", slug: null, parentPath: ROUTES.home };
 
-  if (path === "payment/error")
+  if (matchesAppRoute(path, ROUTES.paymentError))
     return { view: "payment-error", slug: null, parentPath: ROUTES.home };
 
-  if (path === "payment/cancel")
+  if (matchesAppRoute(path, ROUTES.paymentCancel))
     return { view: "payment-cancel", slug: null, parentPath: ROUTES.home };
 
-  const newProductsPath = ROUTES.newProducts.replace(/^\/+|\/+$/g, "");
-  if (path === newProductsPath)
+  const newProductsPath = normalizePathname(ROUTES.newProducts);
+  if (matchesAppRoute(path, ROUTES.newProducts))
     return { view: "new-products", slug: null, parentPath: ROUTES.home };
   if (path.startsWith(`${newProductsPath}/`)) {
     const productSlug = decodeURIComponent(path.replace(`${newProductsPath}/`, ""));
     return { view: "product", slug: productSlug, parentPath: ROUTES.newProducts };
   }
 
-  const bestSellingPath = ROUTES.bestSelling.replace(/^\/+|\/+$/g, "");
-  if (path === bestSellingPath)
+  const bestSellingPath = normalizePathname(ROUTES.bestSelling);
+  if (matchesAppRoute(path, ROUTES.bestSelling))
     return { view: "best-selling", slug: null, parentPath: ROUTES.home };
   if (path.startsWith(`${bestSellingPath}/`)) {
     const productSlug = decodeURIComponent(path.replace(`${bestSellingPath}/`, ""));
     return { view: "product", slug: productSlug, parentPath: ROUTES.bestSelling };
   }
 
-  const promotionsPath = ROUTES.promotions.replace(/^\/+|\/+$/g, "");
-  if (path === promotionsPath)
+  const promotionsPath = normalizePathname(ROUTES.promotions);
+  if (matchesAppRoute(path, ROUTES.promotions))
     return { view: "promotions", slug: null, parentPath: ROUTES.home };
   if (path.startsWith(`${promotionsPath}/`)) {
     const productSlug = decodeURIComponent(path.replace(`${promotionsPath}/`, ""));
     return { view: "product", slug: productSlug, parentPath: ROUTES.promotions };
   }
 
-  const allProductsPath = ROUTES.allProducts.replace(/^\/+|\/+$/g, "");
-  if (path === allProductsPath)
+  const allProductsPath = normalizePathname(ROUTES.allProducts);
+  if (matchesAppRoute(path, ROUTES.allProducts))
     return { view: "all-products", slug: null, parentPath: ROUTES.home };
   if (path.startsWith(`${allProductsPath}/`)) {
     const productSlug = decodeURIComponent(path.replace(`${allProductsPath}/`, ""));

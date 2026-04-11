@@ -408,7 +408,7 @@ export async function confirmTransfer(req: Request, res: Response) {
             const it = bodyItems[i]!;
             return {
               id_order,
-              id_product: parseInt(String(it.id_product ?? ""), 10) || 0,
+              id_product: String(it.id_product ?? "").trim(),
               price: (Number(it.price) || 0) * Math.max(1, parseInt(String(it.quantity), 10) || 1),
               information_order:
                 it.extraInfo && Object.keys(it.extraInfo).length > 0 ? JSON.stringify(it.extraInfo) : null,

@@ -92,10 +92,40 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       UPDATED_AT: "updated_at",
       DESC_VARIANT_ID: "id_desc",
       IMAGE_URL: "image_url",
+      BASE_PRICE: "base_price",
+      /** Legacy: margin nằm ở variant_margin + pricing_tier (admin_orderlist), không còn cột trên variant. */
       PCT_CTV: "pct_ctv",
       PCT_KHACH: "pct_khach",
       PCT_PROMO: "pct_promo",
       PCT_STU: "pct_stu",
+    },
+  },
+
+  /** Bậc giá (ctv, customer, promo, student, …) — đồng bộ admin_orderlist */
+  PRICING_TIER: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "pricing_tier",
+    COLS: {
+      ID: "id",
+      KEY: "key",
+      PREFIX: "prefix",
+      LABEL: "label",
+      PRICING_RULE: "pricing_rule",
+      BASE_TIER_KEY: "base_tier_key",
+      SORT_ORDER: "sort_order",
+      IS_ACTIVE: "is_active",
+      CREATED_AT: "created_at",
+    },
+  },
+
+  /** Biên độ margin theo từng variant + tier */
+  VARIANT_MARGIN: {
+    SCHEMA: SCHEMA_PRODUCT,
+    TABLE: "variant_margin",
+    COLS: {
+      VARIANT_ID: "variant_id",
+      TIER_ID: "tier_id",
+      MARGIN_RATIO: "margin_ratio",
     },
   },
 
@@ -388,7 +418,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   },
 
   // ── Orders ────────────────────────────────────────────────────────────────
-  // order_list: cột id_product kiểu int (variant_id, FK product.variant.id)
+  // order_list (đồng bộ admin_orderlist): id_product = varchar — thường là
+  // product.variant.variant_name (MV sales join theo tên); có thể lưu chuỗi số id khi migrate từ hệ cũ.
 
   ORDER_LIST: {
     SCHEMA: SCHEMA_ORDERS,
@@ -396,17 +427,17 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product",       // int4, variant_id
+      ID_PRODUCT: "id_product",       // varchar — variant_name hoặc id dạng text
       INFORMATION_ORDER: "information_order",
       CUSTOMER: "customer",
       CONTACT: "contact",
       SLOT: "slot",
       ORDER_DATE: "order_date",       // date
-      DAYS: "days",                   // text
+      DAYS: "days",                   // int4 — số ngày gói
       EXPIRED_AT: "expired_at",        // date, ngày hết hạn
       SUPPLY_ID: "supply_id",         // int4, id của partner.supplier
-      COST: "cost",                   // int4
-      PRICE: "price",                 // int4
+      COST: "cost",                   // numeric
+      PRICE: "price",                 // numeric
       NOTE: "note",
       STATUS: "status",
       REFUND: "refund",               // numeric
@@ -679,6 +710,8 @@ export const TABLES = {
   PRODUCT:            t("PRODUCT"),
   DESC_VARIANT:       t("DESC_VARIANT"),
   VARIANT:            t("VARIANT"),
+  PRICING_TIER:       t("PRICING_TIER"),
+  VARIANT_MARGIN:   t("VARIANT_MARGIN"),
   CATEGORY:           t("CATEGORY"),
   PRODUCT_CATEGORY:   t("PRODUCT_CATEGORY"),
   SUPPLIER_COST:      t("SUPPLIER_COST"),

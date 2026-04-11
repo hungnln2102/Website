@@ -1,6 +1,6 @@
 /**
  * Ghi tạm order_list khi thanh toán thành công (Mcoin).
- * Mỗi item = 1 dòng order_list (id_order, id_product = variant_id, customer, price, ...).
+ * Mỗi item = 1 dòng order_list (id_order, id_product = variant.variant_name — đồng bộ admin_orderlist).
  * Bot /done sau đó cập nhật slot, note, supply_id (id supplier), cost.
  */
 
@@ -11,9 +11,11 @@ import { ORDER_LIST_STATUS } from "../../config/status.constants";
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const SUPPLIER_COST_TABLE = `${DB_SCHEMA.SUPPLIER_COST!.SCHEMA}.${DB_SCHEMA.SUPPLIER_COST!.TABLE}`;
+const VARIANT_TABLE = `${DB_SCHEMA.VARIANT!.SCHEMA}.${DB_SCHEMA.VARIANT!.TABLE}`;
 const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as Record<string, string>;
 const COLS_ACCOUNT = DB_SCHEMA.ACCOUNT!.COLS as Record<string, string>;
 const COLS_SC = DB_SCHEMA.SUPPLIER_COST!.COLS as Record<string, string>;
+const COLS_V = DB_SCHEMA.VARIANT!.COLS as Record<string, string>;
 
 const DEFAULT_CONTACT = "Website";
 /** Trạng thái khi mới ghi vào order_list (thanh toán đã xác nhận, bot chưa xử lý) */
@@ -30,6 +32,24 @@ async function ensureOrderListSequence(): Promise<void> {
   );
 }
 
+/**
+ * Giá trị ghi vào order_list.id_product: variant_name (varchar), khớp admin_orderlist / MV bán hàng.
+ * Đầu vào có thể là id variant (số) hoặc đã là variant_name.
+ */
+async function resolveIdProductForOrderList(idProductRaw: string | number): Promise<string> {
+  const raw = String(idProductRaw ?? "").trim();
+  if (!raw) return raw;
+  const res = await pool.query<{ vn: string | null }>(
+    `SELECT ${COLS_V.VARIANT_NAME} AS vn FROM ${VARIANT_TABLE}
+     WHERE ${COLS_V.ID}::text = $1
+        OR TRIM(${COLS_V.VARIANT_NAME}::text) = TRIM($2::text)
+     LIMIT 1`,
+    [raw, raw]
+  );
+  const vn = res.rows[0]?.vn;
+  return vn != null && String(vn).trim() !== "" ? String(vn).trim() : raw;
+}
+
 /** Parse duration "12m" / "30d" thành số ngày (để tính expired_at). */
 function parseDaysFromDuration(duration: string | undefined | null): number | null {
   if (!duration || typeof duration !== "string") return null;
@@ -44,8 +64,8 @@ function parseDaysFromDuration(duration: string | undefined | null): number | nu
 
 export interface OrderListItemInput {
   id_order: string;
-  /** variant_id (int) - id_product trong order_list */
-  id_product: number;
+  /** variant id (số) hoặc variant_name — trước khi INSERT được map sang variant_name trong DB */
+  id_product: string | number;
   /** Giá bán (từ item khi thanh toán) */
   price: number;
   /** Thông tin bổ sung (JSON string hoặc null) */
@@ -115,13 +135,15 @@ export async function insertOrderListFromPayment(params: InsertOrderListParams):
         ? String(item.information_order).trim()
         : null;
 
+    const idProductStored = await resolveIdProductForOrderList(item.id_product);
+
     try {
       await pool.query(
         `INSERT INTO ${ORDER_LIST_TABLE} (${columns})
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           idOrder,
-          item.id_product,
+          idProductStored,
           informationOrder,
           customer,
           contactVal,
@@ -141,7 +163,7 @@ export async function insertOrderListFromPayment(params: InsertOrderListParams):
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             idOrder,
-            item.id_product,
+            idProductStored,
             informationOrder,
             customer,
             contactVal,
@@ -201,8 +223,15 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
            WHEN $5::int IS NOT NULL THEN (
              SELECT sc.${COLS_SC.PRICE}
              FROM ${SUPPLIER_COST_TABLE} sc
-             WHERE sc.${COLS_SC.VARIANT_ID} = ol.${COLS_OL.ID_PRODUCT}
-               AND sc.${COLS_SC.SUPPLIER_ID} = $5
+             INNER JOIN ${VARIANT_TABLE} v ON v.${COLS_V.ID} = sc.${COLS_SC.VARIANT_ID}
+             WHERE sc.${COLS_SC.SUPPLIER_ID} = $5
+               AND (
+                 TRIM(BOTH FROM ol.${COLS_OL.ID_PRODUCT}::text) = TRIM(BOTH FROM v.${COLS_V.VARIANT_NAME}::text)
+                 OR (
+                   TRIM(BOTH FROM ol.${COLS_OL.ID_PRODUCT}::text) ~ '^[0-9]+$'
+                   AND v.${COLS_V.ID} = TRIM(BOTH FROM ol.${COLS_OL.ID_PRODUCT}::text)::int
+                 )
+               )
              LIMIT 1
            )
            ELSE ol.${COLS_OL.COST}

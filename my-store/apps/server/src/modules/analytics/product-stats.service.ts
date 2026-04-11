@@ -24,12 +24,18 @@ export class ProductStatsService {
   }
 
   private async queryProductSoldCount(productId: string): Promise<number> {
-    // id_product trong order_list là variant_id (int); đếm theo product_id qua JOIN variant
+    // id_product trong order_list là varchar (variant_name hoặc id dạng text — đồng bộ admin_orderlist)
     // Loại trừ đơn Chưa Hoàn, Đã Hoàn, Đã Hủy khỏi thống kê doanh thu
     const excludedStatuses = ORDER_LIST_STATUS_EXCLUDE_FROM_STATS;
     const result = await pool.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM ${TABLES.ORDER_LIST} ol
-       INNER JOIN product.variant v ON ol.id_product = v.id
+       INNER JOIN product.variant v ON (
+         TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) = TRIM(BOTH FROM COALESCE(v.variant_name::text, ''))
+         OR (
+           TRIM(BOTH FROM COALESCE(ol.id_product::text, '')) ~ '^[0-9]+$'
+           AND v.id = TRIM(BOTH FROM COALESCE(ol.id_product::text, ''))::int
+         )
+       )
        WHERE v.product_id = $1
          AND ol.status != ALL($2::text[])`,
       [productId, excludedStatuses]

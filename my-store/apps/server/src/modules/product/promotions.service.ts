@@ -4,7 +4,7 @@
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
 import { sqlRetailPrice, sqlPromoPrice } from "../../shared/utils/pricing";
-import { SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { MARGIN_PIVOT_SQL, SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, stripHtml, toNumber } from "./product.helpers";
 
 export async function getPromotionsList() {
@@ -18,9 +18,9 @@ export async function getPromotionsList() {
         v.variant_name AS package_product,
         v.display_name AS id_product,
         v.is_active AS is_active,
-        COALESCE(v.pct_ctv, 0) AS pct_ctv,
-        COALESCE(v.pct_khach, 0) AS pct_khach,
-        v.pct_promo AS pct_promo,
+        COALESCE(margins.pct_ctv, 0) AS pct_ctv,
+        COALESCE(margins.pct_khach, 0) AS pct_khach,
+        margins.pct_promo AS pct_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         d.description,
@@ -28,12 +28,13 @@ export async function getPromotionsList() {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
+      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       WHERE (p.is_active IS NULL OR p.is_active = true)
         AND (v.is_active IS NULL OR v.is_active = true)
-        AND v.pct_promo IS NOT NULL
-        AND v.pct_promo > 0
+        AND margins.pct_promo IS NOT NULL
+        AND margins.pct_promo > 0
     )
     SELECT
       product_id,

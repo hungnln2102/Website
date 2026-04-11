@@ -4,6 +4,15 @@ export type RenewAdobeWebsiteStatusCode =
   | "order_expired"
   | "no_order";
 
+export type RenewResultType =
+  | "check-success"
+  | "expired"
+  | "outside-order"
+  | "activate-success"
+  | "error"
+  | "info"
+  | null;
+
 export type RenewAdobeWebsiteOrder = {
   orderCode: string | null;
   expiryDate: string | null;

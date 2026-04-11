@@ -14,7 +14,7 @@ import {
 } from "../../shared/utils/pricing";
 import type { ProductListPriceScope } from "../../shared/utils/role-code";
 import { normalizeProductListPriceScope } from "../../shared/utils/role-code";
-import { SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { MARGIN_PIVOT_SQL, SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
 
@@ -82,21 +82,22 @@ function buildProductsListQuery(scope: ProductListPriceScope): string {
         p.package_name AS package,
         v.variant_name AS package_product,
         v.is_active AS is_active,
-        COALESCE(v.pct_ctv, 0) AS pct_ctv,
-        COALESCE(v.pct_khach, 0) AS pct_khach,
-        v.pct_promo AS pct_promo,
-        v.pct_stu AS pct_stu,
-        (v.pct_promo IS NOT NULL) AS has_promo,
+        COALESCE(margins.pct_ctv, 0) AS pct_ctv,
+        COALESCE(margins.pct_khach, 0) AS pct_khach,
+        margins.pct_promo AS pct_promo,
+        margins.pct_stu AS pct_stu,
+        (margins.pct_promo IS NOT NULL AND margins.pct_promo > 0) AS has_promo,
         COALESCE(sm.price_max, 0) AS price_max,
         COALESCE(vsc.sales_count, 0) AS sales_count,
         d.short_desc,
         d.description,
         d.rules,
         p.image_url AS image_url,
-        p.created_at AS created_at
+        COALESCE(v.created_at, p.updated_at) AS created_at
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
+      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id

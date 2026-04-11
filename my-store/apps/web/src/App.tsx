@@ -11,7 +11,6 @@ import { APP_CONFIG, isSystemHubPath, ROUTES } from "@/lib/constants";
 const SYSTEM_HUB_VIEWS = new Set<View>([
   "otp",
   "renew-adobe",
-  "renew-zoom",
   "netflix",
 ]);
 
@@ -47,7 +46,6 @@ const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage")
 const TopupPage = lazyWithRetry(() => import("@/features/wallet/TopupPage"));
 const CheckProfilePage = lazyWithRetry(() => import("@/features/CheckProfile/checkprofile"));
 const RenewAdobePage = lazyWithRetry(() => import("@/features/CheckProfile/RenewAdobePage"));
-const ServicePlaceholderPage = lazyWithRetry(() => import("@/features/CheckProfile/ServicePlaceholderPage"));
 const NetflixPage = lazyWithRetry(() => import("@/features/CheckProfile/NetflixPage"));
 const AdobeGuidePage = lazyWithRetry(() => import("@/features/guide/AdobeGuidePage"));
 const AboutPage = lazyWithRetry(() => import("@/features/about/AboutPage"));
@@ -216,23 +214,18 @@ export default function App() {
           title: `Trung tâm gói - ${APP_CONFIG.name}`,
           description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
           keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
-          url: getCurrentUrl(ROUTES.otp),
+          url: getCurrentUrl(ROUTES.fixAdobeEdu),
           type: "website" as const,
           robots: "noindex, follow",
         };
       case "renew-adobe":
-      case "renew-zoom":
       case "netflix":
         return {
           title: `Hỗ trợ dịch vụ - ${APP_CONFIG.name}`,
           description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
           keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
           url: getCurrentUrl(
-            view === "renew-adobe"
-              ? ROUTES.renewAdobe
-              : view === "renew-zoom"
-                ? ROUTES.renewZoom
-                : ROUTES.netflix
+            view === "renew-adobe" ? ROUTES.renewAdobe : ROUTES.netflix
           ),
           type: "website" as const,
           robots: "noindex, follow",
@@ -380,7 +373,6 @@ export default function App() {
         {view === "topup" && <TopupPage />}
         {view === "otp" && <CheckProfilePage />}
         {view === "renew-adobe" && <RenewAdobePage />}
-        {view === "renew-zoom" && <ServicePlaceholderPage serviceId="renew-zoom" />}
         {view === "netflix" && <NetflixPage />}
         {view === "adobe-guide" && <AdobeGuidePage />}
         {view === "about" && <AboutPage />}
