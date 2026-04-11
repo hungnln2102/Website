@@ -4,7 +4,7 @@
 import prisma from "@my-store/db";
 import { TABLES } from "../../config/db.config";
 import { MARGIN_PIVOT_SQL } from "./product-sql.shared";
-import { sqlRetailPrice } from "../../shared/utils/pricing";
+import { sqlPromoPrice, sqlRetailPrice } from "../../shared/utils/pricing";
 import { toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
 
@@ -52,7 +52,8 @@ export async function getProductPackages(packageName: string) {
     )
     SELECT
       *,
-      ${sqlRetailPrice('price_max', 'pct_ctv', 'pct_khach')} AS cost
+      ${sqlRetailPrice('price_max', 'pct_ctv', 'pct_khach')} AS cost,
+      ${sqlPromoPrice('price_max', 'pct_ctv', 'pct_khach', 'pct_promo')} AS promo_cost
     FROM priced
     WHERE package_product IS NOT NULL;
   `;

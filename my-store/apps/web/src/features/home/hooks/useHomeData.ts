@@ -1,13 +1,9 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchCategories,
-  fetchProducts,
-  fetchPromotions,
-  productsQueryKey,
-  type CategoryDto,
-  type PromotionDto,
-} from "@/lib/api";
+import { fetchProducts, productsQueryKey } from "@/features/product/api/products.api";
+import { fetchPromotions } from "@/features/catalog/api/promotions.api";
+import { fetchCategories } from "@/features/catalog/api/categories.api";
+import type { CategoryDto, PromotionDto } from "@/lib/types";
 import { useAuth } from "@/features/auth/hooks";
 import { categoriesMock } from "@/lib/mockData";
 import { slugify } from "@/lib/utils";

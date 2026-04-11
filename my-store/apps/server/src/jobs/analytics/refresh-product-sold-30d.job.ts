@@ -1,18 +1,21 @@
-import cron from 'node-cron';
-import prisma from '@my-store/db';
+import cron from "node-cron";
+import prisma from "@my-store/db";
+import logger from "../../shared/utils/logger";
 
 /**
- * Refresh product sold count (30 days) materialized view
- * Runs every 5 minutes
+ * Refresh product_sold_30d MV.
+ * Gọi từ `registerCrons` — chỉ leader cluster mới đăng ký.
  */
-cron.schedule('*/5 * * * *', async () => {
-  try {
-    console.log('🔄 Refreshing product sold count (30 days)...');
-    await prisma.$executeRaw`SELECT product.refresh_product_sold_30d()`;
-    console.log('✅ Product sold count (30 days) refreshed');
-  } catch (error) {
-    console.error('❌ Failed to refresh product sold count (30 days):', error);
-  }
-});
-
-console.log('✅ Product sold count (30 days) cron job started (every 5 minutes)');
+export function registerRefreshProductSold30dCron() {
+  const task = cron.schedule("*/5 * * * *", async () => {
+    try {
+      console.log("🔄 Refreshing product sold count (30 days)...");
+      await prisma.$executeRaw`SELECT product.refresh_product_sold_30d()`;
+      console.log("✅ Product sold count (30 days) refreshed");
+    } catch (error) {
+      logger.error("Failed to refresh product sold count (30 days)", { error });
+    }
+  });
+  console.log("✅ Product sold count (30 days) cron scheduled (every 5 minutes)");
+  return task;
+}

@@ -10,6 +10,7 @@ import { insertOrderListFromPayment } from "../order/order-list.service";
 import type { OrderListItemInput } from "../order/order-list.service";
 import * as customerEmail from "../notification/customer-email.service";
 import { getAccountEmailById } from "../notification/customer-email-lookup";
+import logger from "../../shared/utils/logger";
 
 export type PaymentMethod = "Mcoin" | "QR";
 
@@ -57,7 +58,7 @@ export function handlePaymentSuccess(params: HandlePaymentSuccessParams): void {
       items: itemsForOrderList,
       contact: contact ?? process.env.FRONTEND_URL ?? undefined,
     }).catch((err) => {
-      console.error("[PaymentSuccess] order_list insert failed:", err);
+      logger.error("[PaymentSuccess] order_list insert failed", { error: err });
     });
   }
 
@@ -69,7 +70,7 @@ export function handlePaymentSuccess(params: HandlePaymentSuccessParams): void {
       lines: linesForTelegram,
       totalAmount,
     }).catch((err) => {
-      console.error("[PaymentSuccess] Telegram notification failed:", err);
+      logger.error("[PaymentSuccess] Telegram notification failed", { error: err });
     });
   } else {
     notifyNewOrder({
@@ -77,7 +78,7 @@ export function handlePaymentSuccess(params: HandlePaymentSuccessParams): void {
       orderIds,
       totalAmount,
     }).catch((err) => {
-      console.error("[PaymentSuccess] Telegram notification failed:", err);
+      logger.error("[PaymentSuccess] Telegram notification failed", { error: err });
     });
   }
 
@@ -94,7 +95,7 @@ export function handlePaymentSuccess(params: HandlePaymentSuccessParams): void {
         });
       })
       .catch((err) => {
-        console.error("[PaymentSuccess] customer payment email failed:", err);
+        logger.error("[PaymentSuccess] customer payment email failed", { error: err });
       });
   }
 

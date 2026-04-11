@@ -7,6 +7,7 @@ import { DB_SCHEMA } from "../../config/db.config";
 import { updateOrderDone, cancelOrder } from "./order-list.service";
 import * as customerEmail from "../notification/customer-email.service";
 import { getAccountEmailByOrderId } from "../notification/customer-email-lookup";
+import logger from "../../shared/utils/logger";
 
 function getApiKey(req: Request): string | undefined {
   const header = req.headers["x-api-key"];
@@ -31,6 +32,19 @@ function checkOrderApiKey(req: Request, res: Response): boolean {
   return true;
 }
 
+/** Không log toàn bộ body (Telegram/bot có thể chứa PII). */
+function summarizeOrderWebhookBody(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { shape: typeof body };
+  }
+  const o = body as Record<string, unknown>;
+  return {
+    keys: Object.keys(o),
+    id_order: typeof o.id_order === "string" ? o.id_order : undefined,
+    has_supply: o.supply_id != null || o.supply != null,
+  };
+}
+
 /**
  * POST /api/orders/notify-done
  * Body: { id_order: string, information_order?: string, slot?: string, note?: string, supply_id?: number | string }
@@ -39,7 +53,7 @@ function checkOrderApiKey(req: Request, res: Response): boolean {
 export async function notifyDone(req: Request, res: Response): Promise<void> {
   if (!checkOrderApiKey(req, res)) return;
 
-  console.log("[orders] notify-done – body from bot:", JSON.stringify(req.body, null, 2));
+  console.log("[orders] notify-done", summarizeOrderWebhookBody(req.body));
 
   const id_order =
     typeof req.body?.id_order === "string" ? req.body.id_order.trim() : "";
@@ -83,13 +97,13 @@ export async function notifyDone(req: Request, res: Response): Promise<void> {
             infoSnippet,
           });
         })
-        .catch((e) => console.error("[orders] notify-done customer email:", e));
+        .catch((e) => logger.error("[orders] notify-done customer email", { error: e }));
     }
     res.status(200).json({ success: true, updated: count });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
-    console.error("[orders] notify-done error:", message, stack ?? "");
+    logger.error("[orders] notify-done error", { message, stack });
     const safeMessage =
       process.env.NODE_ENV !== "production" ? message : "Server error";
     res.status(500).json({ success: false, error: safeMessage });
@@ -103,7 +117,7 @@ export async function notifyDone(req: Request, res: Response): Promise<void> {
 export async function cancel(req: Request, res: Response): Promise<void> {
   if (!checkOrderApiKey(req, res)) return;
 
-  console.log("[orders] cancel – body from bot:", JSON.stringify(req.body, null, 2));
+  console.log("[orders] cancel", summarizeOrderWebhookBody(req.body));
 
   const id_order =
     typeof req.body?.id_order === "string" ? req.body.id_order.trim() : "";
@@ -122,7 +136,7 @@ export async function cancel(req: Request, res: Response): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
-    console.error("[orders] cancel error:", message, stack ?? "");
+    logger.error("[orders] cancel error", { message, stack });
     const safeMessage =
       process.env.NODE_ENV !== "production" ? message : "Server error";
     res.status(500).json({ success: false, error: safeMessage });
@@ -158,7 +172,7 @@ export async function getSuppliers(req: Request, res: Response): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
-    console.error("[orders] getSuppliers error:", message, stack ?? "");
+    logger.error("[orders] getSuppliers error", { message, stack });
     const safeMessage =
       process.env.NODE_ENV !== "production" ? message : "Server error";
     res.status(500).json({ success: false, error: safeMessage });

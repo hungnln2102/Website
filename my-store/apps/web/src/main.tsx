@@ -7,18 +7,18 @@ import { reportWebVitals, measurePerformance } from '@/lib/performance/web-vital
 import { errorTracker } from '@/lib/error-tracking/error-tracker';
 import App from './App';
 import { AuthProvider } from '@/features/auth/hooks';
+import {
+  idempotentGetRetryDelay,
+  shouldRetryIdempotentQuery,
+} from '@/lib/api/query-retry';
 import './index.css';
 
-// Retry function with exponential backoff
-const retryWithBackoff = (failureCount: number, error: unknown) => {
-  // Don't retry on 4xx errors (client errors)
-  if (error instanceof Error) {
-    if (error.message.includes('404') || error.message.includes('403') || error.message.includes('401')) {
-      return false;
-    }
-  }
-  // Retry up to 3 times for network/server errors
-  return failureCount < 3;
+const PERF_DEBUG =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("perf");
+
+type PerfWindow = Window & {
+  __WEB_VITALS__?: Record<string, number>;
 };
 
 // Configure React Query with optimized settings
@@ -28,14 +28,33 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      retry: retryWithBackoff,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retry: shouldRetryIdempotentQuery,
+      retryDelay: idempotentGetRetryDelay,
     },
   },
 });
 
-// Initialize error tracking
-errorTracker.init();
+function scheduleErrorTrackerInit() {
+  if (typeof window === "undefined") return;
+  const hasSentryDsn = Boolean(import.meta.env.VITE_SENTRY_DSN);
+  if (!hasSentryDsn) return;
+
+  const init = () => {
+    void errorTracker.init();
+  };
+
+  const idleApi = window as Window & {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+  };
+
+  if (idleApi.requestIdleCallback) {
+    idleApi.requestIdleCallback(init, { timeout: 4000 });
+  } else {
+    window.setTimeout(init, 2000);
+  }
+}
+
+scheduleErrorTrackerInit();
 
 // Register Service Worker
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
@@ -55,9 +74,14 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 // Report Web Vitals (silent - no console logs)
-reportWebVitals(() => {
-  // Metrics are automatically sent via web-vitals.ts
-  // No console logging to reduce noise
+reportWebVitals((metric) => {
+  if (!PERF_DEBUG || typeof window === "undefined") return;
+  const value = Math.round(Number(metric.value) * 1000) / 1000;
+  (window as PerfWindow).__WEB_VITALS__ = {
+    ...((window as PerfWindow).__WEB_VITALS__ ?? {}),
+    [metric.name]: value,
+  };
+  console.log(`[WebVitals] ${metric.name}=${value}`);
 });
 
 // Measure performance on load

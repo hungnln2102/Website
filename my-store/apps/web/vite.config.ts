@@ -1,7 +1,10 @@
 import fs from 'fs';
+import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+const analyzeBundle = process.env.ANALYZE === 'true';
 
 /** my-store apps/server (sản phẩm, giỏ, thanh toán, …) */
 const STORE_API_URL = process.env.VITE_STORE_API_URL || 'http://127.0.0.1:4000';
@@ -92,7 +95,18 @@ function extensionlessBrandingAssets() {
 
 export default defineConfig({
   base: '/',
-  plugins: [react(), extensionlessBrandingAssets()],
+  plugins: [
+    react(),
+    extensionlessBrandingAssets(),
+    analyzeBundle &&
+      visualizer({
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+        open: false,
+        template: 'treemap',
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -171,6 +185,7 @@ export default defineConfig({
           if (id.includes('/sonner/')) {
             return 'sonner-vendor';
           }
+
         },
       },
     },

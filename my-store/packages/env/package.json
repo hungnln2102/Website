@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts":{"build":"node -e \"process.exit(0)\""},"exports": {
+  "scripts": {
+    "build": "node -e \"process.exit(0)\"",
+    "check-types": "tsc -p tsconfig.json --noEmit"
+  },
+  "exports": {
     "./server": "./src/server.ts",
     "./web": "./src/web.ts"
   },

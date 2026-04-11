@@ -1,5 +1,9 @@
-import type { Request, Response } from 'express';
-import prisma from '@my-store/db';
+import type { Request, Response } from "express";
+import prisma from "@my-store/db";
+import { isRedisAvailable } from "../../config/redis";
+import { getCatalogSchemaReport } from "./catalog-schema.service";
+import { getRequestMetricsSnapshot } from "../../shared/middleware/request-metrics";
+import logger from "../../shared/utils/logger";
 
 /**
  * Basic health check endpoint
@@ -27,7 +31,7 @@ export async function healthCheckDatabase(_req: Request, res: Response) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Database health check failed:', error);
+    logger.error("Database health check failed", { error });
     res.status(503).json({
       status: 'error',
       database: 'disconnected',
@@ -42,24 +46,26 @@ export async function healthCheckDatabase(_req: Request, res: Response) {
  */
 export async function readinessCheck(_req: Request, res: Response) {
   try {
-    // Check database connection
     await prisma.$queryRaw`SELECT 1`;
-    
-    // Add more checks here as needed (e.g., external services)
-    
+
+    const redisOk = isRedisAvailable();
+    /** `fallback` = Redis không kết nối; app vẫn ready (cache in-memory). Xem `docs/RUNBOOKS_COMPACT.md`. */
+    const redis: "ok" | "fallback" = redisOk ? "ok" : "fallback";
+
     res.status(200).json({
-      status: 'ready',
+      status: "ready",
       checks: {
-        database: 'ok',
+        database: "ok",
+        redis,
       },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Readiness check failed:', error);
+    logger.error("Readiness check failed", { error });
     res.status(503).json({
-      status: 'not ready',
+      status: "not ready",
       checks: {
-        database: 'failed',
+        database: "failed",
       },
       timestamp: new Date().toISOString(),
     });
@@ -74,4 +80,60 @@ export function livenessCheck(_req: Request, res: Response) {
     status: 'alive',
     timestamp: new Date().toISOString(),
   });
+}
+
+/**
+ * Schema + MV + hàm refresh phục vụ /products và /promotions (mục 1.1).
+ * HTTP 200 + `catalogReady`; vận hành cảnh báo khi `catalogReady === false`.
+ */
+/**
+ * Metrics nhẹ (RPS theo nhóm path, 4xx/5xx, avg latency). Bật khi đặt `METRICS_TOKEN`.
+ * Gửi `Authorization: Bearer <token>` hoặc header `x-metrics-token`.
+ */
+export function metricsJson(req: Request, res: Response) {
+  const token = process.env.METRICS_TOKEN?.trim();
+  if (!token) {
+    res.status(404).json({
+      enabled: false,
+      hint: "Set METRICS_TOKEN in apps/server env to enable this endpoint.",
+    });
+    return;
+  }
+  const auth = req.headers.authorization;
+  const hdr = req.headers["x-metrics-token"];
+  const ok =
+    auth === `Bearer ${token}` ||
+    (typeof hdr === "string" && hdr === token);
+  if (!ok) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.status(200).json({
+    ...getRequestMetricsSnapshot(),
+    pid: process.pid,
+  });
+}
+
+export async function catalogDependencyCheck(_req: Request, res: Response) {
+  try {
+    const report = await getCatalogSchemaReport();
+    const status = report.catalogReady ? 200 : 503;
+    const { catalogReady, items, rowCounts, refreshFunctions } = report;
+    res.status(status).json({
+      status: catalogReady ? "ok" : "degraded",
+      catalogReady,
+      timestamp: new Date().toISOString(),
+      items,
+      rowCounts,
+      refreshFunctions,
+    });
+  } catch (error) {
+    logger.error("Catalog dependency check failed", { error });
+    res.status(503).json({
+      status: "error",
+      catalogReady: false,
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 }

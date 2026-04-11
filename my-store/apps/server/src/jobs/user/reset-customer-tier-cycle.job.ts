@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
+import logger from "../../shared/utils/logger";
 
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
@@ -190,7 +191,7 @@ async function runTierCycleReset(): Promise<void> {
     scheduleNextRun();
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("❌ [TierCycleReset] Lỗi:", err);
+    logger.error("[TierCycleReset] Lỗi", { error: err });
     scheduleNextRun();
   } finally {
     client.release();
@@ -238,14 +239,17 @@ async function scheduleNextRun(): Promise<void> {
       `✅ [TierCycleReset] Đã lên lịch chạy lúc ${current.cycleEndAt.toISOString()} (sau ${Math.round(delayMs / 1000 / 60)} phút)`
     );
   } catch (err) {
-    console.error("[TierCycleReset] Lỗi khi lên lịch:", err);
+    logger.error("[TierCycleReset] Lỗi khi lên lịch", { error: err });
   }
 }
 
 /**
  * Job chạy đúng thời điểm cycle_end_at của chu kỳ OPEN (id thấp nhất).
- * Sau mỗi lần chạy, lên lịch lần tiếp theo theo cycle_end_at của chu kỳ OPEN mới.
+ * Gọi từ `registerCrons` — chỉ leader cluster mới đăng ký.
  */
-scheduleNextRun();
-
-console.log("✅ [TierCycleReset] Đã đăng ký: thời gian chạy = cycle_end_at của chu kỳ OPEN (id nhỏ nhất).");
+export function registerTierCycleResetCron(): void {
+  void scheduleNextRun();
+  console.log(
+    "✅ [TierCycleReset] Đã đăng ký: thời gian chạy = cycle_end_at của chu kỳ OPEN (id nhỏ nhất)."
+  );
+}

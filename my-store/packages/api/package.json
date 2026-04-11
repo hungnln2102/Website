@@ -10,7 +10,8 @@
     }
   },
   "scripts": {
-    "build": "node -e \"process.exit(0)\""
+    "build": "node -e \"process.exit(0)\"",
+    "check-types": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

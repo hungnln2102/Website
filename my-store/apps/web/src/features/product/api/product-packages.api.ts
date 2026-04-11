@@ -21,6 +21,10 @@ export async function fetchProductPackages(
     return list.map((p) => ({
       ...p,
       cost: Number(p.cost) || 0,
+      promo_cost:
+        p.promo_cost != null && String(p.promo_cost).trim() !== ""
+          ? Number(p.promo_cost) || 0
+          : undefined,
     }));
   } catch (error) {
     if (error instanceof Error) throw error;

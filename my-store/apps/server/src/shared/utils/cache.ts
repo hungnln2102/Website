@@ -1,6 +1,5 @@
 /**
- * Simple in-memory cache implementation
- * For production, consider using Redis
+ * In-memory cache + singleflight (tránh stampede) + TTL jitter tùy chọn.
  */
 
 interface CacheEntry<T> {
@@ -8,8 +7,15 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
+function ttlJitterSeconds(baseTtl: number): number {
+  const maxJitter = Number(process.env.CACHE_TTL_JITTER_SEC ?? "48");
+  if (!Number.isFinite(maxJitter) || maxJitter <= 0) return baseTtl;
+  return baseTtl + Math.floor(Math.random() * (maxJitter + 1));
+}
+
 class Cache {
   private store: Map<string, CacheEntry<any>> = new Map();
+  private inflight = new Map<string, Promise<unknown>>();
 
   /**
    * Get value from cache
@@ -31,11 +37,52 @@ class Cache {
   }
 
   /**
-   * Set value in cache with TTL in seconds
+   * Set value in cache with TTL in seconds.
+   * `applyJitter` — cộng ngẫu nhiên 0…`CACHE_TTL_JITTER_SEC` (tránh expire đồng loạt).
    */
-  set<T>(key: string, data: T, ttlSeconds: number = 300): void {
-    const expiresAt = Date.now() + ttlSeconds * 1000;
+  set<T>(
+    key: string,
+    data: T,
+    ttlSeconds: number = 300,
+    applyJitter = false,
+  ): void {
+    const ttl = applyJitter ? ttlJitterSeconds(ttlSeconds) : ttlSeconds;
+    const expiresAt = Date.now() + ttl * 1000;
     this.store.set(key, { data, expiresAt });
+  }
+
+  /**
+   * Lấy hoặc tính một lần cho cùng key (singleflight — nhiều request đồng thời chỉ gọi factory một lần).
+   * `cacheHit === false` chỉ trên request “leader” chạy factory; request chờ chung promise có `cacheHit === true`.
+   */
+  async getOrSet<T>(
+    key: string,
+    ttlSeconds: number,
+    factory: () => Promise<T>,
+  ): Promise<{ value: T; cacheHit: boolean }> {
+    const hit = this.get<T>(key);
+    if (hit !== null) {
+      return { value: hit, cacheHit: true };
+    }
+
+    let created = false;
+    let work = this.inflight.get(key) as Promise<T> | undefined;
+    if (!work) {
+      created = true;
+      work = (async () => {
+        try {
+          const data = await factory();
+          this.set(key, data, ttlSeconds, true);
+          return data;
+        } finally {
+          this.inflight.delete(key);
+        }
+      })();
+      this.inflight.set(key, work);
+    }
+
+    const value = await work;
+    return { value, cacheHit: !created };
   }
 
   /**
@@ -43,6 +90,7 @@ class Cache {
    */
   delete(key: string): void {
     this.store.delete(key);
+    this.inflight.delete(key);
   }
 
   /**
@@ -50,6 +98,7 @@ class Cache {
    */
   clear(): void {
     this.store.clear();
+    this.inflight.clear();
   }
 
   /**

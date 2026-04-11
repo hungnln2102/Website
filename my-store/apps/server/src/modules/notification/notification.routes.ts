@@ -5,12 +5,14 @@
 
 import express from "express";
 import { authenticate } from "../../shared/middleware/auth";
+import { webhookLimiter } from "../../shared/middleware/rate-limiter";
 import * as mailWebhookController from "./mail-webhook.controller";
 
 const router = express.Router();
 
 router.post(
   "/webhook",
+  webhookLimiter,
   express.raw({ type: "application/json" }),
   (req, res) => mailWebhookController.mailWebhook(req, res)
 );

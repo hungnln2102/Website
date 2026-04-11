@@ -74,9 +74,9 @@ export function useProductData(
     );
   }, [allProducts, legacyPackageQuery, slug]);
 
-  // Fetch packages
+  // Fetch packages (không default [] để phân biệt đang tải vs rỗng)
   const {
-    data: packageData = [],
+    data: packageData,
     isLoading: loadingPackages,
     error: packagesError,
     refetch: refetchPackages,
@@ -87,15 +87,17 @@ export function useProductData(
     enabled: !!productData?.package,
   });
 
+  const packagesList = Array.isArray(packageData) ? packageData : [];
+
   const matchedPackageVariant = useMemo(() => {
-    if (!selectedPackage || !selectedDuration || packageData.length === 0) {
+    if (!selectedPackage || !selectedDuration || packagesList.length === 0) {
       return null;
     }
 
     const normalizedPackageKey = selectedPackage.trim().toLowerCase();
 
     return (
-      packageData.find((pkg) => {
+      packagesList.find((pkg) => {
         const packageKey = (pkg.package_product ?? pkg.package ?? "")
           .trim()
           .toLowerCase();
@@ -106,7 +108,7 @@ export function useProductData(
         );
       }) ?? null
     );
-  }, [packageData, selectedDuration, selectedPackage]);
+  }, [packagesList, selectedDuration, selectedPackage]);
 
   // Extract base_name for product info
   const baseName = useMemo(() => {
@@ -167,9 +169,9 @@ export function useProductData(
   const packages = useMemo(() => {
     if (!product) return [];
 
-    if (packageData.length > 0) {
+    if (packagesList.length > 0) {
       const dedup = new Map<string, any>();
-      packageData.forEach((pkg) => {
+      packagesList.forEach((pkg) => {
         const variantName = pkg.package_product?.trim() || pkg.package?.trim() || "Gói";
         const packageKey = variantName.toLowerCase();
         const costValue = Number(pkg.cost) || 0;
@@ -212,7 +214,7 @@ export function useProductData(
       const list = Array.from(dedup.values());
       list.forEach((pkg) => {
         const packageKey = (pkg.name || "").trim().toLowerCase();
-        pkg.has_available_duration = packageData.some(
+        pkg.has_available_duration = packagesList.some(
           (p) =>
             ((p.package_product ?? p.package ?? "").trim().toLowerCase() === packageKey) &&
             p.is_active !== false
@@ -237,23 +239,29 @@ export function useProductData(
         has_promo: false,
       },
     ];
-  }, [packageData, product, packagesFromMock]);
+  }, [packagesList, product, packagesFromMock]);
 
   // Process duration options
   const durationOptions = useMemo<DurationOption[]>(() => {
     if (!product) return [];
 
-    if (packageData.length > 0) {
+    if (packagesList.length > 0) {
       const activePackageKey = (selectedPackage || "").toLowerCase();
       if (!activePackageKey) return [];
 
       const options = new Map<string, DurationOption>();
-      packageData.forEach((pkg, idx) => {
+      packagesList.forEach((pkg, idx) => {
         const packageKey = (pkg.package_product ?? pkg.package ?? "").trim().toLowerCase();
         if (packageKey !== activePackageKey) return;
 
         const duration = parseDurationToken(pkg.id_product);
         const price = roundToNearestThousand(pkg.cost);
+        const pctPromo = Number(pkg.pct_promo) || 0;
+        const promoRaw = Number((pkg as { promo_cost?: number }).promo_cost);
+        const promoPrice =
+          pctPromo > 0 && Number.isFinite(promoRaw) && promoRaw > 0
+            ? roundToNearestThousand(promoRaw)
+            : undefined;
         const key = duration?.key ?? (pkg.id_product?.trim() || `opt-${idx}`);
         const label = duration?.label ?? (pkg.id_product?.trim() || "Gói");
         const sortValue = duration?.sortValue ?? Number.MAX_SAFE_INTEGER;
@@ -267,6 +275,7 @@ export function useProductData(
             key,
             label,
             price,
+            promoPrice,
             sortValue,
             pct_promo: pkg.pct_promo,
             is_active: isActive,
@@ -284,7 +293,7 @@ export function useProductData(
       { id: undefined, key: "24m", label: "24 tháng", price: roundToNearestThousand(base * 1.8), sortValue: 24, is_active: true },
       { id: undefined, key: "36m", label: "36 tháng", price: roundToNearestThousand(base * 2.5), sortValue: 36, is_active: true },
     ];
-  }, [packageData, product, selectedPackage]);
+  }, [packagesList, product, selectedPackage]);
 
   // Selected package info
   const selectedPackageImageUrl = useMemo(() => {
@@ -292,7 +301,7 @@ export function useProductData(
       return matchedPackageVariant.image_url;
     }
 
-    if (!selectedPackage || !selectedDuration || packageData.length > 0) {
+    if (!selectedPackage || !selectedDuration || packagesList.length > 0) {
       return null;
     }
 
@@ -300,7 +309,7 @@ export function useProductData(
     return pkg?.image_url || null;
   }, [
     matchedPackageVariant,
-    packageData.length,
+    packagesList.length,
     packages,
     selectedDuration,
     selectedPackage,
@@ -325,7 +334,7 @@ export function useProductData(
       };
     }
 
-    if (!selectedDuration || packageData.length > 0) {
+    if (!selectedDuration || packagesList.length > 0) {
       return {
         short_description: null,
         description: null,
@@ -341,7 +350,7 @@ export function useProductData(
       purchase_rules: pkg?.purchase_rules || null,
       seo_heading: pkg?.seo_heading || null,
     };
-  }, [matchedPackageVariant, packageData.length, packages, selectedDuration, selectedPackage]);
+  }, [matchedPackageVariant, packagesList.length, packages, selectedDuration, selectedPackage]);
 
   // Reviews
   const reviews = product ? reviewsMock.filter((r) => r.product_id === product.id) : [];
@@ -388,8 +397,9 @@ export function useProductData(
     allProducts,
     categories,
 
-    // Loading
-    loading: loadingProducts || (!!productData?.package && loadingPackages),
+    // Loading: danh sách SP; gói variant tải riêng để trang chi tiết hiện skeleton panel
+    loading: loadingProducts,
+    loadingPackagesPanel: Boolean(productData?.package && loadingPackages),
     loadingProductInfo,
 
     // Errors

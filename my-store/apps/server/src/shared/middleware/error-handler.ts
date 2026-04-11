@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { Prisma } from '@my-store/db';
+import { notifyError } from "../utils/telegram-error-notifier";
 
 /**
  * Global error handler middleware
@@ -12,6 +13,14 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
+  const basePayload = {
+    source: "backend" as const,
+    url: req.url,
+    method: req.method,
+    message: err.message || "Unknown error",
+    stack: err.stack,
+  };
+
   // Log error details for debugging
   console.error('Error occurred:', {
     message: err.message,
@@ -48,6 +57,10 @@ export const errorHandler = (
           message: 'The requested record was not found',
         });
       default:
+        notifyError({
+          ...basePayload,
+          extra: "PrismaClientKnownRequestError",
+        });
         return res.status(500).json({
           error: 'Database error',
           message: process.env.NODE_ENV === 'production'
@@ -68,6 +81,10 @@ export const errorHandler = (
   }
 
   // Default error response
+  notifyError({
+    ...basePayload,
+    extra: "Unhandled route error",
+  });
   res.status(500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'production'

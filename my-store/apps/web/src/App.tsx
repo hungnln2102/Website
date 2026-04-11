@@ -2,7 +2,6 @@ import { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaTags } from "@/components/SEO";
 import SkipLinks from "@/components/accessibility/SkipLinks";
-import MaintenancePage from "@/components/MaintenancePage";
 import HomePage from "@/features/home/HomePage";
 import { useRouter, type View } from "@/hooks/useRouter";
 import { isMaintenanceMode, onMaintenanceChange } from "@/lib/api/client";
@@ -56,6 +55,8 @@ const PaymentSuccessPage = lazyWithRetry(() => import("@/features/payment/Paymen
 const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentErrorPage"));
 const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
 const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
+/** Trang bảo trì — lazy vì chỉ tải khi API báo maintenance. */
+const MaintenancePage = lazyWithRetry(() => import("@/components/MaintenancePage"));
 
 const VIEWS_WITH_OWN_SEO = new Set<View>([
   "home",
@@ -89,19 +90,31 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const connection = (
+      navigator as Navigator & {
+        connection?: { effectiveType?: string; saveData?: boolean };
+      }
+    ).connection;
+
+    const isSlowNetwork =
+      connection?.saveData === true ||
+      ["slow-2g", "2g", "3g"].includes((connection?.effectiveType || "").toLowerCase());
+    const isMobileViewport = window.matchMedia("(max-width: 768px)").matches;
+    const isLowCpu =
+      typeof navigator.hardwareConcurrency === "number" &&
+      navigator.hardwareConcurrency > 0 &&
+      navigator.hardwareConcurrency <= 4;
+
+    // Avoid aggressive prefetch on slow/mobile/low-end devices.
+    if (isSlowNetwork || isMobileViewport || isLowCpu) return;
 
     let cancelled = false;
     const runWarmup = () => {
       if (cancelled) return;
       Promise.allSettled([
         import("@/features/catalog/CategoryPage"),
-        import("@/features/catalog/NewProductsPage"),
         import("@/features/catalog/AllProductsPage"),
         import("@/features/auth/LoginPage"),
-        import("@/features/cart/CartPage"),
-        import("@/features/profile/ProfilePage"),
-        import("@/features/about/AboutPage"),
-        import("@/features/news/NewsPage"),
       ]).catch(() => {});
     };
 
@@ -110,7 +123,7 @@ export default function App() {
       cancelIdleCallback?: (id: number) => void;
     };
 
-    const fallbackTimer = window.setTimeout(runWarmup, 2500);
+    const fallbackTimer = window.setTimeout(runWarmup, 4000);
     const idleId = idleApi.requestIdleCallback?.(runWarmup, { timeout: 5000 });
 
     return () => {
@@ -259,7 +272,17 @@ export default function App() {
     (typeof window !== "undefined" && isSystemHubPath(window.location.pathname));
 
   if (maintenance && !allowSiteDuringMaintenance) {
-    return <MaintenancePage />;
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-200">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
+          </div>
+        }
+      >
+        <MaintenancePage />
+      </Suspense>
+    );
   }
 
   if (view === "home" || (view === "product" && !selectedSlug)) {

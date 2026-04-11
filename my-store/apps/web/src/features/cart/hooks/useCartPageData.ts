@@ -4,7 +4,15 @@ import { mapStorageItemsToCartItemData, computeCartTotals } from "../utils/cartI
 import type { CartItemData } from "../components/CartItem";
 
 export function useCartPageData() {
-  const { items: cartStorageItems, updateQuantity, removeItem, clearCart, isLoggedIn } = useCart();
+  const {
+    items: cartStorageItems,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    isLoggedIn,
+    isLoaded,
+    isSyncing,
+  } = useCart();
 
   const cartItems: CartItemData[] = useMemo(
     () => mapStorageItemsToCartItemData(cartStorageItems),
@@ -26,5 +34,7 @@ export function useCartPageData() {
     removeItem,
     clearCart,
     isLoggedIn,
+    isLoaded,
+    isSyncing,
   };
 }

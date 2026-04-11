@@ -15,8 +15,12 @@ const MAINTENANCE_BYPASS_PREFIXES = [
   "/api/fix-adobe",
   "/api/netflix",
   "/api/renew-adobe/public",
+  /** Route check trạng thái maintenance (đặt trước guard, vẫn keep ở đây để chống regression). */
+  "/api/maintenance/status",
   "/categories",
   "/products",
+  /** Probe + metrics vận hành (1.3) — không chặn khi bảo trì. */
+  "/health",
 ];
 
 function pathBypassesMaintenance(reqPath: string): boolean {

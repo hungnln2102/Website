@@ -239,6 +239,14 @@ ALTER TABLE customer.customer_profiles
   ADD COLUMN IF NOT EXISTS date_of_birth_changed_at TIMESTAMPTZ;
 
 -- -----------------------------------------------------------------------------
+-- 10. Catalog /products + /promotions — chỉ mục hỗ trợ JOIN & GROUP BY (1.1)
+-- -----------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_variant_margin_variant_id
+  ON product.variant_margin (variant_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_cost_variant_id
+  ON product.supplier_cost (variant_id);
+
+-- -----------------------------------------------------------------------------
 -- DONE
 -- -----------------------------------------------------------------------------
 -- Các migration khác (create tables, cart, fix_wallet_sequence, ...) có thể đã

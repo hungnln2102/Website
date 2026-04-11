@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { productSoldCountService } from '../../modules/analytics/product-sold-count.service';
+import logger from '../../shared/utils/logger';
 
 /**
  * Refresh product sold count materialized view
@@ -10,7 +11,7 @@ cron.schedule('*/15 * * * *', async () => {
     console.log('🔄 Refreshing product sold count...');
     await productSoldCountService.refreshSoldCount();
   } catch (error) {
-    console.error('❌ Failed to refresh sold count:', error);
+    logger.error('Failed to refresh sold count', { error });
   }
 });
 

@@ -45,7 +45,6 @@ const EXEMPT_PATHS = [
   "/payment/callback",
   "/payment/success",
   "/payment/error",
-  "/payment/create",    // Has its own validation
   // Mail webhook – xác thực bằng SIGNING_SECRET (Svix)
   "/mail/webhook",
   // Order API – Bot Telegram xác thực bằng X-Api-Key (NOTIFY_ORDER_API_KEY)

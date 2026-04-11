@@ -11,8 +11,10 @@ import helmet from "helmet";
 
 // Shared middleware
 import { errorHandler, asyncHandler } from "./shared/middleware/error-handler";
+import { correlationIdMiddleware } from "./shared/middleware/correlation-id";
 import { requestLogger, responseTimeLogger } from "./shared/middleware/logger";
-import { generalLimiter } from "./shared/middleware/rate-limiter";
+import { buildSecurityTxt } from "./shared/utils/security-txt";
+import { generalLimiter, webhookLimiter } from "./shared/middleware/rate-limiter";
 import {
   apiSecurityMiddleware,
   limitPayloadSize,
@@ -45,6 +47,12 @@ import maintenanceRouter from "./modules/maintenance/maintenance.routes";
 import { maintenanceGuard } from "./shared/middleware/maintenance";
 import * as sitemapController from "./modules/seo/sitemap.controller";
 import * as healthRoutes from "./modules/health/health.routes";
+import { CACHE_TTL_SEC } from "./config/cache-ttl";
+import { httpCacheKeys } from "./shared/utils/cache-keys";
+import { assertSecurityConfig } from "./config/security-env";
+import { buildCspDirectives } from "./config/helmet-csp";
+import logger from "./shared/utils/logger";
+import { notifyCritical } from "./shared/utils/telegram-error-notifier";
 
 // Cron jobs: load sau khi server listen (dynamic import trong start()) để tránh treo lúc khởi động
 
@@ -53,6 +61,34 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const app = express();
+
+process.on("uncaughtException", (err) => {
+  logger.error("[FATAL] uncaughtException", {
+    error: err.message,
+    stack: err.stack,
+  });
+  notifyCritical({
+    source: "backend",
+    message: `uncaughtException: ${err.message}`,
+    stack: err.stack,
+    extra: "Server will exit in 3 seconds",
+  });
+  setTimeout(() => process.exit(1), 3_000);
+});
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : undefined;
+  logger.error("[FATAL] unhandledRejection", { error: msg, stack });
+  notifyCritical({
+    source: "backend",
+    message: `unhandledRejection: ${msg}`,
+    stack,
+  });
+});
+
+// Fail fast on insecure production config (secrets/CORS).
+assertSecurityConfig();
 
 // Khi chạy sau proxy (Nginx, load balancer): cần trust proxy để express-rate-limit
 // và req.secure/req.ip dùng đúng X-Forwarded-For / X-Forwarded-Proto
@@ -74,16 +110,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use(helmet({
   // Disable CSP in development (causes issues with dev tools)
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "https://challenges.cloudflare.com/"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https:"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      frameSrc: ["https://challenges.cloudflare.com/"],
-      objectSrc: ["'none'"],
-    },
+    directives: buildCspDirectives(),
   } : false,
   // HSTS only in production
   strictTransportSecurity: process.env.NODE_ENV === 'production' ? {
@@ -181,6 +208,7 @@ app.use("/api/mail", mailRouter);
 // Alias đúng URL Resend đang gọi: https://api.mavrykpremium.store/webhook/mail
 app.post(
   "/webhook/mail",
+  webhookLimiter,
   express.raw({ type: "application/json" }),
   (req, res) => mailWebhookController.mailWebhook(req, res)
 );
@@ -190,6 +218,8 @@ app.use(express.json());
 
 // Parse cookies (required for CSRF protection)
 app.use(cookieParser());
+
+app.use(correlationIdMiddleware);
 
 // Request/response logging
 app.use(requestLogger);
@@ -282,15 +312,12 @@ app.get("/", (_req, res) => {
 app.get("/health", asyncHandler(healthRoutes.healthCheck));
 app.get("/health/db", asyncHandler(healthRoutes.healthCheckDatabase));
 app.get("/health/ready", asyncHandler(healthRoutes.readinessCheck));
+app.get("/health/catalog", asyncHandler(healthRoutes.catalogDependencyCheck));
+app.get("/health/metrics", healthRoutes.metricsJson);
 
-// Security.txt endpoint (RFC 9116)
+// Security.txt endpoint (RFC 9116) — nội dung từ env (xem buildSecurityTxt)
 app.get("/.well-known/security.txt", (_req, res) => {
-  res.type("text/plain").send(`# Security Policy
-Contact: security@example.com
-Policy: https://example.com/security-policy
-Preferred-Languages: en, vi
-Expires: 2027-01-31T00:00:00.000Z
-`);
+  res.type("text/plain; charset=utf-8").send(buildSecurityTxt());
 });
 
 // Sitemap.xml – generated from products and categories (SEO)
@@ -329,9 +356,15 @@ async function start() {
         import("./shared/utils/cache"),
       ]);
       await Promise.all([
-        getProductsList("MAVL").then((data) => { cache.set("products:list:MAVL", data, 600); }),
-        getPromotionsList().then((data) => { cache.set("promotions:list", data, 600); }),
-        getCategoriesList().then((data) => { cache.set("categories:list", data, 900); }),
+        getProductsList("MAVL").then((data) => {
+          cache.set(httpCacheKeys.productsList("MAVL"), data, CACHE_TTL_SEC.PRODUCTS_LIST);
+        }),
+        getPromotionsList().then((data) => {
+          cache.set(httpCacheKeys.promotionsList(), data, CACHE_TTL_SEC.PROMOTIONS_LIST);
+        }),
+        getCategoriesList().then((data) => {
+          cache.set(httpCacheKeys.categoriesList(), data, CACHE_TTL_SEC.CATEGORIES_LIST);
+        }),
       ]);
       console.log("[warmup] Product / category / promotion cache warmed");
     } catch (err) {
@@ -354,23 +387,19 @@ async function start() {
       setTimeout(runWarmup, 2000);
     });
 
-  // Load cron jobs sau khi server đã listen (tránh treo khi import jobs + prisma/pool)
-  Promise.all([
-    import("./jobs/analytics/refresh-variant-sold-count.job"),
-    import("./jobs/analytics/refresh-product-sold-30d.job"),
-    import("./jobs/user/reset-customer-tier-cycle.job"),
-  ]).then(
-    () => console.log("[Jobs] Cron jobs loaded"),
-    (err) => console.warn("[Jobs] Failed to load some cron jobs:", err?.message ?? err)
-  );
-
-  // Redis: init trong nền (optional)
+  // Redis trước cron: leader lock dùng Redis khi scale ngang (xem `docs/RUNBOOKS_COMPACT.md`)
   initRedis()
-    .then((redisConnected) => {
+    .then(async (redisConnected) => {
       if (redisConnected) {
         console.log("✅ Redis connected - using distributed caching");
       } else {
         console.log("⚠️  Redis not available - using in-memory fallback");
+      }
+      try {
+        const { registerAllCrons } = await import("./jobs/register-crons");
+        await registerAllCrons();
+      } catch (err) {
+        console.warn("[Jobs] Failed to register crons:", (err as Error)?.message ?? err);
       }
     })
     .catch((err) => {

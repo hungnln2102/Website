@@ -105,7 +105,7 @@ export function LoginForm({
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="login-email" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Tài Khoản/Email
             </label>
             <div className="relative">
@@ -113,6 +113,7 @@ export function LoginForm({
                 <Mail className="h-5 w-5 text-gray-400" />
               </div>
               <input
+                id="login-email"
                 type="text"
                 name="email"
                 value={formData.email}
@@ -133,7 +134,7 @@ export function LoginForm({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Mật khẩu
             </label>
             <div className="relative">
@@ -141,6 +142,7 @@ export function LoginForm({
                 <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input
+                id="login-password"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
@@ -154,7 +156,8 @@ export function LoginForm({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>

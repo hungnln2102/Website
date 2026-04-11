@@ -1,5 +1,6 @@
 import { XCircle, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PaymentOutcomeProps {
   paymentState: "success" | "failed" | "expired" | "loading";
@@ -25,11 +26,21 @@ export function PaymentOutcome({
 }: PaymentOutcomeProps) {
   if (paymentState === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        <p className="mt-4 text-gray-600 dark:text-slate-400">
-          Đang tạo giao dịch thanh toán...
-        </p>
+      <div className="p-6 sm:p-8" aria-busy="true" aria-label="Đang tạo giao dịch thanh toán">
+        <div className="mx-auto flex max-w-md flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 shrink-0 animate-spin text-blue-600 dark:text-blue-400" />
+          <p className="text-center text-sm font-medium text-gray-700 dark:text-slate-300">
+            Đang tạo giao dịch thanh toán...
+          </p>
+          <div className="mt-2 w-full space-y-3 rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton className="h-10 flex-1 rounded-lg" />
+              <Skeleton className="h-10 flex-1 rounded-lg" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Flame, ArrowRight, ChevronDown } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import type { PromotionDto } from "@/lib/api";
+import type { PromotionDto } from "@/lib/types";
 import { ROUTES } from "@/lib/constants";
 import { useCatalogGridColumnCount } from "@/features/catalog/hooks/useCatalogGridColumnCount";
 

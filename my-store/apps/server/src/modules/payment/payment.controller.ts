@@ -8,7 +8,7 @@ import { sepayService } from "./sepay.service";
 import { confirmBalancePayment, createPaymentCodes, generateMavpTransactionId, generateUniqueIdOrder } from "./balance-payment.service";
 import { handlePaymentSuccess } from "./payment-success.service";
 import type { OrderListItemInput } from "../order/order-list.service";
-import { logPaymentEvent, logSecurityEvent } from "../../shared/utils/logger";
+import logger, { logPaymentEvent, logSecurityEvent } from "../../shared/utils/logger";
 import { ORDER_CUSTOMER_STATUS } from "../../config/status.constants";
 
 interface ReqUser {
@@ -203,7 +203,7 @@ export async function createPayment(req: Request, res: Response) {
 
     res.json({ success: true, data: payment });
   } catch (error) {
-    console.error("Payment creation error:", error);
+    logger.error("Payment creation error", { error });
     res.status(500).json({
       success: false,
       error: "Failed to create payment",
@@ -268,18 +268,69 @@ export async function confirmBalance(req: Request, res: Response) {
         error: "Số dư không đủ",
       });
     }
-    console.error("Balance payment confirm error:", error);
+    logger.error("Balance payment confirm error", { error });
     res.status(500).json({ success: false, error: message });
   }
 }
 
 export async function getPaymentStatus(req: Request, res: Response) {
   try {
-    const orderId = req.params.orderId ?? "";
-    const status = await sepayService.getPaymentStatus(orderId);
+    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const accountId = parseInt(userId, 10);
+    const rawOrderId = String(req.params.orderId ?? "").trim();
+    if (!rawOrderId) {
+      return res.status(400).json({ success: false, error: "orderId is required" });
+    }
+
+    const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+    const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
+    const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+    const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
+    const paymentIdCol = COLS_OC.PAYMENT_ID as string;
+    const txIdCol = COLS_WT.TRANSACTION_ID as string;
+
+    // IDOR guard: chỉ cho phép tra cứu status khi order/transaction thuộc chính account hiện tại.
+    const ownerByOrder = await pool.query(
+      `SELECT 1
+       FROM ${ORDER_CUSTOMER_TABLE}
+       WHERE ${COLS_OC.ID_ORDER} = $1 AND ${COLS_OC.ACCOUNT_ID} = $2
+       LIMIT 1`,
+      [rawOrderId, accountId]
+    );
+    let hasOwnership = ownerByOrder.rows.length > 0;
+
+    if (!hasOwnership) {
+      const ownerByTx = await pool.query(
+        `SELECT wt.id
+         FROM ${WALLET_TX_TABLE} wt
+         WHERE wt.${txIdCol} = $1 AND wt.account_id = $2
+         LIMIT 1`,
+        [rawOrderId, accountId]
+      );
+      if (ownerByTx.rows.length > 0) {
+        const pid = ownerByTx.rows[0]!.id;
+        const linkedOrders = await pool.query(
+          `SELECT 1
+           FROM ${ORDER_CUSTOMER_TABLE}
+           WHERE ${paymentIdCol} = $1 AND ${COLS_OC.ACCOUNT_ID} = $2
+           LIMIT 1`,
+          [pid, accountId]
+        );
+        hasOwnership = linkedOrders.rows.length > 0;
+      }
+    }
+
+    if (!hasOwnership) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy giao dịch của bạn",
+      });
+    }
+
+    const status = await sepayService.getPaymentStatus(rawOrderId);
     res.json({ success: true, data: status });
   } catch (error) {
-    console.error("Payment status check error:", error);
+    logger.error("Payment status check error", { error });
     res.status(500).json({
       success: false,
       error: "Failed to check payment status",
@@ -429,7 +480,7 @@ export async function confirmTransfer(req: Request, res: Response) {
     logPaymentEvent("TRANSFER_CONFIRMED", { orderId: idOrderParam, amount: amountVnd, accountId });
     res.json({ success: true, message: "Đã ghi nhận thanh toán vào lịch sử giao dịch" });
   } catch (error) {
-    console.error("Confirm transfer error:", error);
+    logger.error("Confirm transfer error", { error });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Xác nhận thanh toán thất bại",
@@ -441,15 +492,24 @@ export async function successCallback(req: Request, res: Response) {
   try {
     const params = req.query;
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:4001";
+    const orderInvoiceNumber = String(params.order_invoice_number ?? "").replace(
+      /[^a-zA-Z0-9-_]/g,
+      ""
+    );
+    const callbackMeta = {
+      hasSignature: Boolean(params.signature),
+      orderInvoiceNumber,
+      sourceIp: req.ip,
+    };
 
     if (!params.signature) {
-      logSecurityEvent("MISSING_PAYMENT_SIGNATURE", { params });
+      logSecurityEvent("MISSING_PAYMENT_SIGNATURE", callbackMeta);
       return res.redirect(`${frontendUrl}/payment/error?error=missing_signature`);
     }
 
     const isValid = sepayService.verifyReturnUrl(params);
     if (!isValid) {
-      logSecurityEvent("INVALID_PAYMENT_SIGNATURE", { params });
+      logSecurityEvent("INVALID_PAYMENT_SIGNATURE", callbackMeta);
       return res.redirect(`${frontendUrl}/payment/error?error=invalid_signature`);
     }
 
@@ -468,7 +528,7 @@ export async function successCallback(req: Request, res: Response) {
       `${frontendUrl}/payment/success?orderId=${encodeURIComponent(sanitizedOrderId)}`
     );
   } catch (error) {
-    console.error("Payment success callback error:", error);
+    logger.error("Payment success callback error", { error });
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:4001";
     res.redirect(`${frontendUrl}/payment/error?error=callback_failed`);
   }
@@ -520,11 +580,20 @@ export async function webhook(req: Request, res: Response) {
   try {
     const signature = req.headers["x-sepay-signature"] as string;
     const payload = req.body;
+    const payloadKeys =
+      payload && typeof payload === "object"
+        ? Object.keys(payload as object).slice(0, 30)
+        : [];
+    const payloadOrderId =
+      typeof (payload as { order_invoice_number?: unknown })?.order_invoice_number === "string"
+        ? (payload as { order_invoice_number: string }).order_invoice_number
+        : undefined;
 
     if (!signature) {
       logSecurityEvent("MISSING_WEBHOOK_SIGNATURE", {
         ip: req.ip,
-        payload: JSON.stringify(payload).substring(0, 500),
+        payloadKeys,
+        orderId: payloadOrderId,
       });
       return res.status(401).json({ error: "Missing signature" });
     }
@@ -532,7 +601,9 @@ export async function webhook(req: Request, res: Response) {
     if (!sepayService.verifyWebhookSignature(payload, signature)) {
       logSecurityEvent("INVALID_WEBHOOK_SIGNATURE", {
         ip: req.ip,
-        signature: signature.substring(0, 20) + "...",
+        signaturePrefix: signature.substring(0, 8),
+        payloadKeys,
+        orderId: payloadOrderId,
       });
       return res.status(401).json({ error: "Invalid signature" });
     }
@@ -540,7 +611,7 @@ export async function webhook(req: Request, res: Response) {
     await sepayService.processWebhook(payload);
     res.json({ success: true });
   } catch (error) {
-    console.error("Webhook processing error:", error);
+    logger.error("Webhook processing error", { error });
     res.status(500).json({
       success: false,
       error: "Webhook processing failed",

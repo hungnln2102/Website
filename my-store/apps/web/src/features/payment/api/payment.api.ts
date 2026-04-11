@@ -1,5 +1,6 @@
 import { getApiBase } from "@/lib/api/client";
 import { authFetch } from "@/features/auth/api/auth";
+import { ensureCsrfToken } from "@/features/auth/api/auth";
 import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import type {
   PaymentHealthResponse,
@@ -37,6 +38,8 @@ export async function createPayment(
     if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
+    const csrf = await ensureCsrfToken();
+    if (csrf) headers["x-csrf-token"] = csrf;
     const res = await fetchWithTimeoutAndRetry(
       `${API_BASE}/api/payment/create`,
       {

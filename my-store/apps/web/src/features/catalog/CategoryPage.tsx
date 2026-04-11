@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Package, ArrowLeft } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import type { CategoryDto } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CatalogLayout, SortToolbar, ProductGrid } from "./components";
 import { useCatalogData, useProductSort } from "./hooks";
 
@@ -111,13 +112,22 @@ export default function CategoryPage({
     >
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-          {category?.name || "Đang tải..."}
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400">{totalCount} sản phẩm</p>
+        {loadingProducts && !category ? (
+          <>
+            <Skeleton className="mb-3 h-9 w-64 max-w-full sm:h-10 sm:w-80" />
+            <Skeleton className="h-4 w-36" />
+          </>
+        ) : (
+          <>
+            <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+              {category?.name ?? "Danh mục"}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-slate-400">{totalCount} sản phẩm</p>
+          </>
+        )}
       </div>
 
-      <SortToolbar sortBy={sortBy} onSortChange={setSortBy} showSelect={true} />
+      <SortToolbar sortBy={sortBy} onSortChange={setSortBy} showSelect={true} disabled={loadingProducts && !category} />
 
       <ProductGrid
         products={paginatedProducts}

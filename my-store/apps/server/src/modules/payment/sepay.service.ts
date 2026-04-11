@@ -1,5 +1,5 @@
 import { SePayPgClient } from 'sepay-pg-node';
-import { logPaymentEvent, logSecurityEvent } from '../../shared/utils/logger';
+import logger, { logPaymentEvent, logSecurityEvent } from '../../shared/utils/logger';
 import crypto from 'crypto';
 import pool from '../../config/database';
 import { DB_SCHEMA } from '../../config/db.config';
@@ -10,9 +10,14 @@ import { ORDER_CUSTOMER_STATUS } from '../../config/status.constants';
 const SEPAY_ENV = (process.env.SEPAY_ENV || 'sandbox') as 'sandbox' | 'production';
 const SEPAY_MERCHANT_ID = process.env.SEPAY_MERCHANT_ID || '';
 const SEPAY_SECRET_KEY = process.env.SEPAY_SECRET_KEY || '';
-const SEPAY_SUCCESS_URL = process.env.SEPAY_SUCCESS_URL || 'http://localhost:4001/payment/success';
-const SEPAY_ERROR_URL = process.env.SEPAY_ERROR_URL || 'http://localhost:4001/payment/error';
-const SEPAY_CANCEL_URL = process.env.SEPAY_CANCEL_URL || 'http://localhost:4001/payment/cancel';
+const FRONTEND_BASE_URL =
+  (process.env.FRONTEND_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://mavrykpremium.store"
+      : "http://localhost:4001")).replace(/\/+$/, "");
+const SEPAY_SUCCESS_URL = process.env.SEPAY_SUCCESS_URL || `${FRONTEND_BASE_URL}/payment/success`;
+const SEPAY_ERROR_URL = process.env.SEPAY_ERROR_URL || `${FRONTEND_BASE_URL}/payment/error`;
+const SEPAY_CANCEL_URL = process.env.SEPAY_CANCEL_URL || `${FRONTEND_BASE_URL}/payment/cancel`;
 
 // Initialize SePay client
 let client: SePayPgClient | null = null;
@@ -28,7 +33,7 @@ try {
     console.warn('SePay credentials not configured. Payment features will be disabled.');
   }
 } catch (error) {
-  console.error('Failed to initialize SePay client:', error);
+  logger.error('Failed to initialize SePay client', { error });
 }
 
 export interface CreatePaymentParams {
@@ -91,12 +96,19 @@ export class SepayService {
         ...(customerPhone && { buyer_phone: customerPhone }),
       });
 
-      // Log payment creation
-      logPaymentEvent('PAYMENT_CREATED', {
+      const desc =
+        description.length > 200 ? `${description.slice(0, 200)}…` : description;
+      logPaymentEvent("PAYMENT_CREATED", {
         orderId,
         amount,
-        description,
-        checkoutURL,
+        description: desc,
+        checkoutHost: (() => {
+          try {
+            return new URL(checkoutURL).host;
+          } catch {
+            return undefined;
+          }
+        })(),
         env: SEPAY_ENV,
       });
 
@@ -107,7 +119,7 @@ export class SepayService {
         formFields: checkoutFormFields,
       };
     } catch (error) {
-      console.error('SePay payment creation error:', error);
+      logger.error('SePay payment creation error', { error });
       logPaymentEvent('PAYMENT_CREATION_FAILED', {
         orderId,
         amount,
@@ -123,7 +135,7 @@ export class SepayService {
   verifyWebhookSignature(payload: any, signature: string): boolean {
     try {
       if (!SEPAY_SECRET_KEY) {
-        console.error('SEPAY_SECRET_KEY not configured');
+        logger.error('SEPAY_SECRET_KEY not configured');
         return false;
       }
 
@@ -138,15 +150,21 @@ export class SepayService {
 
       if (!isValid) {
         logSecurityEvent('INVALID_WEBHOOK_SIGNATURE', {
-          expected: hash,
-          received: signature,
-          payload,
+          signaturePrefix: String(signature).slice(0, 8),
+          payloadKeys:
+            payload && typeof payload === "object"
+              ? Object.keys(payload as Record<string, unknown>).slice(0, 30)
+              : [],
+          orderId:
+            payload && typeof payload === "object"
+              ? (payload as Record<string, unknown>).order_invoice_number
+              : undefined,
         });
       }
 
       return isValid;
     } catch (error) {
-      console.error('Signature verification error:', error);
+      logger.error('Signature verification error', { error });
       return false;
     }
   }
@@ -319,7 +337,13 @@ export class SepayService {
     const { signature, ...data } = params;
     
     if (!signature) {
-      logSecurityEvent('MISSING_RETURN_URL_SIGNATURE', { params });
+      logSecurityEvent('MISSING_RETURN_URL_SIGNATURE', {
+        orderId:
+          typeof params?.order_invoice_number === "string"
+            ? params.order_invoice_number
+            : undefined,
+        keys: params && typeof params === "object" ? Object.keys(params).slice(0, 20) : [],
+      });
       return false;
     }
 

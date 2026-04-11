@@ -1,6 +1,7 @@
 /**
  * Gửi thông báo đơn hàng mới lên Telegram (định dạng HTML, giao diện chuyên nghiệp).
  */
+import logger from "../../shared/utils/logger";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
@@ -205,13 +206,13 @@ export async function sendOrderNotification(params: SendOrderNotificationParams)
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("Telegram sendOrderNotification error:", res.status, err);
+      logger.error("Telegram sendOrderNotification error", { statusCode: res.status, detail: err });
       return false;
     }
     console.log("[Telegram] Message sent successfully");
     return true;
   } catch (err) {
-    console.error("Telegram sendOrderNotification exception:", err);
+    logger.error("Telegram sendOrderNotification exception", { error: err });
     return false;
   }
 }

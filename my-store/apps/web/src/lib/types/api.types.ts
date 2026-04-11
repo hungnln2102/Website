@@ -42,6 +42,8 @@ export type ProductPackageDto = {
   package_product?: string | null;
   id_product?: string | null;
   cost: number;
+  /** Giá khuyến mãi (cùng công thức giỏ hàng / cart.service) — dùng hiển thị & thêm giỏ, khớp server. */
+  promo_cost?: number;
   pct_promo?: number;
   short_description?: string | null;
   description?: string | null;

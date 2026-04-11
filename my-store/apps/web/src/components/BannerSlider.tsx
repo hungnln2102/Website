@@ -269,11 +269,11 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
           </div>
           <h1
             id="home-main-heading"
-            className="mb-2 text-2xl font-black leading-tight text-white drop-shadow-md sm:text-3xl md:text-3xl lg:text-4xl"
+            className="mb-2 min-h-[3.5rem] text-2xl font-black leading-tight text-white drop-shadow-md line-clamp-2 sm:min-h-[4.5rem] sm:text-3xl md:text-3xl lg:min-h-[5rem] lg:text-4xl"
           >
             {active.title}
           </h1>
-          <p className="mb-4 max-w-xl line-clamp-2 text-xs leading-relaxed text-slate-200 drop-shadow sm:mb-5 sm:line-clamp-3 sm:text-sm md:text-base">
+          <p className="mb-4 min-h-[2.5rem] max-w-xl line-clamp-2 text-xs leading-relaxed text-slate-200 drop-shadow sm:mb-5 sm:min-h-[4.25rem] sm:line-clamp-3 sm:text-sm md:min-h-[4.75rem] md:text-base">
             {active.description}
           </p>
           {active.href && active.cta ? (

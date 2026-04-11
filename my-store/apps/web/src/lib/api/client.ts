@@ -46,6 +46,13 @@ function setMaintenanceMode(on: boolean) {
 /** Fetch with timeout to avoid hanging when backend is slow or down. */
 const DEFAULT_API_TIMEOUT_MS = 12_000;
 
+function requestIdHeader(): Record<string, string> {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return { "X-Request-Id": crypto.randomUUID() };
+  }
+  return {};
+}
+
 export async function apiFetch(
   url: string,
   init?: RequestInit,
@@ -53,8 +60,17 @@ export async function apiFetch(
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const headers = new Headers(init?.headers ?? undefined);
+  const rid = requestIdHeader()["X-Request-Id"];
+  if (rid && !headers.has("X-Request-Id")) {
+    headers.set("X-Request-Id", rid);
+  }
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
+    const res = await fetch(url, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
     clearTimeout(timeoutId);
 
     // Detect maintenance mode from 503 response
@@ -112,6 +128,11 @@ export async function apiFetch(
 export function handleApiError(res: Response, defaultMessage: string): never {
   if (res.status === 503 && _maintenanceMode) {
     throw new Error("Website đang bảo trì. Vui lòng quay lại sau.");
+  }
+  if (res.status === 502 || res.status === 504) {
+    throw new Error(
+      "Máy chủ tạm thời không phản hồi (gateway / timeout). Vui lòng thử lại sau.",
+    );
   }
   if (res.status >= 500) {
     throw new Error("Máy chủ đang gặp sự cố. Vui lòng thử lại sau.");

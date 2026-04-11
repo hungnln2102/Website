@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Package } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CatalogLayout, PageHeader, SortToolbar, ProductGrid } from "./components";
 import { useCatalogData, useProductSort } from "./hooks";
 
@@ -70,23 +71,34 @@ export default function AllProductsPage({
       products={products}
       categories={categories}
     >
-    <PageHeader
-      icon={Package}
-      title="Tất cả"
-      highlightedTitle="sản phẩm"
-      count={totalCount}
-      gradientFrom="from-blue-600"
-      gradientTo="to-indigo-700"
-      iconBgGradient="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-700"
-      iconShadow="shadow-blue-500/25"
-      ringColor="ring-blue-400/20 dark:ring-blue-500/30"
-      pulseColor="bg-blue-400/20"
-    />
+    {loadingProducts ? (
+        <div className="mb-6 flex items-start gap-3">
+          <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+          <div className="flex-1 space-y-2 pt-1">
+            <Skeleton className="h-9 w-64 max-w-full sm:h-10" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+      ) : (
+        <PageHeader
+          icon={Package}
+          title="Tất cả"
+          highlightedTitle="sản phẩm"
+          count={totalCount}
+          gradientFrom="from-blue-600"
+          gradientTo="to-indigo-700"
+          iconBgGradient="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-700"
+          iconShadow="shadow-blue-500/25"
+          ringColor="ring-blue-400/20 dark:ring-blue-500/30"
+          pulseColor="bg-blue-400/20"
+        />
+      )}
 
       <SortToolbar
         sortBy={sortBy}
         onSortChange={setSortBy}
         activeColor="bg-slate-800 shadow-slate-700/40 dark:bg-slate-200 dark:text-slate-900"
+        disabled={loadingProducts}
       />
 
       <ProductGrid

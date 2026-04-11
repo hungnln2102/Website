@@ -179,7 +179,3 @@ class ErrorTracker {
 // Singleton instance
 export const errorTracker = new ErrorTracker();
 
-// Initialize on module load
-if (typeof window !== 'undefined') {
-  errorTracker.init();
-}

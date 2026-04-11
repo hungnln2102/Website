@@ -7,6 +7,7 @@ import { roundToNearestThousand } from "@/lib/pricing";
 import { useCart } from "@/features/cart/hooks/useCart";
 import { CONTACT_LINKS } from "../constants";
 import { ROUTES } from "@/lib/constants";
+import FocusTrap from "@/components/accessibility/FocusTrap";
 import type { DurationOption } from "./DurationSelector";
 
 interface BuyButtonProps {
@@ -48,6 +49,9 @@ export function BuyButton({
     if (!selectedDurationData) return null;
     const discountPctRaw = Number((selectedDurationData as any).pct_promo) || 0;
     const hasPromo = discountPctRaw > 0;
+    if (hasPromo && selectedDurationData.promoPrice != null && selectedDurationData.promoPrice > 0) {
+      return selectedDurationData.promoPrice;
+    }
     return hasPromo
       ? roundToNearestThousand(
           selectedDurationData.price * (1 - (discountPctRaw > 1 ? discountPctRaw / 100 : discountPctRaw))
@@ -179,43 +183,50 @@ export function BuyButton({
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
           onClick={() => setShowContactPopup(false)}
-          role="dialog"
-          aria-label="Liên hệ"
+          aria-hidden="true"
         >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Liên hệ với chúng tôi</h3>
-              <button
-                type="button"
-                onClick={() => setShowContactPopup(false)}
-                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                aria-label="Đóng"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex justify-center gap-4">
-              {CONTACT_LINKS.map(({ label, bg, icon: Icon, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-110 sm:h-14 sm:w-14"
-                  style={{ backgroundColor: bg }}
-                  aria-label={label}
+          <FocusTrap isActive onEscape={() => setShowContactPopup(false)}>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="contact-popup-title"
+              aria-describedby="contact-popup-desc"
+              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 id="contact-popup-title" className="text-lg font-bold text-gray-900 dark:text-white">
+                  Liên hệ với chúng tôi
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowContactPopup(false)}
+                  className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                  aria-label="Đóng hộp thoại liên hệ"
                 >
-                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
-                </a>
-              ))}
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex justify-center gap-4">
+                {CONTACT_LINKS.map(({ label, bg, icon: Icon, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:h-14 sm:w-14"
+                    style={{ backgroundColor: bg }}
+                    aria-label={label}
+                  >
+                    <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                  </a>
+                ))}
+              </div>
+              <p id="contact-popup-desc" className="mt-3 text-center text-xs text-gray-600 dark:text-slate-300">
+                Chọn kênh để liên hệ
+              </p>
             </div>
-            <p className="mt-3 text-center text-xs text-gray-500 dark:text-slate-400">
-              Chọn kênh để liên hệ
-            </p>
-          </div>
+          </FocusTrap>
         </div>
       )}
 

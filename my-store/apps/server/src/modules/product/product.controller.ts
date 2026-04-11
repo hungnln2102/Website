@@ -7,22 +7,10 @@ import { getProductsList } from "./products-list.service";
 import { getPromotionsList } from "./promotions.service";
 import { getCategoriesList } from "./categories.service";
 import { getProductPackages } from "./product-packages.service";
+import { CACHE_TTL_SEC } from "../../config/cache-ttl";
 import { cache } from "../../shared/utils/cache";
+import { httpCacheKeys } from "../../shared/utils/cache-keys";
 import { normalizeProductListPriceScope, PRODUCT_LIST_PRICE_SCOPES } from "../../shared/utils/role-code";
-
-// ── Cache config ────────────────────────────────────────────────────
-// TTL dài hơn để giảm truy vấn DB khi Redis không dùng (cache in-memory)
-const PRODUCTS_TTL = 600;    // 10 phút
-const PROMOTIONS_TTL = 600;  // 10 phút
-const CATEGORIES_TTL = 900;  // 15 phút
-const PACKAGES_TTL = 300;    // 5 phút
-
-const CACHE_KEYS = {
-  products: (scope: string) => `products:list:${scope}`,
-  promotions: "promotions:list",
-  categories: "categories:list",
-  packages: (name: string) => `packages:${name.toLowerCase()}`,
-} as const;
 
 function setPublicCacheHeaders(res: Response, maxAgeSeconds: number, staleSeconds: number) {
   res.setHeader(
@@ -41,20 +29,18 @@ async function cachedQuery<T>(
   ttl: number,
   fetcher: () => Promise<T>,
 ): Promise<T> {
-  const hit = cache.get<T>(key);
-  if (hit !== null) {
+  const { value, cacheHit } = await cache.getOrSet(key, ttl, async () => {
+    const startedAt = Date.now();
+    const data = await fetcher();
+    const duration = Date.now() - startedAt;
+    const rowCount = Array.isArray(data) ? ` rows=${data.length}` : "";
+    console.log(`[${label}] cache MISS${rowCount} duration=${duration}ms`);
+    return data;
+  });
+  if (cacheHit) {
     console.log(`[${label}] cache HIT`);
-    return hit;
   }
-
-  const startedAt = Date.now();
-  const data = await fetcher();
-  const duration = Date.now() - startedAt;
-
-  cache.set(key, data, ttl);
-  const rowCount = Array.isArray(data) ? ` rows=${data.length}` : "";
-  console.log(`[${label}] cache MISS${rowCount} duration=${duration}ms`);
-  return data;
+  return value;
 }
 
 // ── Handlers ────────────────────────────────────────────────────────
@@ -63,12 +49,15 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
     const user = (req as Request & { user?: { roleCode?: string } | null }).user;
     const scope = normalizeProductListPriceScope(user?.roleCode);
-    const cacheKey = CACHE_KEYS.products(scope);
-    const products = await cachedQuery(cacheKey, `products:${scope}`, PRODUCTS_TTL, () =>
-      getProductsList(scope),
+    const cacheKey = httpCacheKeys.productsList(scope);
+    const products = await cachedQuery(
+      cacheKey,
+      `products:${scope}`,
+      CACHE_TTL_SEC.PRODUCTS_LIST,
+      () => getProductsList(scope),
     );
     if (user) setPrivateNoStore(res);
-    else setPublicCacheHeaders(res, 60, PRODUCTS_TTL);
+    else setPublicCacheHeaders(res, 60, CACHE_TTL_SEC.PRODUCTS_LIST);
     res.json({ data: products, price_scope: scope });
   } catch (err) {
     console.error("Fetch products error:", err);
@@ -79,9 +68,12 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
 export async function getPromotions(_req: Request, res: Response): Promise<void> {
   try {
     const promotions = await cachedQuery(
-      CACHE_KEYS.promotions, "promotions", PROMOTIONS_TTL, getPromotionsList,
+      httpCacheKeys.promotionsList(),
+      "promotions",
+      CACHE_TTL_SEC.PROMOTIONS_LIST,
+      getPromotionsList,
     );
-    setPublicCacheHeaders(res, 60, PROMOTIONS_TTL);
+    setPublicCacheHeaders(res, 60, CACHE_TTL_SEC.PROMOTIONS_LIST);
     res.json({ data: promotions });
   } catch (err) {
     console.error("Fetch promotions error:", err);
@@ -92,9 +84,12 @@ export async function getPromotions(_req: Request, res: Response): Promise<void>
 export async function getCategories(_req: Request, res: Response): Promise<void> {
   try {
     const rows = await cachedQuery(
-      CACHE_KEYS.categories, "categories", CATEGORIES_TTL, getCategoriesList,
+      httpCacheKeys.categoriesList(),
+      "categories",
+      CACHE_TTL_SEC.CATEGORIES_LIST,
+      getCategoriesList,
     );
-    setPublicCacheHeaders(res, 120, CATEGORIES_TTL);
+    setPublicCacheHeaders(res, 120, CACHE_TTL_SEC.CATEGORIES_LIST);
     res.json({ data: rows });
   } catch (err) {
     console.error("Fetch categories error:", err);
@@ -113,12 +108,12 @@ export async function getProductPackagesHandler(req: Request, res: Response): Pr
 
   try {
     const data = await cachedQuery(
-      CACHE_KEYS.packages(packageName),
+      httpCacheKeys.packages(packageName),
       `packages:${packageName}`,
-      PACKAGES_TTL,
+      CACHE_TTL_SEC.PRODUCT_PACKAGES,
       () => getProductPackages(packageName),
     );
-    setPublicCacheHeaders(res, 60, PACKAGES_TTL);
+    setPublicCacheHeaders(res, 60, CACHE_TTL_SEC.PRODUCT_PACKAGES);
     res.json({ data });
   } catch (err) {
     console.error("Fetch product-packages error:", err);
@@ -140,13 +135,18 @@ export function invalidateCache(req: Request, res: Response): void {
   for (const k of keys) {
     if (k === "products") {
       for (const scope of PRODUCT_LIST_PRICE_SCOPES) {
-        cache.delete(CACHE_KEYS.products(scope));
+        cache.delete(httpCacheKeys.productsList(scope));
       }
+    } else if (k === "promotions") {
+      cache.delete(httpCacheKeys.promotionsList());
+    } else if (k === "categories") {
+      cache.delete(httpCacheKeys.categoriesList());
+    } else if (k === "all") {
+      cache.clear();
+    } else if (k.startsWith("packages:")) {
+      const name = k.slice("packages:".length).trim();
+      if (name) cache.delete(httpCacheKeys.packages(name));
     }
-    else if (k === "promotions") cache.delete(CACHE_KEYS.promotions);
-    else if (k === "categories") cache.delete(CACHE_KEYS.categories);
-    else if (k === "all") cache.clear();
-    else if (k.startsWith("packages:")) cache.delete(k);
   }
   console.log(`[cache] invalidated: ${keys.join(", ")}`);
   res.json({ message: `Caches invalidated: ${keys.join(", ")}` });

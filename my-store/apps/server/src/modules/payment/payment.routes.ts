@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { body } from "express-validator";
 import { authenticate, optionalAuth } from "../../shared/middleware/auth";
 import { validationRules, handleValidationErrors } from "../../shared/utils/validation";
+import { webhookLimiter } from "../../shared/middleware/rate-limiter";
 import * as paymentController from "./payment.controller";
 
 const router = express.Router();
@@ -91,7 +92,7 @@ router.get("/cancel", (req: Request, res: Response) =>
   paymentController.cancelCallback(req, res)
 );
 
-router.post("/webhook", (req: Request, res: Response) =>
+router.post("/webhook", webhookLimiter, (req: Request, res: Response) =>
   paymentController.webhook(req, res)
 );
 

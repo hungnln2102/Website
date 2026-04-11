@@ -12,6 +12,8 @@ apps/server/docs/payment/
 ├── README.md (this file)
 ├── SEPAY_SETUP.md - SePay integration guide
 ├── SECURITY_SETUP.md - Security best practices
+├── E2E_STORE_CHECKLIST_VI.md - checklist kiểm thử Mcoin / QR / webhook trùng (staging)
+├── WEBHOOK_SECURITY_CHECKLIST_3_3.md - checklist bắt buộc chữ ký/idempotency/HTTPS/log hygiene
 └── deployment.md - Production deployment guide
 ```
 

@@ -32,6 +32,7 @@ import {
   ProductImageGallery,
   ProductInfo,
   ProductLoadingSkeleton,
+  ProductPurchasePanelSkeleton,
   ProductNotFound,
   PurchasePolicy,
   RelatedProducts,
@@ -76,6 +77,7 @@ export default function ProductDetailPage({
     allProducts,
     categories,
     loading,
+    loadingPackagesPanel,
     productsError,
     packagesError,
     productInfoError,
@@ -222,11 +224,17 @@ export default function ProductDetailPage({
   const productSchema = useMemo(() => {
     if (!product) return null;
 
+    const pctPromo = Number(selectedDurationData?.pct_promo) || 0;
+    const schemaPrice =
+      pctPromo > 0 && selectedDurationData?.promoPrice != null && selectedDurationData.promoPrice > 0
+        ? selectedDurationData.promoPrice
+        : selectedDurationData?.price ?? product.base_price ?? 0;
+
     return generateProductSchema({
       name: product.name,
       description: product.description || undefined,
       image: activeImageUrl || undefined,
-      price: selectedDurationData?.price ?? product.base_price ?? 0,
+      price: schemaPrice,
       brand: APP_CONFIG.name,
     });
   }, [activeImageUrl, product, selectedDurationData]);
@@ -438,7 +446,9 @@ export default function ProductDetailPage({
             />
           </div>
 
-          {packages.length > 0 ? (
+          {loadingPackagesPanel && packages.length === 0 ? (
+            <ProductPurchasePanelSkeleton />
+          ) : packages.length > 0 ? (
             <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-slate-700/50 dark:bg-slate-900/90 sm:space-y-6 sm:rounded-2xl sm:p-5 sm:shadow-2xl">
               <PackageSelector
                 packages={packages}

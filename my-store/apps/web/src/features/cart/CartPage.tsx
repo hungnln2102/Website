@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { CartProgressSteps, CartItem, CartSummary, CartConfirmation, PaymentStep } from "./components";
 import type { CartItemData, PaymentMethod } from "./components";
 import SiteHeader from "@/components/SiteHeader";
@@ -53,6 +54,8 @@ export default function CartPage({
     removeItem,
     clearCart,
     isLoggedIn,
+    isLoaded,
+    isSyncing,
   } = useCartPageData();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -250,6 +253,35 @@ export default function CartPage({
               Đăng nhập
             </button>
           </div>
+        ) : currentStep === 1 && !isLoaded ? (
+          <div
+            className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+            aria-busy="true"
+            aria-label="Đang tải giỏ hàng"
+          >
+            <div className="mb-6 flex items-center gap-2 border-b border-gray-200 pb-4 dark:border-slate-700">
+              <ShoppingCart className="h-6 w-6 text-gray-400" />
+              <Skeleton className="h-7 w-48" />
+            </div>
+            <div className="flex flex-col gap-6 lg:flex-row">
+              <div className="flex-1 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex gap-4 rounded-xl border border-gray-100 p-4 dark:border-slate-700">
+                    <Skeleton className="h-24 w-24 shrink-0 rounded-lg sm:h-32 sm:w-32" />
+                    <div className="flex flex-1 flex-col gap-3">
+                      <Skeleton className="h-5 w-2/3 max-w-xs" />
+                      <Skeleton className="h-4 w-full max-w-sm" />
+                      <Skeleton className="h-6 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="w-full space-y-4 lg:w-96 lg:shrink-0">
+                <Skeleton className="h-40 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </div>
+            </div>
+          </div>
         ) : cartItems.length === 0 ? (
           /* Empty Cart */
           <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white py-16 dark:border-slate-700 dark:bg-slate-800">
@@ -269,8 +301,16 @@ export default function CartPage({
           </div>
         ) : currentStep === 1 ? (
           /* Step 1: Cart Content - Horizontal Layout */
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-            {/* Title */}
+          <div className="relative rounded-2xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            {isSyncing ? (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/75 backdrop-blur-[2px] dark:bg-slate-900/70"
+                aria-busy="true"
+                aria-label="Đang cập nhật giỏ hàng"
+              >
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
+              </div>
+            ) : null}
             <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-700">
               <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
                 <ShoppingCart className="h-6 w-6" />
@@ -281,10 +321,8 @@ export default function CartPage({
               </h2>
             </div>
 
-            {/* Content - Horizontal */}
             <div className="flex flex-col lg:flex-row">
-              {/* Left - Cart Items */}
-              <div className="flex-1 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700 p-6">
+              <div className="flex-1 border-b border-gray-200 p-6 dark:border-slate-700 lg:border-b-0 lg:border-r">
                 <div className="space-y-4">
                   {cartItems.map((item) => (
                     <CartItem
@@ -297,8 +335,7 @@ export default function CartPage({
                 </div>
               </div>
 
-              {/* Right - Summary */}
-              <div className="w-full lg:w-96 p-6">
+              <div className="w-full p-6 lg:w-96">
                 <CartSummary
                   subtotal={subtotal}
                   discount={discount}

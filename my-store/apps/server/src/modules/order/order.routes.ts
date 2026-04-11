@@ -1,14 +1,15 @@
 import express from "express";
 import type { Request, Response } from "express";
 import * as orderController from "./order.controller";
+import { webhookLimiter } from "../../shared/middleware/rate-limiter";
 
 const router = express.Router();
 
-router.post("/notify-done", (req: Request, res: Response) =>
+router.post("/notify-done", webhookLimiter, (req: Request, res: Response) =>
   orderController.notifyDone(req, res)
 );
 
-router.post("/cancel", (req: Request, res: Response) =>
+router.post("/cancel", webhookLimiter, (req: Request, res: Response) =>
   orderController.cancel(req, res)
 );
 

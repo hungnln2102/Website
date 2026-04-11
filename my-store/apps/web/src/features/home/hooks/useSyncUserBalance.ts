@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { authFetch, getApiBase } from "@/lib/api";
+import { authFetch } from "@/features/auth/api/auth";
+import { getApiBase } from "@/lib/api/client";
 
 export function useSyncUserBalance(
   user: { id?: string; balance?: number } | null,

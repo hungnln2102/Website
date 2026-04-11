@@ -1,11 +1,15 @@
 /**
  * Redis Configuration
- * 
+ *
  * Provides Redis client for caching and session management.
  * Falls back to in-memory storage if Redis is not available.
  */
 
 import Redis from "ioredis";
+import { CACHE_TTL_SEC } from "./cache-ttl";
+
+/** Prefix tùy chọn cho mọi key Redis (multi-tenant / tránh trùng DB #0). Mặc định rỗng = giữ key cũ. */
+const REDIS_KEY_PREFIX = (process.env.REDIS_KEY_PREFIX ?? "").trim().replace(/:+$/, "");
 
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -106,7 +110,8 @@ export class RedisMap<T> {
   }
 
   private getKey(key: string): string {
-    return `${this.prefix}:${key}`;
+    const tail = `${this.prefix}:${key}`;
+    return REDIS_KEY_PREFIX ? `${REDIS_KEY_PREFIX}:${tail}` : tail;
   }
 
   async set(key: string, value: T, ttlSeconds?: number): Promise<void> {
@@ -223,7 +228,7 @@ export class RedisMap<T> {
 
     if (redis) {
       try {
-        const keys = await redis.keys(`${this.prefix}:${pattern}`);
+        const keys = await redis.keys(this.getKey(pattern));
         for (const key of keys) {
           const data = await redis.get(key);
           if (data) {
@@ -262,8 +267,20 @@ export class RedisMap<T> {
   }
 }
 
-// Export singleton maps for common use cases
-export const tokenBlacklistMap = new RedisMap<boolean>("blacklist", 900); // 15 min
-export const loginAttemptsMap = new RedisMap<{ count: number; lockedUntil: number }>("login", 900);
-export const captchaAttemptsMap = new RedisMap<number>("captcha", 900);
-export const csrfTokenMap = new RedisMap<{ userId: string | null; createdAt: number }>("csrf", 3600);
+// Export singleton maps — domain prefix ngắn; thêm `REDIS_KEY_PREFIX` trên env nếu cần namespace theo môi trường.
+export const tokenBlacklistMap = new RedisMap<boolean>(
+  "blacklist",
+  CACHE_TTL_SEC.TOKEN_BLACKLIST,
+);
+export const loginAttemptsMap = new RedisMap<{ count: number; lockedUntil: number }>(
+  "login",
+  CACHE_TTL_SEC.LOGIN_CAPTCHA,
+);
+export const captchaAttemptsMap = new RedisMap<number>(
+  "captcha",
+  CACHE_TTL_SEC.LOGIN_CAPTCHA,
+);
+export const csrfTokenMap = new RedisMap<{ userId: string | null; createdAt: number }>(
+  "csrf",
+  CACHE_TTL_SEC.CSRF,
+);

@@ -61,7 +61,8 @@ export class ProductSoldCountService {
    */
   async refreshSoldCount(): Promise<void> {
     try {
-      await prisma.$executeRaw`SELECT product.refresh_product_sold_count()`;
+      /** Khớp migration: `refresh_variant_sold_count` refresh cả variant_sold_count + product_sold_count. */
+      await prisma.$executeRaw`SELECT product.refresh_variant_sold_count()`;
       console.log('✅ Product sold count refreshed');
     } catch (error) {
       console.error('❌ Failed to refresh sold count:', error);

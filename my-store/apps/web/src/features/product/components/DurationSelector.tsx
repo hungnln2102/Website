@@ -13,6 +13,8 @@ export interface DurationOption {
   key: string;
   label: string;
   price: number;
+  /** Giá khuyến mãi từ API (`promo_cost`) — khớp cart server */
+  promoPrice?: number;
   sortValue: number;
   pct_promo?: number;
   is_active?: boolean;
@@ -46,11 +48,14 @@ export function DurationSelector({ options, selectedDuration, onSelect }: Durati
         {options.map((option) => {
           const discountPctRaw = Number(option.pct_promo) || 0;
           const hasPromo = discountPctRaw > 0;
-          const promoPrice = hasPromo
-            ? roundToNearestThousand(
-                option.price * (1 - (discountPctRaw > 1 ? discountPctRaw / 100 : discountPctRaw))
-              )
-            : option.price;
+          const promoPrice =
+            hasPromo && option.promoPrice != null && option.promoPrice > 0
+              ? option.promoPrice
+              : hasPromo
+                ? roundToNearestThousand(
+                    option.price * (1 - (discountPctRaw > 1 ? discountPctRaw / 100 : discountPctRaw))
+                  )
+                : option.price;
           const isSelected = selectedDuration === option.key;
           const isOutOfStock = option.is_active === false;
 

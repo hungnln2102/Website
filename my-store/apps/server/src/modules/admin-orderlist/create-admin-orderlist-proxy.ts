@@ -3,14 +3,35 @@
  * Dùng chung để tránh lệch logic và log lỗi upstream thống nhất.
  */
 import type { Request, RequestHandler, Response } from "express";
+import logger from "../../shared/utils/logger";
 
 const DEFAULT_ADMIN = "http://127.0.0.1:3001";
 
-/** Timeout gọi admin (Adobe / DB có thể chậm lúc cold start). */
-const UPSTREAM_TIMEOUT_MS = 60_000;
+function parseTimeoutMs(raw: string | undefined, fallback: number): number {
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1000 ? Math.floor(n) : fallback;
+}
 
-/** Renew Adobe public /activate chạy Playwright vài phút — không dùng timeout ngắn. */
-export const UPSTREAM_TIMEOUT_RENEW_ADOBE_MS = 660_000;
+/** Timeout gọi admin mặc định (JSON / API thường). Env: `ADMIN_ORDERLIST_TIMEOUT_MS`. */
+const UPSTREAM_TIMEOUT_MS = parseTimeoutMs(
+  process.env.ADMIN_ORDERLIST_TIMEOUT_MS,
+  60_000,
+);
+
+/**
+ * Timeout cho proxy đọc nhanh (tin, ảnh) — tách khỏi Renew Adobe (Playwright dài).
+ * Env: `ADMIN_ORDERLIST_READ_TIMEOUT_MS` (mặc định 45s).
+ */
+export const UPSTREAM_TIMEOUT_READ_MS = parseTimeoutMs(
+  process.env.ADMIN_ORDERLIST_READ_TIMEOUT_MS,
+  45_000,
+);
+
+/** Renew Adobe public /activate. Env: `ADMIN_ORDERLIST_RENEW_TIMEOUT_MS` (mặc định 660s). */
+export const UPSTREAM_TIMEOUT_RENEW_ADOBE_MS = parseTimeoutMs(
+  process.env.ADMIN_ORDERLIST_RENEW_TIMEOUT_MS,
+  660_000,
+);
 
 function normalizeAdminBase(raw: string): string {
   let b = raw.trim().replace(/\/+$/, "");
@@ -94,7 +115,7 @@ export function createAdminOrderlistProxyHandler(
       clearTimeout(timeoutId);
       const reason = err instanceof Error ? err.message : String(err);
       const pathOnly = req.url.split("?")[0];
-      console.error(`[${logLabel}] không gọi được admin_orderlist`, {
+      logger.error(`[${logLabel}] không gọi được admin_orderlist`, {
         upstream: `${base}${upstreamPath}${pathOnly}`,
         reason,
         hint:
@@ -112,7 +133,7 @@ export function createAdminOrderlistProxyHandler(
 export function warnIfAdminOrderlistUrlMissingInProduction(): void {
   if (process.env.NODE_ENV !== "production") return;
   if (String(process.env.ADMIN_ORDERLIST_API_URL ?? "").trim()) return;
-  console.error(
+  logger.error(
     "[store] ADMIN_ORDERLIST_API_URL chưa đặt — Renew Adobe / tin tức / ảnh bài sẽ lỗi. " +
       "Đặt trong apps/server/.env: production https://admin.<domain>; dev http://127.0.0.1:3001 (không thêm /api).",
   );

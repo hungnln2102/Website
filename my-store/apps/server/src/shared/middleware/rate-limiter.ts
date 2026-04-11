@@ -77,6 +77,21 @@ export const strictLimiter = createLimiter('strict', {
 });
 
 /**
+ * OTP / password reset verification limiter
+ * Allows 6 attempts per 10 minutes per IP.
+ */
+export const otpLimiter = createLimiter('otp', {
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 6,
+  message: {
+    error: 'Quá nhiều lần thử OTP. Vui lòng thử lại sau 10 phút.',
+    retryAfter: '10 minutes',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
  * Very strict rate limiter for sensitive operations
  * Allows 5 requests per 15 minutes per IP
  */
@@ -105,6 +120,21 @@ export const authLimiter = createLimiter('auth', {
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
+});
+
+/**
+ * Webhook / bot callback limiter
+ * Keep high enough for retries but still blocks floods.
+ */
+export const webhookLimiter = createLimiter('webhook', {
+  windowMs: 60 * 1000, // 1 minute
+  max: 120,
+  message: {
+    error: 'Too many webhook requests. Please retry shortly.',
+    retryAfter: '1 minute',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 /**

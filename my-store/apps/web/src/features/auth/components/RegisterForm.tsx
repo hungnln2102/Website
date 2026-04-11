@@ -122,7 +122,7 @@ export function RegisterForm({
           {/* Họ và Tên - 2 inputs cùng hàng */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+              <label htmlFor="register-last-name" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
                 Họ
               </label>
               <div className="relative">
@@ -130,6 +130,7 @@ export function RegisterForm({
                   <UserCircle className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  id="register-last-name"
                   type="text"
                   name="lastName"
                   value={formData.lastName}
@@ -141,7 +142,7 @@ export function RegisterForm({
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+              <label htmlFor="register-first-name" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
                 Tên
               </label>
               <div className="relative">
@@ -149,6 +150,7 @@ export function RegisterForm({
                   <UserCircle className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  id="register-first-name"
                   type="text"
                   name="firstName"
                   value={formData.firstName}
@@ -163,7 +165,7 @@ export function RegisterForm({
 
           {/* Tài khoản */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="register-username" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Tài khoản
             </label>
             <div className="relative">
@@ -171,6 +173,7 @@ export function RegisterForm({
                 <IdCard className={`h-5 w-5 ${errors.username ? "text-red-500" : "text-gray-400"}`} />
               </div>
               <input
+                id="register-username"
                 type="text"
                 name="username"
                 value={formData.username}
@@ -181,6 +184,8 @@ export function RegisterForm({
                   "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 )}
                 placeholder="Nhập tên tài khoản"
+                aria-invalid={!!errors.username}
+                aria-describedby={errors.username ? "register-username-error" : undefined}
               />
               {errors.username && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -189,7 +194,7 @@ export function RegisterForm({
               )}
             </div>
             {errors.username && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+              <p id="register-username-error" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.username}
               </p>
@@ -198,7 +203,7 @@ export function RegisterForm({
 
           {/* Ngày sinh (customer_profiles.date_of_birth) */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="register-dob" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Ngày sinh
             </label>
             <div className="relative">
@@ -206,6 +211,7 @@ export function RegisterForm({
                 <Calendar className={`h-5 w-5 ${errors.dateOfBirth ? "text-red-500" : "text-gray-400"}`} />
               </div>
               <input
+                id="register-dob"
                 type="text"
                 name="dateOfBirth"
                 value={formData.dateOfBirth || ""}
@@ -216,6 +222,8 @@ export function RegisterForm({
                   "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 )}
                 placeholder="dd/mm/yyyy"
+                aria-invalid={!!errors.dateOfBirth}
+                aria-describedby={errors.dateOfBirth ? "register-dob-error" : undefined}
               />
               {errors.dateOfBirth && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -224,7 +232,7 @@ export function RegisterForm({
               )}
             </div>
             {errors.dateOfBirth && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+              <p id="register-dob-error" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.dateOfBirth}
               </p>
@@ -233,7 +241,7 @@ export function RegisterForm({
 
           {/* Email */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="register-email" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Email
             </label>
             <div className="relative">
@@ -241,6 +249,7 @@ export function RegisterForm({
                 <Mail className={`h-5 w-5 ${errors.email ? "text-red-500" : "text-gray-400"}`} />
               </div>
               <input
+                id="register-email"
                 type="email"
                 name="email"
                 value={formData.email}
@@ -251,6 +260,8 @@ export function RegisterForm({
                   "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 )}
                 placeholder="your@email.com"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "register-email-error" : undefined}
               />
               {errors.email && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -259,7 +270,7 @@ export function RegisterForm({
               )}
             </div>
             {errors.email && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+              <p id="register-email-error" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.email}
               </p>
@@ -268,7 +279,7 @@ export function RegisterForm({
 
           {/* Mật khẩu */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="register-password" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Mật khẩu
             </label>
             <div className="relative">
@@ -276,6 +287,7 @@ export function RegisterForm({
                 <Lock className={`h-5 w-5 ${errors.password ? "text-red-500" : "text-gray-400"}`} />
               </div>
               <input
+                id="register-password"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
@@ -286,17 +298,20 @@ export function RegisterForm({
                   "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-12 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 )}
                 placeholder="••••••••"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "register-password-error" : undefined}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+              <p id="register-password-error" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.password}
               </p>
@@ -305,7 +320,7 @@ export function RegisterForm({
 
           {/* Xác nhận mật khẩu */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+            <label htmlFor="register-confirm-password" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-slate-300">
               Xác nhận mật khẩu
             </label>
             <div className="relative">
@@ -313,6 +328,7 @@ export function RegisterForm({
                 <Lock className={`h-5 w-5 ${errors.confirmPassword ? "text-red-500" : "text-gray-400"}`} />
               </div>
               <input
+                id="register-confirm-password"
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -323,17 +339,20 @@ export function RegisterForm({
                   "w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-12 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 )}
                 placeholder="••••••••"
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? "register-confirm-password-error" : undefined}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label={showConfirmPassword ? "Ẩn mật khẩu xác nhận" : "Hiện mật khẩu xác nhận"}
               >
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
+              <p id="register-confirm-password-error" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {errors.confirmPassword}
               </p>

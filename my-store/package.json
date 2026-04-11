@@ -28,7 +28,12 @@
     "db:start": "npm run db:start --workspace @my-store/db",
     "db:watch": "npm run db:watch --workspace @my-store/db",
     "db:stop": "npm run db:stop --workspace @my-store/db",
-    "db:down": "npm run db:down --workspace @my-store/db"
+    "db:down": "npm run db:down --workspace @my-store/db",
+    "security:check-secrets": "node scripts/security-check-secrets.mjs",
+    "smoke:health": "node scripts/smoke-health.mjs",
+    "bench:catalog": "node scripts/benchmark-catalog.mjs",
+    "smoke:catalog": "node scripts/smoke-catalog.mjs",
+    "monitor:infra-routes": "node scripts/monitor-infra-routes.mjs"
   },
   "packageManager": "npm@11.7.0",
   "dependencies": {

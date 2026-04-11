@@ -1,4 +1,5 @@
 export { ProductLoadingSkeleton } from "./ProductLoadingSkeleton";
+export { ProductPurchasePanelSkeleton } from "./ProductPurchasePanelSkeleton";
 export { ProductNotFound } from "./ProductNotFound";
 export { ProductImageGallery } from "./ProductImageGallery";
 export { ProductInfo } from "./ProductInfo";
