@@ -246,12 +246,12 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
           <div className="mb-2 inline-flex items-center rounded-full bg-blue-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md sm:mb-3 sm:text-xs">
             {active.tagText}
           </div>
-          <h1
+          <h2
             id="home-main-heading"
             className="mb-2 min-h-[3.5rem] text-2xl font-black leading-tight text-white drop-shadow-md line-clamp-2 sm:min-h-[4.5rem] sm:text-3xl md:text-3xl lg:min-h-[5rem] lg:text-4xl"
           >
             {active.title}
-          </h1>
+          </h2>
           <p className="mb-4 min-h-[2.5rem] max-w-xl line-clamp-2 text-xs leading-relaxed text-slate-200 drop-shadow sm:mb-5 sm:min-h-[4.25rem] sm:line-clamp-3 sm:text-sm md:min-h-[4.75rem] md:text-base">
             {active.description}
           </p>

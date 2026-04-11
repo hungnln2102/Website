@@ -40,9 +40,9 @@ export function ProductNotFound({ error, onRetry, onBack }: ProductNotFoundProps
             className="mb-4"
           />
         ) : (
-          <p className="mb-4 text-gray-600 dark:text-slate-400">
+          <h1 className="mb-4 text-xl font-semibold text-gray-800 dark:text-slate-200">
             Không thể tải được sản phẩm
-          </p>
+          </h1>
         )}
         <button
           onClick={onBack}

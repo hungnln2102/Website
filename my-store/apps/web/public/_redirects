@@ -1,0 +1,4 @@
+# Netlify / Cloudflare Pages: redirect index entry points to canonical /
+/index.html  /  301
+/index.htm   /  301
+/index.php   /  301
