@@ -151,6 +151,21 @@ export default function HomePage({
     };
   }, [searchQuery, selectedCategory, categories, homeHeading]);
 
+  /** sr-only H1: wording differs from <title> (SEO audits). */
+  const seoPageHeading = useMemo(() => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim();
+      return `Kết quả tìm kiếm cho “${q}” — phần mềm bản quyền tại ${APP_CONFIG.name}`;
+    }
+    if (selectedCategory) {
+      const categoryName =
+        categories.find((category) => category.slug === selectedCategory)?.name ||
+        "Danh mục";
+      return `Danh mục ${categoryName} — sản phẩm bản quyền tại ${APP_CONFIG.name}`;
+    }
+    return `${APP_CONFIG.name} — Cửa hàng phần mềm bản quyền chính hãng, tài khoản số và hỗ trợ khách hàng`;
+  }, [searchQuery, selectedCategory, categories]);
+
   const structuredData = useMemo(() => {
     const schemas: object[] = [generateOrganizationSchema(), generateWebSiteSchema()];
     if (faqs.length > 0) {
@@ -202,7 +217,7 @@ export default function HomePage({
       <MetaTags metadata={seoMetadata} />
       <StructuredData data={structuredData} />
 
-      <h1 className="sr-only">{homeHeading}</h1>
+      <h1 className="sr-only">{seoPageHeading}</h1>
 
       <main
         id="main-content"
