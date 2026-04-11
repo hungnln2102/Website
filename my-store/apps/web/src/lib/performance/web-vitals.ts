@@ -1,7 +1,9 @@
 /**
  * Core Web Vitals tracking
- * Measures LCP, FID, CLS, FCP, TTFB
+ * Measures LCP, INP, CLS, FCP, TTFB (web-vitals v5 — không còn onFID)
  */
+
+import { onCLS, onFCP, onLCP, onTTFB, onINP } from 'web-vitals';
 
 interface Metric {
   name: string;
@@ -13,6 +15,16 @@ interface Metric {
 }
 
 type ReportCallback = (metric: Metric) => void;
+
+/** Enable web-vitals observers in dev, or in prod when URL has ?perf=1. */
+function isDetailedPerfEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return import.meta.env.DEV || new URLSearchParams(window.location.search).has('perf');
+  } catch {
+    return import.meta.env.DEV;
+  }
+}
 
 /**
  * Send metrics to analytics endpoint
@@ -28,7 +40,7 @@ function sendToAnalytics(metric: Metric) {
     // }).catch(() => {
     //   // Silently fail in production
     // });
-    
+
     // Don't log to console in production
     return;
   } else {
@@ -59,73 +71,52 @@ function getRating(name: string, value: number): 'good' | 'needs-improvement' | 
 }
 
 /**
- * Report Web Vitals
- * Uses fallback measurements by default
- * To enable web-vitals library: npm install web-vitals
+ * Report Web Vitals — measurePerformance() always; library hooks only if isDetailedPerfEnabled().
  */
 export function reportWebVitals(onPerfEntry?: ReportCallback) {
-  // Always use fallback measurements (works without external dependencies)
   measurePerformance();
-  
-  if (onPerfEntry && typeof onPerfEntry === 'function') {
-    let hasNativeINP = false;
-    startInteractionLatencyFallback(() => hasNativeINP, onPerfEntry);
 
-    import('web-vitals')
-      .then((webVitals: any) => {
-        const { onCLS, onFID, onFCP, onLCP, onTTFB, onINP } = webVitals;
+  if (!onPerfEntry || typeof onPerfEntry !== 'function') return;
+  if (!isDetailedPerfEnabled()) return;
 
-        const options = { reportAllChanges: true };
+  let hasNativeINP = false;
+  startInteractionLatencyFallback(() => hasNativeINP, onPerfEntry);
 
-        if (typeof onCLS === "function") {
-          onCLS((metric: any) => {
-            const ratedMetric = { ...metric, rating: getRating('CLS', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          }, options);
-        }
-        if (typeof onFID === "function") {
-          onFID((metric: any) => {
-            const ratedMetric = { ...metric, rating: getRating('FID', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          });
-        }
-        if (typeof onFCP === "function") {
-          onFCP((metric: any) => {
-            const ratedMetric = { ...metric, rating: getRating('FCP', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          }, options);
-        }
-        if (typeof onLCP === "function") {
-          onLCP((metric: any) => {
-            const ratedMetric = { ...metric, rating: getRating('LCP', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          }, options);
-        }
-        if (typeof onTTFB === "function") {
-          onTTFB((metric: any) => {
-            const ratedMetric = { ...metric, rating: getRating('TTFB', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          }, options);
-        }
-        if (typeof onINP === "function") {
-          onINP((metric: any) => {
-            hasNativeINP = true;
-            const ratedMetric = { ...metric, rating: getRating('INP', metric.value) };
-            sendToAnalytics(ratedMetric);
-            onPerfEntry(ratedMetric);
-          }, options);
-        }
-      })
-      .catch(() => {
-        if (import.meta.env.DEV) {
-          // Silent - no console logs
-        }
-      });
+  const options = { reportAllChanges: true };
+
+  try {
+    onCLS((metric: any) => {
+      const ratedMetric = { ...metric, rating: getRating('CLS', metric.value) };
+      sendToAnalytics(ratedMetric);
+      onPerfEntry(ratedMetric);
+    }, options);
+
+    onFCP((metric: any) => {
+      const ratedMetric = { ...metric, rating: getRating('FCP', metric.value) };
+      sendToAnalytics(ratedMetric);
+      onPerfEntry(ratedMetric);
+    }, options);
+
+    onLCP((metric: any) => {
+      const ratedMetric = { ...metric, rating: getRating('LCP', metric.value) };
+      sendToAnalytics(ratedMetric);
+      onPerfEntry(ratedMetric);
+    }, options);
+
+    onTTFB((metric: any) => {
+      const ratedMetric = { ...metric, rating: getRating('TTFB', metric.value) };
+      sendToAnalytics(ratedMetric);
+      onPerfEntry(ratedMetric);
+    }, options);
+
+    onINP((metric: any) => {
+      hasNativeINP = true;
+      const ratedMetric = { ...metric, rating: getRating('INP', metric.value) };
+      sendToAnalytics(ratedMetric);
+      onPerfEntry(ratedMetric);
+    }, options);
+  } catch {
+    // Tránh throw ra global handler khi browser / bundle lạ
   }
 }
 
