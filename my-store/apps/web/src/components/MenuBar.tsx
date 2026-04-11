@@ -12,7 +12,7 @@ interface MenuBarProps {
   isScrolled: boolean;
 }
 
-export default function MenuBar({ isScrolled }: MenuBarProps) {
+export default function MenuBar({ isScrolled: _isScrolled }: MenuBarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -89,16 +89,14 @@ const handleMobileMenuClose = () => {
       <nav 
         id="navigation"
         ref={menuRef}
-        className={`sticky z-50 overflow-visible border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm dark:from-slate-900/98 dark:to-slate-950 dark:border-slate-700/80 shadow-sm dark:shadow-slate-900/20 transition-all duration-500 ${
-          isScrolled ? "top-[60px] sm:top-[64px] md:top-[68px]" : "top-[72px] sm:top-[76px] md:top-[80px]"
-        }`}
+        className="sticky top-[72px] z-50 overflow-visible border-b border-gray-200/90 bg-gradient-to-b from-gray-50/95 to-white backdrop-blur-sm shadow-sm transition-all duration-500 dark:border-slate-700/80 dark:from-slate-900/98 dark:to-slate-950 dark:shadow-slate-900/20 sm:top-[76px] md:top-[80px]"
         aria-label="Main navigation"
       >
         {/* Accent line */}
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent dark:via-blue-400/30" />
 
         <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-5 lg:px-8">
-          <div className={`relative flex ${isScrolled ? "h-11" : "h-14"} items-center justify-between gap-3`}>
+          <div className="relative flex h-14 items-center justify-between gap-3">
             {/* Desktop: menu trái */}
             <div className="hidden min-w-0 flex-1 items-center lg:flex">
               <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar lg:gap-1">

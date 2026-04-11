@@ -202,6 +202,8 @@ export default function HomePage({
       <MetaTags metadata={seoMetadata} />
       <StructuredData data={structuredData} />
 
+      <h1 className="sr-only">Mavryk Premium - Phần mềm bản quyền chính hãng giá rẻ</h1>
+
       <main
         id="main-content"
         className="relative z-0 mx-auto flex max-w-[90rem] flex-col px-3 pt-6 pb-8 sm:px-6 sm:pt-10 lg:px-8"

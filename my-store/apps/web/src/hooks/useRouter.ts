@@ -34,7 +34,8 @@ export type View =
   | "news-detail"
   | "payment-success"
   | "payment-error"
-  | "payment-cancel";
+  | "payment-cancel"
+  | "not-found";
 
 interface RouteInfo {
   view: View;
@@ -42,10 +43,18 @@ interface RouteInfo {
   parentPath: string | null;
 }
 
+const INDEX_PAGE_PATTERN = /^index\.(html?|php|asp)$/i;
+const FILE_EXTENSION_PATTERN = /\.\w{1,5}$/;
+
 const parsePath = (categories: CategoryDto[]): RouteInfo => {
   if (typeof window === "undefined") return { view: "home", slug: null, parentPath: null };
   const path = normalizePathname(window.location.pathname);
   if (!path) return { view: "home", slug: null, parentPath: null };
+
+  if (INDEX_PAGE_PATTERN.test(path)) {
+    window.history.replaceState({}, "", "/");
+    return { view: "home", slug: null, parentPath: null };
+  }
 
   if (matchesAppRoute(path, ROUTES.about))
     return { view: "about", slug: null, parentPath: ROUTES.home };
@@ -163,6 +172,10 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   const isCategory = categories.some((c: CategoryDto) => slugify(c.name) === decodedPath);
   if (isCategory) {
     return { view: "category", slug: decodedPath, parentPath: ROUTES.home };
+  }
+
+  if (FILE_EXTENSION_PATTERN.test(path) || path.includes("//")) {
+    return { view: "not-found", slug: null, parentPath: ROUTES.home };
   }
 
   return { view: "product", slug: decodedPath, parentPath: ROUTES.home };

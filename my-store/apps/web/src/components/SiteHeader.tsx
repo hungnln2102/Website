@@ -47,10 +47,10 @@ export default function SiteHeader({
 }: SiteHeaderProps) {
   return (
     <header
-      className={`sticky top-0 left-0 right-0 z-[100] border-b transition-all duration-500 shadow-sm ${
+      className={`sticky top-0 left-0 right-0 z-[100] border-b py-3 transition-all duration-500 shadow-sm ${
         isScrolled
-          ? "border-gray-200/50 bg-white/90 backdrop-blur-md py-2 dark:border-slate-800/50 dark:bg-slate-950/90"
-          : "border-gray-100 bg-white py-3.5 dark:border-slate-800/50 dark:bg-slate-950/70"
+          ? "border-gray-200/50 bg-white/90 backdrop-blur-md dark:border-slate-800/50 dark:bg-slate-950/90"
+          : "border-gray-100 bg-white dark:border-slate-800/50 dark:bg-slate-950/70"
       }`}
     >
       <div
@@ -77,29 +77,22 @@ export default function SiteHeader({
             src={BRANDING_ASSETS.logoTransparent}
             alt="Mavryk Logo"
             title="Mavryk Premium Store"
-            width={44}
-            height={44}
-            className={`object-contain transition-all duration-500 ${
-              isScrolled
-                ? "h-6 w-6 sm:h-7 sm:w-7 md:h-9 md:w-9"
-                : "h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 lg:h-11 lg:w-11"
-            }`}
+            width={40}
+            height={40}
+            className="h-9 w-9 object-contain sm:h-9 sm:w-9 md:h-10 md:w-10"
           />
-          <div className="hidden sm:block text-left">
-            <div
-              className={`font-bold tracking-tight text-gray-900 transition-all duration-500 dark:text-white ${
-                isScrolled
-                  ? "text-xs sm:text-sm md:text-base"
-                  : "text-sm sm:text-base md:text-lg lg:text-xl"
-              }`}
-            >
+          <div className="hidden min-h-[2.75rem] flex-col justify-center text-left sm:flex">
+            <div className="font-bold tracking-tight text-gray-900 dark:text-white text-sm sm:text-base md:text-lg">
               Mavryk Premium <span className="text-blue-600 dark:text-blue-500">Store</span>
             </div>
-            {!isScrolled && (
-              <p className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-slate-400 lg:block">
-                Phần mềm bản quyền chính hãng
-              </p>
-            )}
+            <p
+              className={`mt-0.5 hidden text-[10px] font-bold uppercase leading-none tracking-[0.2em] text-gray-500 transition-opacity duration-300 dark:text-slate-400 lg:block lg:min-h-[12px] ${
+                isScrolled ? "opacity-0" : "opacity-100"
+              }`}
+              aria-hidden={isScrolled}
+            >
+              Phần mềm bản quyền chính hãng
+            </p>
           </div>
         </a>
         </div>

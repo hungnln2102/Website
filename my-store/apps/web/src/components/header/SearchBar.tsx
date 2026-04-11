@@ -89,9 +89,7 @@ export function SearchBar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           onFocus={handleFocus}
-          className={`relative w-full pl-10 pr-10 transition-all duration-500 rounded-xl text-sm font-medium focus:outline-none placeholder:text-gray-500 ${
-            isScrolled ? "h-9" : "h-10"
-          } ${
+          className={`relative h-10 w-full pl-10 pr-10 transition-all duration-500 rounded-xl text-sm font-medium focus:outline-none placeholder:text-gray-500 ${
             "bg-white border-2 border-blue-200 shadow-lg shadow-blue-100/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:shadow-xl focus:shadow-blue-200/50 " +
             "dark:bg-slate-800 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400 dark:shadow-none dark:focus:ring-blue-500/20 dark:focus:border-blue-500 dark:focus:bg-slate-800"
           }`}

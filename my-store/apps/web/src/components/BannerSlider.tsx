@@ -115,9 +115,6 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
   }, []);
 
   const [current, setCurrent] = useState(0);
-  const [showDesktopImages, setShowDesktopImages] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
-  );
 
   const slideCount = slides.length;
   const safeIndex = slideCount ? Math.min(current, slideCount - 1) : 0;
@@ -136,28 +133,12 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
   }, [slideCount]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || slideCount === 0) {
       return;
     }
 
     const mediaQuery = window.matchMedia("(min-width: 640px)");
-    const updateImageMode = (event?: MediaQueryListEvent) => {
-      setShowDesktopImages(event?.matches ?? mediaQuery.matches);
-    };
-
-    updateImageMode();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", updateImageMode);
-      return () => mediaQuery.removeEventListener("change", updateImageMode);
-    }
-
-    mediaQuery.addListener(updateImageMode);
-    return () => mediaQuery.removeListener(updateImageMode);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !showDesktopImages || slideCount === 0) {
+    if (!mediaQuery.matches) {
       return;
     }
 
@@ -183,7 +164,7 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
 
     const timeoutId = window.setTimeout(preloadNextImage, 700);
     return () => window.clearTimeout(timeoutId);
-  }, [safeIndex, showDesktopImages, slideCount, slides]);
+  }, [safeIndex, slideCount, slides]);
 
   const handlePrev = useCallback(() => {
     setCurrent((prev) => (prev - 1 + slideCount) % slideCount);
@@ -225,24 +206,22 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
           />
         </div>
 
-        {showDesktopImages && (
-          <div key={safeIndex} className="absolute inset-0 hidden animate-in fade-in duration-500 sm:block">
-            <img
-              src={active.imageSrc}
-              srcSet={active.imageSrcSet}
-              sizes={active.imageSrcSet ? BANNER_IMAGE_SIZES : undefined}
-              alt={active.imageAlt}
-              className="h-full w-full object-cover"
-              width={1200}
-              height={675}
-              loading={safeIndex === 0 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={safeIndex === 0 ? "high" : "auto"}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
-          </div>
-        )}
+        <div key={safeIndex} className="absolute inset-0 hidden animate-in fade-in duration-500 sm:block">
+          <img
+            src={active.imageSrc}
+            srcSet={active.imageSrcSet}
+            sizes={active.imageSrcSet ? BANNER_IMAGE_SIZES : undefined}
+            alt={active.imageAlt}
+            className="h-full w-full object-cover"
+            width={1200}
+            height={675}
+            loading={safeIndex === 0 ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={safeIndex === 0 ? "high" : "auto"}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-slate-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 via-transparent to-transparent" />
+        </div>
       </div>
 
       <button

@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { ErrorMessage } from "@/components/ui/error-message";
+import { APP_CONFIG } from "@/lib/constants";
 
 interface ProductNotFoundProps {
   error?: string | null;
@@ -9,6 +11,24 @@ interface ProductNotFoundProps {
 }
 
 export function ProductNotFound({ error, onRetry, onBack }: ProductNotFoundProps) {
+  useEffect(() => {
+    document.title = `Không tìm thấy sản phẩm | ${APP_CONFIG.name}`;
+
+    let robotsMeta = document.querySelector(
+      'meta[name="robots"]'
+    ) as HTMLMetaElement | null;
+    if (!robotsMeta) {
+      robotsMeta = document.createElement("meta");
+      robotsMeta.setAttribute("name", "robots");
+      document.head.appendChild(robotsMeta);
+    }
+    const prev = robotsMeta.getAttribute("content") || "index, follow";
+    robotsMeta.setAttribute("content", "noindex, follow");
+    return () => {
+      robotsMeta?.setAttribute("content", prev);
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="text-center">

@@ -305,6 +305,11 @@ if (process.env.NODE_ENV !== "production") {
   app.use("/debug", debugRouter);
 }
 
+// SEO: redirect index pages to canonical root (301)
+app.get("/index.html", (_req, res) => res.redirect(301, "/"));
+app.get("/index.php", (_req, res) => res.redirect(301, "/"));
+app.get("/index.htm", (_req, res) => res.redirect(301, "/"));
+
 // Health check endpoints (liveness, readiness, db)
 app.get("/", (_req, res) => {
   res.status(200).send("OK");

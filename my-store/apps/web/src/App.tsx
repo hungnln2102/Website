@@ -54,6 +54,7 @@ const NewsDetailPage = lazyWithRetry(() => import("@/features/news/NewsDetailPag
 const PaymentSuccessPage = lazyWithRetry(() => import("@/features/payment/PaymentSuccessPage"));
 const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentErrorPage"));
 const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
+const NotFoundPage = lazyWithRetry(() => import("@/components/NotFoundPage"));
 const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
 /** Trang bảo trì — lazy vì chỉ tải khi API báo maintenance. */
 const MaintenancePage = lazyWithRetry(() => import("@/components/MaintenancePage"));
@@ -254,6 +255,15 @@ export default function App() {
           type: "website" as const,
           robots: "noindex, follow",
         };
+      case "not-found":
+        return {
+          title: `404 - Không tìm thấy | ${APP_CONFIG.name}`,
+          description: "Trang bạn đang tìm không tồn tại hoặc đã bị di chuyển.",
+          keywords: "",
+          url: getCurrentUrl(ROUTES.home),
+          type: "website" as const,
+          robots: "noindex, follow",
+        };
       default:
         return {
           title: `${APP_CONFIG.name} - Phần mềm bản quyền chính hãng`,
@@ -446,6 +456,7 @@ export default function App() {
             onSearchChange={setSearchQuery}
           />
         )}
+        {view === "not-found" && <NotFoundPage />}
       </Suspense>
       {view !== "login" && view !== "login-forgot" && (
         <Suspense fallback={null}>
