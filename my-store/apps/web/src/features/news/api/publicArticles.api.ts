@@ -52,26 +52,32 @@ function visualLabelFromDate(iso: string | null): string {
 
 /**
  * Admin lưu ảnh bìa dạng absolute (vd. http://localhost:3001/image/articles/...).
- * Trên production, trang www HTTPS không được tải http://localhost (mixed content + CSP img-src).
- * Đổi thành `/image/...` rồi ghép getApiBase() (HTTPS) — proxy store → admin_orderlist.
+ * Storefront phải tải qua same-origin `/image/articles/...` (Vite/nginx proxy → admin_orderlist),
+ * không gọi trực tiếp localhost hay domain admin (mixed content, CSP, hoặc host không public).
  *
- * Prod: nên set `VITE_ADMIN_PUBLIC_ORIGIN=https://admin.mavrykpremium.store` nếu DB còn URL đầy đủ trỏ admin.
+ * Ảnh bìa bài viết luôn nằm dưới `/image/articles/` — luôn chuyển về path tương đối.
+ * Các path `/image/` khác: loopback hoặc khớp VITE_ADMIN_PUBLIC_ORIGIN.
  */
 function normalizeArticleImageStorageUrl(url: string): string {
   if (!/^https?:\/\//i.test(url)) return url;
 
   try {
     const parsed = new URL(url);
+    const pathname = parsed.pathname;
     const host = parsed.hostname.toLowerCase();
     const isLoopback =
       host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
 
-    if (!parsed.pathname.startsWith('/image/')) {
+    if (pathname.startsWith('/image/articles')) {
+      return `${pathname}${parsed.search}`;
+    }
+
+    if (!pathname.startsWith('/image/')) {
       return url;
     }
 
     if (isLoopback) {
-      return `${parsed.pathname}${parsed.search}`;
+      return `${pathname}${parsed.search}`;
     }
 
     const stripOrigin = import.meta.env.VITE_ADMIN_PUBLIC_ORIGIN?.replace(/\/+$/, '');
@@ -82,7 +88,7 @@ function normalizeArticleImageStorageUrl(url: string): string {
         url.startsWith(`${stripOrigin}/`) ||
         normalizedIncoming.startsWith(`${normalizedOrigin}/`)
       ) {
-        return `${parsed.pathname}${parsed.search}`;
+        return `${pathname}${parsed.search}`;
       }
     }
   } catch {

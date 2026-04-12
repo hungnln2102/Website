@@ -264,13 +264,15 @@ export default function NewsDetailPage({
             <article className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-[0_20px_40px_rgba(2,6,23,0.35)]">
               <div className={`h-2 w-full bg-gradient-to-r ${article.accentClass}`} aria-hidden="true" />
               {article.coverImageUrl ? (
-                <div className="w-full overflow-hidden bg-slate-100 dark:bg-slate-900/90">
-                  <img
-                    src={article.coverImageUrl}
-                    alt=""
-                    className="news-card-cover-img"
-                    loading="eager"
-                  />
+                <div className="flex w-full justify-center bg-slate-100 px-4 py-5 sm:px-6 dark:bg-slate-900/90">
+                  <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm dark:border-slate-700/80">
+                    <img
+                      src={article.coverImageUrl}
+                      alt=""
+                      className="news-card-cover-img"
+                      loading="eager"
+                    />
+                  </div>
                 </div>
               ) : null}
               <div className="p-6 sm:p-8">

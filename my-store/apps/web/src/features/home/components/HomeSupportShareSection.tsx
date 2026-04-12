@@ -33,6 +33,7 @@ export function HomeSupportShareSection() {
 
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   const [isSliding, setIsSliding] = useState(false);
+  const [coverImageFailed, setCoverImageFailed] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +41,10 @@ export function HomeSupportShareSection() {
       setActiveArticleId(articles[0].id);
     }
   }, [articles, activeArticleId]);
+
+  useEffect(() => {
+    setCoverImageFailed(false);
+  }, [activeArticleId]);
 
   const activeArticle =
     articles.find((a) => a.id === activeArticleId) ?? articles[0] ?? null;
@@ -145,7 +150,7 @@ export function HomeSupportShareSection() {
                 aria-label={`Xem chi tiết bài viết ${activeArticle.title}`}
               >
                 <div className="relative w-full overflow-hidden bg-slate-900/90 dark:bg-slate-950">
-                  {activeArticle.coverImageUrl ? (
+                  {activeArticle.coverImageUrl && !coverImageFailed ? (
                     <img
                       src={activeArticle.coverImageUrl}
                       alt=""
@@ -153,6 +158,7 @@ export function HomeSupportShareSection() {
                       decoding="async"
                       sizes="(min-width: 1280px) 640px, (min-width: 640px) 90vw, 100vw"
                       className="news-card-cover-img"
+                      onError={() => setCoverImageFailed(true)}
                     />
                   ) : (
                     <div className="relative aspect-video w-full">
