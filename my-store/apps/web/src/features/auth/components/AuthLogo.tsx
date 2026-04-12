@@ -17,9 +17,9 @@ export function AuthLogo({ onBack }: AuthLogoProps) {
         <img
           src={BRANDING_ASSETS.logoTransparent}
           alt="Mavryk Logo"
-          width={40}
-          height={40}
-          className="h-10 w-10 rounded-xl object-contain transition-all duration-300"
+          width={160}
+          height={48}
+          className="h-10 w-auto max-h-10 max-w-[11rem] shrink-0 rounded-xl object-contain object-left transition-all duration-300"
         />
         <div className="hidden sm:block text-left">
           <h1 className="text-lg font-bold tracking-tight text-white">

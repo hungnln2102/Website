@@ -200,7 +200,7 @@ export default function NewsCategoryPage({
                       alt=""
                       aria-hidden="true"
                       loading="lazy"
-                      className="absolute right-3 bottom-2 h-16 w-16 object-contain opacity-85"
+                      className="absolute right-3 bottom-2 h-16 w-auto max-h-16 max-w-[8rem] object-contain opacity-85"
                     />
                   </>
                 )}

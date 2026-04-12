@@ -181,7 +181,7 @@ export function HomeSupportShareSection() {
                     aria-hidden="true"
                     loading="lazy"
                     decoding="async"
-                    className="pointer-events-none absolute right-2 bottom-2 z-10 h-11 w-11 object-contain opacity-95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:right-2.5 sm:bottom-2.5 sm:h-12 sm:w-12"
+                    className="pointer-events-none absolute right-2 bottom-2 z-10 h-11 w-auto max-h-11 max-w-[5.5rem] object-contain opacity-95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:right-2.5 sm:bottom-2.5 sm:h-12 sm:max-h-12 sm:max-w-[6.5rem]"
                   />
                 </div>
               </button>

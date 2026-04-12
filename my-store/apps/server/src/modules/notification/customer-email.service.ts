@@ -7,7 +7,7 @@
  * - MAIL_FROM_PASSWORD_RESET — (tùy chọn) from cho mail OTP; mặc định Support <support@mavrykpremium.store>
  * - MAIL_COMPANY_NAME — thay {{company_name}} trong mail OTP (mặc định Mavryk Premium)
  * - FRONTEND_URL — link trong nội dung mail (tùy chọn)
- * - MAIL_LOGO_URL — (tùy chọn) URL tuyệt đối ảnh logo mail OTP; mặc định {FRONTEND_URL}/assets/images/logo-transparent (khớp brandingAssets trên web)
+ * - MAIL_LOGO_URL — (tùy chọn) URL tuyệt đối ảnh logo mail OTP; mặc định {FRONTEND_URL}/assets/images/logo-transparent.png (khớp brandingAssets trên web)
  */
 
 import { Resend } from "resend";
@@ -20,9 +20,9 @@ const PASSWORD_RESET_FROM =
 const COMPANY_NAME = process.env.MAIL_COMPANY_NAME?.trim() || "Mavryk Premium";
 const FRONTEND_URL = (process.env.FRONTEND_URL || "https://mavrykpremium.store").replace(/\/+$/, "");
 
-/** Cùng đường dẫn extensionless như `apps/web/src/lib/brandingAssets.ts` — nginx/Vite resolve đuôi .webp/.png/… */
+/** Cùng đường dẫn logo mail: cùng URL như `BRANDING_ASSETS.logoTransparent` (logo-transparent.png) */
 const PASSWORD_RESET_EMAIL_LOGO_URL =
-  process.env.MAIL_LOGO_URL?.trim() || `${FRONTEND_URL}/assets/images/logo-transparent`;
+  process.env.MAIL_LOGO_URL?.trim() || `${FRONTEND_URL}/assets/images/logo-transparent.png`;
 
 /** Đồng bộ với OTP_TTL_SEC trong password-reset.service (phút). */
 const PASSWORD_RESET_OTP_EXPIRE_MINUTES = 15;

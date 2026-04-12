@@ -202,7 +202,7 @@ export default function BannerSlider({ fillRow = false }: BannerSliderProps) {
             height={180}
             fetchPriority="high"
             decoding="async"
-            className="h-36 w-36 rounded-[2rem] object-cover opacity-20 shadow-[0_30px_90px_rgba(15,23,42,0.45)]"
+            className="h-36 w-auto max-w-[14rem] rounded-[2rem] object-contain opacity-20 shadow-[0_30px_90px_rgba(15,23,42,0.45)]"
           />
         </div>
 

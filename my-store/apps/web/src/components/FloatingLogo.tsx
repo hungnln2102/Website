@@ -92,7 +92,7 @@ export default function FloatingLogo() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 transition hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
+            className="flex h-12 min-h-12 w-auto min-w-12 max-w-[11rem] shrink-0 items-center justify-center rounded-full bg-white px-2 shadow-lg ring-1 ring-black/5 transition hover:scale-105 active:scale-95 sm:h-14 sm:min-h-14 sm:max-w-[12rem] sm:px-2.5"
             aria-label="Toggle liên hệ"
           >
             {open ? (
@@ -102,9 +102,9 @@ export default function FloatingLogo() {
                 src={BRANDING_ASSETS.logoTransparent}
                 alt="Logo"
                 title="Mavryk Premium Store"
-                width={48}
+                width={160}
                 height={48}
-                className="h-9 w-9 rounded-full object-cover sm:h-12 sm:w-12"
+                className="h-9 max-h-9 w-auto max-w-full object-contain object-center sm:h-11 sm:max-h-11"
               />
             )}
           </button>

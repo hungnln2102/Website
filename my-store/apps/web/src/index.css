@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Tailwind source(".") limits scanning to this folder (apps/web/src). Avoids scanning the monorepo (e.g. extensionless /assets/ URLs in apps/server) which can make Vite css-analysis resolve a missing .svg. */
+@import "tailwindcss" source(".");
 @import "tw-animate-css";
 @import "./styles/animations.css";
 

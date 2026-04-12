@@ -77,9 +77,9 @@ export default function SiteHeader({
             src={BRANDING_ASSETS.logoTransparent}
             alt="Mavryk Logo"
             title="Mavryk Premium Store"
-            width={40}
-            height={40}
-            className="h-9 w-9 object-contain sm:h-9 sm:w-9 md:h-10 md:w-10"
+            width={160}
+            height={48}
+            className="h-9 w-auto max-h-9 max-w-[10.5rem] shrink-0 object-contain object-left sm:max-w-[12rem] md:h-10 md:max-h-10"
           />
           <div className="hidden min-h-[2.75rem] flex-col justify-center text-left sm:flex">
             <div className="font-bold tracking-tight text-gray-900 dark:text-white text-sm sm:text-base md:text-lg">

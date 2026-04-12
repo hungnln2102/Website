@@ -31,9 +31,9 @@ export default function Footer() {
                 aria-hidden="true"
                 title="Mavryk Premium Store"
                 loading="lazy"
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain"
+                width={160}
+                height={48}
+                className="h-7 w-auto max-h-7 max-w-[8rem] shrink-0 object-contain object-left"
               />
               <span className="text-base font-bold text-white">
                 Mavryk Premium <span className="text-blue-400">Store</span>

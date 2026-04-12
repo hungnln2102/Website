@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "copy-branding": "node scripts/copy-branding.cjs",
+    "prebuild": "node scripts/copy-branding.cjs",
+    "predev": "node scripts/copy-branding.cjs",
     "dev": "vite",
     "build": "npx vite build",
     "check-types": "tsc --noEmit",
