@@ -1,8 +1,8 @@
 // Service Worker for Mavryk Premium Store
-// Version 1.0.0
-
-const CACHE_NAME = 'mavryk-store-v7';
-const RUNTIME_CACHE = 'mavryk-runtime-v7';
+// Tăng VERSION mỗi lần deploy nếu cần xóa sạch runtime cache cũ (ảnh/API đã put vào RUNTIME).
+const VERSION = 'v8';
+const CACHE_NAME = `mavryk-store-${VERSION}`;
+const RUNTIME_CACHE = `mavryk-runtime-${VERSION}`;
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -123,38 +123,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets - Cache first, then network
+  // Static assets — network first để mỗi lần có mạng luôn ưu tiên bản mới; cache chỉ khi offline/chậm.
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        return fetch(request)
-          .then((response) => {
-            // Don't cache if not a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(RUNTIME_CACHE)
-              .then((cache) => {
-                cache.put(request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // If both cache and network fail, return offline page for navigation requests
-            if (request.mode === 'navigate') {
-              return caches.match('/index.html');
-            }
-            return new Response('Offline', { status: 503 });
+    fetch(request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseToCache);
           });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return new Response('Offline', { status: 503 });
+        });
       })
   );
 });

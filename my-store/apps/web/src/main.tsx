@@ -56,13 +56,35 @@ function scheduleErrorTrackerInit() {
 
 scheduleErrorTrackerInit();
 
-// Register Service Worker
+// Register Service Worker — kiểm tra bản mới mỗi lần vào và reload một lần khi SW mới đã cài xong (tránh khách phải xóa cache).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
+    let reloadAfterControllerChange = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!reloadAfterControllerChange) {
+        return;
+      }
+      reloadAfterControllerChange = false;
+      window.location.reload();
+    });
+
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
         console.log('[SW] Service Worker registered:', registration.scope);
+
+        void registration.update();
+
+        registration.addEventListener('updatefound', () => {
+          if (navigator.serviceWorker.controller) {
+            reloadAfterControllerChange = true;
+          }
+        });
+
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          reloadAfterControllerChange = true;
+        }
       })
       .catch((error) => {
         console.error('[SW] Service Worker registration failed:', error);

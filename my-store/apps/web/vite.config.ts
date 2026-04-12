@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { BRANDING_ASSET_STAMP } from './src/lib/brandingAssetStamp';
 
 const analyzeBundle = process.env.ANALYZE === 'true';
 
@@ -93,10 +94,20 @@ function extensionlessBrandingAssets() {
   };
 }
 
+function injectBrandingStampIntoHtml() {
+  return {
+    name: 'inject-branding-stamp-html',
+    transformIndexHtml(html: string) {
+      return html.replace(/__BRANDING_ASSET_STAMP__/g, BRANDING_ASSET_STAMP);
+    },
+  };
+}
+
 export default defineConfig({
   base: '/',
   plugins: [
     react(),
+    injectBrandingStampIntoHtml(),
     extensionlessBrandingAssets(),
     analyzeBundle &&
       visualizer({
