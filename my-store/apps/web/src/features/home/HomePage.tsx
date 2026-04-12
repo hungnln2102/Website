@@ -163,7 +163,7 @@ export default function HomePage({
         "Danh mục";
       return `Danh mục ${categoryName} — sản phẩm bản quyền tại ${APP_CONFIG.name}`;
     }
-    return `${APP_CONFIG.name} — Cửa hàng phần mềm bản quyền chính hãng, tài khoản số và hỗ trợ khách hàng`;
+    return `${APP_CONFIG.name} — Cửa hàng phần mềm bản quyền chính hãng`;
   }, [searchQuery, selectedCategory, categories]);
 
   const structuredData = useMemo(() => {
