@@ -1,12 +1,12 @@
 // Service Worker for Mavryk Premium Store
 // Tăng VERSION mỗi lần deploy nếu cần xóa sạch runtime cache cũ (ảnh/API đã put vào RUNTIME).
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE_NAME = `mavryk-store-${VERSION}`;
 const RUNTIME_CACHE = `mavryk-runtime-${VERSION}`;
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
-  '/assets/images/logo-192',
+  '/assets/images/logo-192.jpg',
 ];
 
 // Install event - cache static assets

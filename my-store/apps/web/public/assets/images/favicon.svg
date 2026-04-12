@@ -1,14 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mavryk">
-  <defs>
-    <linearGradient id="mavryk-favicon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1" />
-      <stop offset="55%" stop-color="#8b5cf6" />
-      <stop offset="100%" stop-color="#d946ef" />
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="#f8fafc" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="7" fill="#2563eb"/>
   <path
-    fill="url(#mavryk-favicon-grad)"
-    d="M18 46V18h6l8 16 8-16h6v28h-6V30l-7 13h-4L24 30v16h-6z"
+    fill="#fff"
+    d="M8.5 22V10h3.2l4.8 7.1h.05L21.3 10H24.5v12h-2.85v-7.4l-.05.01-4.35 6.55h-1.5L11.4 14.6l-.05-.01V22H8.5Z"
   />
 </svg>
