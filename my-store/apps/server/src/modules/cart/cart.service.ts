@@ -296,7 +296,6 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
     const pctKhach = toNum(r.pct_khach);
     const pctPromo = toNum(r.pct_promo);
     const priceMax = toNum(r.price_max);
-    // margin-based pricing (ported from admin_orderlist)
     const { ctvPrice, retailPrice: salePrice, promoPrice } = calculatePrices({
       priceMax,
       pctCtv,
@@ -424,10 +423,12 @@ export async function getVariantProductData(
   const pctKhach = toNum(r.pct_khach);
   const pctPromo = toNum(r.pct_promo);
   const priceMax = toNum(r.price_max);
-  const salePrice = Math.round((pctCtv * priceMax * pctKhach) / 1000) * 1000;
-  const promoPrice =
-    pctPromo > 0 ? Math.round((salePrice * (1 - (pctPromo > 1 ? pctPromo / 100 : pctPromo))) / 1000) * 1000 : salePrice;
-  const ctvPrice = Math.round((pctCtv * priceMax) / 1000) * 1000;
+  const { ctvPrice, retailPrice: salePrice, promoPrice } = calculatePrices({
+    priceMax,
+    pctCtv,
+    pctKhach,
+    pctPromo,
+  });
   const price = priceType === "promo" ? promoPrice : priceType === "ctv" ? ctvPrice : salePrice;
   const originalPrice = priceType === "promo" && pctPromo > 0 ? salePrice : undefined;
   const discountPercentage = priceType === "promo" && pctPromo > 0 ? (pctPromo > 1 ? pctPromo : pctPromo * 100) : undefined;

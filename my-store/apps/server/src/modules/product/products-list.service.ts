@@ -1,7 +1,6 @@
 /**
  * Products list: một dòng / gói (`package`).
- * - Mỗi variant: giá list = một giá (MAV: max NCC từ supply_max, làm tròn nghìn; khách/CTV: công thức margin).
- * - Cột "TỪ" / `from_price`: MIN trên các variant trong gói (entry thấp nhất), gồm cả MAV.
+ * Giá list trong SQL (margin); `from_price` = MIN sale theo package.
  */
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
@@ -51,7 +50,6 @@ const STU = "priced.pct_stu";
 function scopeSaleSql(scope: ProductListPriceScope): string {
   switch (scope) {
     case "MAV":
-      /* Admin: mỗi variant = max giá NCC (supply_max), làm tròn nghìn; gói hiển thị MIN(variant) ở bước aggregate */
       return sqlCostPriceRounded(PM);
     case "MAVC":
       return sqlCtvPrice(PM, CTV);

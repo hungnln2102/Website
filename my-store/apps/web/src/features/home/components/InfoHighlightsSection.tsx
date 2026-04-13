@@ -103,7 +103,7 @@ export function InfoHighlightsSection() {
 
               <div className="relative flex items-center gap-3">
                 <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/70 ${card.lightIconBg} ${card.darkIconBg} shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:border-white/5 dark:shadow-[0_8px_18px_rgba(2,6,23,0.2)]`}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/70 ${card.lightIconBg} ${card.darkIconBg} shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:border-white/5 dark:shadow-[0_8px_18px_rgba(2,6,23,0.2)]`}
                 >
                   <Icon
                     className={`h-5 w-5 ${card.lightIconColor} ${card.darkIconColor}`}

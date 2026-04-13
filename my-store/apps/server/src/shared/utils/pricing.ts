@@ -1,5 +1,6 @@
 /**
- * Pricing calculation ported from admin_orderlist (backend/src/services/pricing/core.js).
+ * Pricing calculation ported from admin_orderlist `backend/src/services/pricing/core.js`.
+ * Store computes catalog/cart prices locally (SQL + this module). Keep in sync with admin core.
  *
  * Formula (margin-based):
  *   ctvPrice     = priceMax / (1 - pctCtv)

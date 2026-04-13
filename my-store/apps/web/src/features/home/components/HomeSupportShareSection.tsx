@@ -181,14 +181,18 @@ export function HomeSupportShareSection() {
                     </div>
                   )}
                   {/* Logo shop — góc phải (dưới ảnh), luôn hiển thị */}
-                  <img
-                    src={BRANDING_ASSETS.logoTransparent}
-                    alt=""
+                  <div
+                    className="pointer-events-none absolute right-2 bottom-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 p-1 shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:right-2.5 sm:bottom-2.5 sm:h-12 sm:w-12 sm:p-1.5"
                     aria-hidden="true"
-                    loading="lazy"
-                    decoding="async"
-                    className="pointer-events-none absolute right-2 bottom-2 z-10 h-11 w-auto max-h-11 max-w-[5.5rem] object-contain opacity-95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:right-2.5 sm:bottom-2.5 sm:h-12 sm:max-h-12 sm:max-w-[6.5rem]"
-                  />
+                  >
+                    <img
+                      src={BRANDING_ASSETS.logoTransparent}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-contain opacity-95"
+                    />
+                  </div>
                 </div>
               </button>
 
