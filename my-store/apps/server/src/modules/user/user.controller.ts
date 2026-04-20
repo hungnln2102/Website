@@ -138,7 +138,7 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
     };
 
     const publicTable = `public.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
-    // Thử schema config (cycles.tier_cycles) trước để tránh lỗi "public.tier_cycles does not exist" khi bảng chỉ có ở cycles
+    // Thử schema config (customer_web.tier_cycles) trước để tránh lỗi "public.tier_cycles does not exist".
     const tablesToTry = [TIER_CYCLES_TABLE, publicTable].filter((t, i, a) => a.indexOf(t) === i);
     try {
       for (const table of tablesToTry) {

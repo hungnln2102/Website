@@ -233,9 +233,9 @@ VALUES ('maintenance_mode', 'off')
 ON CONFLICT (key) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- customer.customer_profiles — cooldown đổi ngày sinh (365 ngày)
+-- customer_web.customer_profiles — cooldown đổi ngày sinh (365 ngày)
 -- -----------------------------------------------------------------------------
-ALTER TABLE customer.customer_profiles
+ALTER TABLE customer_web.customer_profiles
   ADD COLUMN IF NOT EXISTS date_of_birth_changed_at TIMESTAMPTZ;
 
 -- -----------------------------------------------------------------------------

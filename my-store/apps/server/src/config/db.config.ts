@@ -32,16 +32,16 @@ const        SCHEMA_PARTNER       = pickSchema(process.env.DB_SCHEMA_PARTNER,   
 export const SCHEMA_SUPPLIER      = pickSchema(process.env.DB_SCHEMA_SUPPLIER,      process.env.SCHEMA_SUPPLIER,      SCHEMA_PARTNER, SCHEMA_PRODUCT);
 export const SCHEMA_SUPPLIER_COST = pickSchema(process.env.DB_SCHEMA_SUPPLIER_COST, process.env.SCHEMA_SUPPLIER_COST, SCHEMA_PRODUCT, SCHEMA_PARTNER);
 export const SCHEMA_ORDERS        = pickSchema(process.env.DB_SCHEMA_ORDERS,        process.env.SCHEMA_ORDERS,        "orders");
-export const SCHEMA_IDENTITY      = pickSchema(process.env.DB_SCHEMA_IDENTITY,      process.env.SCHEMA_IDENTITY,      "identity");
-export const SCHEMA_CUSTOMER      = pickSchema(process.env.DB_SCHEMA_CUSTOMER,      process.env.SCHEMA_CUSTOMER,      "customer");
+export const SCHEMA_RECEIPT       = pickSchema(process.env.DB_SCHEMA_RECEIPT,       process.env.SCHEMA_RECEIPT,       "receipt");
+export const SCHEMA_IDENTITY      = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
+export const SCHEMA_CUSTOMER      = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
 export const SCHEMA_CART          = pickSchema(process.env.DB_SCHEMA_CART,           process.env.SCHEMA_CART,           "cart");
 export const SCHEMA_WALLET        = pickSchema(process.env.DB_SCHEMA_WALLET,        process.env.SCHEMA_WALLET,        "wallet");
-export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_REVIEW,        process.env.SCHEMA_REVIEW,        "review");
-export const SCHEMA_AUDIT         = pickSchema(process.env.DB_SCHEMA_AUDIT,         process.env.SCHEMA_AUDIT,         "audit");
+export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "product");
 export const SCHEMA_FORM_DESC     = pickSchema(process.env.DB_SCHEMA_FORM_DESC,     process.env.SCHEMA_FORM_DESC,     "form_desc");
-export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CYCLES,        process.env.SCHEMA_CYCLES,        "cycles");
+export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
 export const SCHEMA_ADMIN       = pickSchema(process.env.DB_SCHEMA_ADMIN,        process.env.SCHEMA_ADMIN,        "admin");
-export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      "finance");
+export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      process.env.DB_SCHEMA_DASHBOARD, process.env.SCHEMA_DASHBOARD, "dashboard");
 export const SCHEMA_PROMOTION   = pickSchema(process.env.DB_SCHEMA_PROMOTION,    process.env.SCHEMA_PROMOTION,    "promotion");
 // ─────────────────────────────────────────────────────────────────────────────
 // Table & Column Definitions
@@ -446,7 +446,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   },
 
   PAYMENT_RECEIPT: {
-    SCHEMA: SCHEMA_ORDERS,
+    SCHEMA: SCHEMA_RECEIPT,
     TABLE: "payment_receipt",
     COLS: {
       ID: "id",
@@ -681,7 +681,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
   // ── Audit ──────────────────────────────────────────────────────────────────
 
   AUDIT_LOG: {
-    SCHEMA: SCHEMA_AUDIT,
+    SCHEMA: SCHEMA_IDENTITY,
     TABLE: "audit_logs",
     COLS: {
       ID: "id",
