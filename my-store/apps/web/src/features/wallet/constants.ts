@@ -2,10 +2,10 @@ import type { LucideIcon } from "lucide-react";
 import { Wallet, Sparkles, Gift, Zap, Crown, ShoppingBag } from "lucide-react";
 
 export const BANK_CONFIG = {
-  bankId: import.meta.env.VITE_BANK_ID || "970432",
+  bankId: import.meta.env.VITE_BANK_ID || "VPB",
   bankName: import.meta.env.VITE_BANK_NAME || "VPBank",
-  accountNo: import.meta.env.VITE_BANK_ACCOUNT_NO || "9183400998",
-  accountName: import.meta.env.VITE_BANK_ACCOUNT_NAME || "NGO HUNG",
+  accountNo: import.meta.env.VITE_BANK_ACCOUNT_NO || "",
+  accountName: import.meta.env.VITE_BANK_ACCOUNT_NAME || "",
 } as const;
 
 export type TopupPackageItem = {

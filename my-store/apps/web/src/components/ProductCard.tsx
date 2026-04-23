@@ -45,7 +45,8 @@ export default function ProductCard({
 }: ProductCardProps) {
   const displayPrice = (from_price != null ? from_price : base_price) || 0;
   const discountPercent = Number(discount_percentage ?? 0);
-  const hasDiscount = discountPercent > 0;
+  const discountPercentRounded = Math.max(0, Math.round(discountPercent));
+  const hasDiscount = discountPercentRounded > 0;
   const discountedPrice = roundToNearestThousand(displayPrice * (1 - discountPercent / 100));
   const hasMultipleCodes = (package_count ?? 1) > 1;
   const showContact = displayPrice === 0;
@@ -150,7 +151,7 @@ export default function ProductCard({
                 compact ? "right-0.5 top-0.5 px-1 py-px text-[8px] leading-none" : "right-2 top-2 rounded-md px-2 py-0.5 text-[10px]"
               }`}
             >
-              -{discount_percentage}%
+              -{discountPercentRounded}%
             </div>
           )}
         </div>
@@ -308,7 +309,7 @@ export default function ProductCard({
 
                   {hasDiscount && !showContact && (
                     <div className="badge-discount inline-flex shrink-0 items-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-md shadow-orange-600/30">
-                      -{discountPercent}%
+                      -{discountPercentRounded}%
                     </div>
                   )}
                 </div>
