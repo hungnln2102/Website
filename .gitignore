@@ -1,0 +1,18 @@
+# ── Local dev / DB (không commit dump, override compose, env thử local) ──
+# Backup Postgres (pg_dump -Fc) — dữ liệu nhạy cảm, chỉ dùng máy dev
+db-backup*.dump
+**/*.dump
+
+# Override Docker Compose (chỉ máy bạn, vd. thêm port/secret)
+docker-compose.override.yml
+**/docker-compose.override.yml
+
+# Biến môi trường Docker/Postgres / override chỉ dùng local
+.env.postgres.local
+.env.local
+.env.*.local
+
+# Volume/thư mục data Postgres nếu từng mount bind ra thư mục repo
+postgres_data/
+**/postgres_data/
+pgdata/

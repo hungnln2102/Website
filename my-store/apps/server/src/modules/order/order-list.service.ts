@@ -6,13 +6,18 @@
 
 import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
-import { ORDER_LIST_STATUS } from "../../config/status.constants";
+import { ORDER_CUSTOMER_STATUS, ORDER_LIST_STATUS } from "../../config/status.constants";
 
 const ORDER_LIST_TABLE = `${DB_SCHEMA.ORDER_LIST!.SCHEMA}.${DB_SCHEMA.ORDER_LIST!.TABLE}`;
+const ORDER_CUSTOMER_TABLE = `${DB_SCHEMA.ORDER_CUSTOMER!.SCHEMA}.${DB_SCHEMA.ORDER_CUSTOMER!.TABLE}`;
+const WALLET_TABLE = `${DB_SCHEMA.WALLET!.SCHEMA}.${DB_SCHEMA.WALLET!.TABLE}`;
+const WALLET_TX_TABLE = `${DB_SCHEMA.WALLET_TRANSACTION!.SCHEMA}.${DB_SCHEMA.WALLET_TRANSACTION!.TABLE}`;
 const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`;
 const SUPPLIER_COST_TABLE = `${DB_SCHEMA.SUPPLIER_COST!.SCHEMA}.${DB_SCHEMA.SUPPLIER_COST!.TABLE}`;
 const VARIANT_TABLE = `${DB_SCHEMA.VARIANT!.SCHEMA}.${DB_SCHEMA.VARIANT!.TABLE}`;
 const COLS_OL = DB_SCHEMA.ORDER_LIST!.COLS as Record<string, string>;
+const COLS_OC = DB_SCHEMA.ORDER_CUSTOMER!.COLS as Record<string, string>;
+const COLS_WT = DB_SCHEMA.WALLET_TRANSACTION!.COLS as Record<string, string>;
 const COLS_ACCOUNT = DB_SCHEMA.ACCOUNT!.COLS as Record<string, string>;
 const COLS_SC = DB_SCHEMA.SUPPLIER_COST!.COLS as Record<string, string>;
 const COLS_V = DB_SCHEMA.VARIANT!.COLS as Record<string, string>;
@@ -242,18 +247,157 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
   return res.rowCount ?? 0;
 }
 
+function generateRefundTransactionId(): string {
+  const r = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const n = String(Date.now()).slice(-6);
+  return `MAVR${n}${r}`.slice(0, 20);
+}
+
+export type CancelOrderResult = {
+  /** Số dòng order_list cập nhật (0 nếu đã hủy trước đó hoặc không tìm thấy) */
+  updated: number;
+  /** Mcoin đã cộng lại ví (0 nếu không hoàn) */
+  refundedMcoin: number;
+  accountId: number | null;
+};
+
 /**
- * Hủy đơn: cập nhật status thành "Đã Hủy" và ghi canceled_at trong order_list.
- * Cập nhật status "Đã Hủy" và canceled_at trong order_list.
+ * Hủy đơn: Đã Hủy + canceled_at; nếu đơn đã thu Mcoin (order_list.price & order_customer) thì cộng lại ví + ghi wallet_transactions (REFUND/CREDIT).
  * Gọi từ POST /api/orders/cancel (Bot nút "Hủy Đơn").
  */
-export async function cancelOrder(id_order: string): Promise<number> {
-  const res = await pool.query(
-    `UPDATE ${ORDER_LIST_TABLE}
-     SET ${COLS_OL.STATUS} = $1,
-         ${COLS_OL.CANCELED_AT} = NOW()
-     WHERE ${COLS_OL.ID_ORDER} = $2`,
-    [ORDER_LIST_STATUS.CANCELLED, id_order]
-  );
-  return res.rowCount ?? 0;
+export async function cancelOrder(id_order: string): Promise<CancelOrderResult> {
+  const idOrder = String(id_order ?? "").trim();
+  if (!idOrder) {
+    return { updated: 0, refundedMcoin: 0, accountId: null };
+  }
+
+  const client = await pool.connect();
+  const txIdCol = COLS_WT.TRANSACTION_ID as string;
+  const methodCol = COLS_WT.METHOD as string;
+  const promotionIdCol = COLS_WT.PROMOTION_ID as string;
+  const idOrderColOl = COLS_OL.ID_ORDER as string;
+  const idOrderColOc = COLS_OC.ID_ORDER as string;
+  const accountIdCol = COLS_OC.ACCOUNT_ID as string;
+  const statusColOl = COLS_OL.STATUS as string;
+  const priceCol = COLS_OL.PRICE as string;
+  const refundCol = COLS_OL.REFUND as string;
+  const canceledAtCol = COLS_OL.CANCELED_AT as string;
+  const statusColOc = COLS_OC.STATUS as string;
+  const updatedAtCol = COLS_OC.UPDATED_AT as string;
+
+  let refundedMcoin = 0;
+  let outAccountId: number | null = null;
+  let updated = 0;
+
+  try {
+    await client.query("BEGIN");
+
+    const sel = await client.query<{
+      st: string | null;
+      price: string | null;
+      account_id: string | null;
+    }>(
+      `SELECT ol.${statusColOl} AS st, ol.${priceCol}::text AS price,
+              oc.${accountIdCol}::text AS account_id
+       FROM ${ORDER_LIST_TABLE} ol
+       LEFT JOIN ${ORDER_CUSTOMER_TABLE} oc ON oc.${idOrderColOc} = ol.${idOrderColOl}
+       WHERE ol.${idOrderColOl} = $1
+       FOR UPDATE OF ol`,
+      [idOrder]
+    );
+
+    if (sel.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { updated: 0, refundedMcoin: 0, accountId: null };
+    }
+
+    const row = sel.rows[0]!;
+    if (row.st === ORDER_LIST_STATUS.CANCELLED) {
+      await client.query("ROLLBACK");
+      return { updated: 0, refundedMcoin: 0, accountId: null };
+    }
+
+    const refundLine = Math.max(0, Math.round(parseFloat(String(row.price ?? "0")) || 0));
+    const accountId =
+      row.account_id != null && String(row.account_id).trim() !== ""
+        ? parseInt(String(row.account_id), 10)
+        : NaN;
+    const hasAccount = Number.isFinite(accountId) && accountId > 0;
+    if (hasAccount) outAccountId = accountId!;
+
+    const markCancelled = await client.query(
+      `UPDATE ${ORDER_LIST_TABLE}
+       SET ${statusColOl} = $1,
+           ${canceledAtCol} = NOW(),
+           ${refundCol} = $2::numeric
+       WHERE ${idOrderColOl} = $3
+         AND ${statusColOl} != $1
+       RETURNING 1`,
+      [ORDER_LIST_STATUS.CANCELLED, refundLine, idOrder]
+    );
+    if (markCancelled.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return { updated: 0, refundedMcoin: 0, accountId: hasAccount ? outAccountId : null };
+    }
+    updated = 1;
+
+    if (hasAccount && refundLine > 0) {
+      const balRes = await client.query<{ balance: string }>(
+        `SELECT balance FROM ${WALLET_TABLE} WHERE account_id = $1 FOR UPDATE`,
+        [accountId]
+      );
+      if (balRes.rows.length === 0) {
+        await client.query(
+          `INSERT INTO ${WALLET_TABLE} (account_id, balance, created_at, updated_at)
+           VALUES ($1, 0, NOW(), NOW())`,
+          [accountId]
+        );
+      }
+      const bal2 = await client.query<{ balance: string }>(
+        `SELECT balance FROM ${WALLET_TABLE} WHERE account_id = $1 FOR UPDATE`,
+        [accountId]
+      );
+      const balanceBefore = parseInt(bal2.rows[0]?.balance ?? "0", 10) || 0;
+      const balanceAfter = balanceBefore + refundLine;
+      let txId = generateRefundTransactionId();
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const ex = await client.query(`SELECT 1 FROM ${WALLET_TX_TABLE} WHERE ${txIdCol} = $1`, [txId]);
+        if (ex.rows.length === 0) break;
+        txId = generateRefundTransactionId();
+      }
+
+      await client.query(
+        `UPDATE ${WALLET_TABLE} SET balance = $1, updated_at = NOW() WHERE account_id = $2`,
+        [balanceAfter, accountId]
+      );
+      await client.query(
+        `INSERT INTO ${WALLET_TX_TABLE}
+         (${txIdCol}, account_id, type, direction, amount, balance_before, balance_after, ${methodCol}, ${promotionIdCol}, created_at)
+         VALUES ($1, $2, 'REFUND', 'CREDIT', $3, $4, $5, 'Mcoin', NULL, NOW())`,
+        [txId, accountId, refundLine, balanceBefore, balanceAfter]
+      );
+      refundedMcoin = refundLine;
+    }
+
+    await client.query(
+      `UPDATE ${ORDER_CUSTOMER_TABLE}
+       SET ${statusColOc} = $1, ${updatedAtCol} = NOW()
+       WHERE ${idOrderColOc} = $2`,
+      [ORDER_CUSTOMER_STATUS.CANCELLED, idOrder]
+    );
+
+    await client.query("COMMIT");
+    if (refundedMcoin > 0) {
+      console.log(
+        "[order-list] cancel: refunded Mcoin",
+        { id_order: idOrder, refundedMcoin, accountId: outAccountId }
+      );
+    }
+    return { updated, refundedMcoin, accountId: outAccountId };
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }

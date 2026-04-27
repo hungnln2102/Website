@@ -1,0 +1,30 @@
+# Postgres chỉ dùng dev local (Website). Dữ liệu: restore từ .dump cạnh thư mục này.
+# Khởi chạy:  docker compose -f docker-compose.postgres.local.yml up -d
+# Dừng:      docker compose -f docker-compose.postgres.local.yml down
+# (down -v  xóa volume — mất dữ liệu local)
+#
+# Trùng kiểu cấu hình với my-store/packages/db/docker-compose.yml: DB my-store, user postgres.
+# Phiên bản 16 thường tương thích với bản cài EDB/Cloud — đổi image nếu server dùng 15/17.
+name: website-postgres-local
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: website-postgres-dev
+    environment:
+      POSTGRES_DB: my-store
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "${POSTGRES_DEV_PORT:-5432}:5432"
+    volumes:
+      - website_pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d my-store"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  website_pgdata_dev:

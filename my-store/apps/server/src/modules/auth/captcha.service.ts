@@ -11,6 +11,10 @@ const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY;
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
+function envFlagTrue(v: string | undefined): boolean {
+  return ["1", "true", "yes", "on"].includes(String(v ?? "").toLowerCase().trim());
+}
+
 interface TurnstileResponse {
   success: boolean;
   challenge_ts?: string;
@@ -32,6 +36,13 @@ class CaptchaService {
   }
 
   /**
+   * Tắt toàn bộ Turnstile (dev / tạm thời): `TURNSTILE_DISABLED=1` trong .env, restart server.
+   */
+  isDisabled(): boolean {
+    return envFlagTrue(process.env.TURNSTILE_DISABLED);
+  }
+
+  /**
    * Check if CAPTCHA is configured
    */
   isConfigured(): boolean {
@@ -42,6 +53,9 @@ class CaptchaService {
    * Check if an IP requires CAPTCHA verification
    */
   async requiresCaptcha(ipAddress: string): Promise<boolean> {
+    if (this.isDisabled()) {
+      return false;
+    }
     if (!this.isConfigured()) {
       return false;
     }
@@ -80,6 +94,9 @@ class CaptchaService {
     token: string,
     ipAddress?: string
   ): Promise<{ success: boolean; error?: string }> {
+    if (this.isDisabled()) {
+      return { success: true };
+    }
     if (!TURNSTILE_SECRET_KEY) {
       console.warn("[CAPTCHA] Turnstile secret key not configured, skipping verification");
       return { success: true };
@@ -123,6 +140,9 @@ class CaptchaService {
    * Get the site key for frontend
    */
   getSiteKey(): string | undefined {
+    if (this.isDisabled()) {
+      return undefined;
+    }
     return TURNSTILE_SITE_KEY;
   }
 

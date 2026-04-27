@@ -19,6 +19,8 @@ export interface DurationOption {
   pct_promo?: number;
   is_active?: boolean;
   form_id?: number | null;
+  /** display_name (id_product) — khớp khi thời hạn từ URL/alias lệch với `key` */
+  id_product?: string | null;
 }
 
 interface DurationSelectorProps {

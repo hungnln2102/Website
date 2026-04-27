@@ -40,9 +40,13 @@ export function BankTransferInfo({
   onTestPaymentSuccess,
 }: BankTransferInfoProps) {
   const [qrImageFailed, setQrImageFailed] = useState(false);
+  const [bankLogoFailed, setBankLogoFailed] = useState(false);
   useEffect(() => {
     setQrImageFailed(false);
   }, [qrUrl]);
+  useEffect(() => {
+    setBankLogoFailed(false);
+  }, [bankConfig.bankLogo]);
 
   // Render copy button
   const CopyButton = ({ text, field }: { text: string; field: string }) => (
@@ -67,16 +71,20 @@ export function BankTransferInfo({
           Thông tin thanh toán
         </h3>
 
-        {/* Bank Logo & Name */}
-        <div className="mb-6 flex items-center gap-3">
-          <img
-            src={bankConfig.bankLogo}
-            alt={bankConfig.bankName}
-            className="h-10 w-auto"
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-            {bankConfig.bankName}
-          </span>
+        {/* Logo đã có wordmark — chỉ hiện tên khi không tải được ảnh */}
+        <div className="mb-6 flex min-h-10 items-center gap-3">
+          {!bankLogoFailed && bankConfig.bankLogo ? (
+            <img
+              src={bankConfig.bankLogo}
+              alt={bankConfig.bankName}
+              className="h-10 w-auto max-w-full object-contain object-left"
+              onError={() => setBankLogoFailed(true)}
+            />
+          ) : (
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+              {bankConfig.bankName}
+            </span>
+          )}
         </div>
 
         {/* Account Info */}

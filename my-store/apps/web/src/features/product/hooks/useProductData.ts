@@ -12,7 +12,11 @@ import { useAuth } from "@/features/auth/hooks";
 import { roundToNearestThousand } from "@/lib/pricing";
 import { productsMock, productPackagesMock, reviewsMock } from "@/lib/mockData";
 import { slugify } from "@/lib/utils";
-import { parseDurationToken } from "../utils";
+import {
+  packageVariantDurationKey,
+  parseDurationToken,
+  resolveDurationOptionKey,
+} from "../utils";
 import type { DurationOption } from "../components/DurationSelector";
 
 export function useProductData(
@@ -88,49 +92,6 @@ export function useProductData(
   });
 
   const packagesList = Array.isArray(packageData) ? packageData : [];
-
-  const matchedPackageVariant = useMemo(() => {
-    if (!selectedPackage || !selectedDuration || packagesList.length === 0) {
-      return null;
-    }
-
-    const normalizedPackageKey = selectedPackage.trim().toLowerCase();
-
-    return (
-      packagesList.find((pkg) => {
-        const packageKey = (pkg.package_product ?? pkg.package ?? "")
-          .trim()
-          .toLowerCase();
-
-        return (
-          packageKey === normalizedPackageKey &&
-          parseDurationToken(pkg.id_product)?.key === selectedDuration
-        );
-      }) ?? null
-    );
-  }, [packagesList, selectedDuration, selectedPackage]);
-
-  // Extract base_name for product info
-  const baseName = useMemo(() => {
-    const idProduct =
-      matchedPackageVariant?.id_product ||
-      matchedPackageVariant?.package_product ||
-      "";
-
-    return idProduct.split("--")[0] || null;
-  }, [matchedPackageVariant]);
-
-  // Fetch product info
-  const {
-    data: productInfo,
-    isLoading: loadingProductInfo,
-    error: productInfoError,
-    refetch: refetchProductInfo,
-  } = useQuery({
-    queryKey: ["product-info", baseName],
-    queryFn: () => (baseName ? fetchProductInfo(baseName) : Promise.resolve(null)),
-    enabled: !!baseName,
-  });
 
   // Map product data
   const mappedProduct = useMemo(
@@ -262,7 +223,7 @@ export function useProductData(
           pctPromo > 0 && Number.isFinite(promoRaw) && promoRaw > 0
             ? roundToNearestThousand(promoRaw)
             : undefined;
-        const key = duration?.key ?? (pkg.id_product?.trim() || `opt-${idx}`);
+        const key = packageVariantDurationKey(pkg.id_product, idx);
         const label = duration?.label ?? (pkg.id_product?.trim() || "Gói");
         const sortValue = duration?.sortValue ?? Number.MAX_SAFE_INTEGER;
         const isActive = pkg.is_active !== false;
@@ -272,6 +233,7 @@ export function useProductData(
         if (!existing || (price > 0 && (existing.price === 0 || price < existing.price))) {
           options.set(key, {
             id: pkg.id,
+            id_product: pkg.id_product ?? null,
             key,
             label,
             price,
@@ -295,25 +257,65 @@ export function useProductData(
     ];
   }, [packagesList, product, selectedPackage]);
 
-  // Selected package info
-  const selectedPackageImageUrl = useMemo(() => {
-    if (matchedPackageVariant?.image_url) {
-      return matchedPackageVariant.image_url;
-    }
-
-    if (!selectedPackage || !selectedDuration || packagesList.length > 0) {
+  /** Cùng dòng variant với mục đã chọn trên Thời gian gia hạn (theo `id` option, fallback cùng key) */
+  const matchedPackageVariant = useMemo(() => {
+    if (!selectedPackage || !selectedDuration || packagesList.length === 0) {
       return null;
     }
+    const resolvedKey =
+      resolveDurationOptionKey(selectedDuration, durationOptions) ?? selectedDuration;
+    const opt = durationOptions.find((o) => o.key === resolvedKey);
+    if (opt != null && opt.id != null && String(opt.id) !== "") {
+      const byId = packagesList.find((p) => String(p.id) === String(opt.id));
+      if (byId) return byId;
+    }
+    const normalizedPackageKey = selectedPackage.trim().toLowerCase();
+    return (
+      packagesList.find((pkg, idx) => {
+        const packageKey = (pkg.package_product ?? pkg.package ?? "").trim().toLowerCase();
+        if (packageKey !== normalizedPackageKey) return false;
+        return packageVariantDurationKey(pkg.id_product, idx) === resolvedKey;
+      }) ?? null
+    );
+  }, [durationOptions, packagesList, selectedDuration, selectedPackage]);
 
-    const pkg = packages.find((p: any) => p.id === selectedPackage);
+  const baseName = useMemo(() => {
+    const idProduct =
+      matchedPackageVariant?.id_product ||
+      matchedPackageVariant?.package_product ||
+      "";
+    return idProduct.split("--")[0] || null;
+  }, [matchedPackageVariant]);
+
+  const {
+    data: productInfo,
+    isLoading: loadingProductInfo,
+    error: productInfoError,
+    refetch: refetchProductInfo,
+  } = useQuery({
+    queryKey: ["product-info", baseName],
+    queryFn: () => (baseName ? fetchProductInfo(baseName) : Promise.resolve(null)),
+    enabled: !!baseName,
+  });
+
+  // Ảnh gallery: chưa chọn gói → null (ảnh product); chỉ gói → ảnh theo tên gói; gói + thời hạn → ảnh đúng hàng variant
+  const selectedPackageImageUrl = useMemo(() => {
+    if (!selectedPackage) return null;
+    if (selectedDuration) {
+      const rowUrl = matchedPackageVariant?.image_url?.trim();
+      if (rowUrl) return rowUrl;
+      if (matchedPackageVariant) {
+        const vid = Number(matchedPackageVariant.id);
+        const fromList = (productInfo as { variants?: Array<{ variant_id?: number; image_url?: string | null }> } | null)
+          ?.variants?.find((v) => Number(v?.variant_id) === vid);
+        const vUrl = fromList?.image_url?.trim();
+        if (vUrl) return vUrl;
+      }
+      return null;
+    }
+    const pkg = packages.find((p: { id: string }) => p.id === selectedPackage);
     return pkg?.image_url || null;
-  }, [
-    matchedPackageVariant,
-    packagesList.length,
-    packages,
-    selectedDuration,
-    selectedPackage,
-  ]);
+  }, [matchedPackageVariant, productInfo, packages, selectedDuration, selectedPackage]);
 
   const selectedPackageInfo = useMemo(() => {
     if (!selectedPackage) {

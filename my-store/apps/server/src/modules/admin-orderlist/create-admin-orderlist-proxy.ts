@@ -85,6 +85,11 @@ export function createAdminOrderlistProxyHandler(
       if (req.headers.authorization)
         headers.Authorization = req.headers.authorization as string;
 
+      const renewPublicKey = process.env.RENEW_ADOBE_PUBLIC_API_KEY?.trim();
+      if (renewPublicKey && upstreamPath.includes("renew-adobe/public")) {
+        headers["X-Renew-Public-Key"] = renewPublicKey;
+      }
+
       const init: RequestInit = {
         method: req.method,
         headers,

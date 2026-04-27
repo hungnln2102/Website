@@ -50,6 +50,17 @@ describe("maintenanceGuard", () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
+  it("khong chan api orders (bot Telegram) khi maintenance", async () => {
+    const next = vi.fn();
+    const req = { path: "/api/orders/suppliers" } as any;
+    const res = createRes() as any;
+
+    await maintenanceGuard(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
   it("khong chan route Trung tam goi (renew-adobe public)", async () => {
     const next = vi.fn();
     const req = { path: "/api/renew-adobe/public/profile" } as any;

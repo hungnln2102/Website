@@ -1,14 +1,12 @@
 import { getApiBase } from "@/lib/api/client";
 import { ensureCsrfToken, handleUnauthorized } from "@/features/auth/api/auth";
+import { MSG_SESSION_EXPIRED, toUserFacingApiError } from "@/lib/messages/apiUserErrors";
 import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import type {
   CartResponse,
   CartAddResponse,
   CartCountResponse,
 } from "@/lib/types";
-
-/** Khi API trả 401: clear session và thông báo đăng nhập lại (không hiển thị lỗi server). */
-const SESSION_EXPIRED_MESSAGE = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
 
 const API_BASE = getApiBase();
 const CART_FETCH_OPTIONS = { timeoutMs: 15000, retries: 2 };
@@ -17,9 +15,16 @@ function handleCartResponse(res: Response, body: any, fallbackError: string): { 
   if (res.ok) return null;
   if (res.status === 401) {
     handleUnauthorized();
-    return { success: false, error: SESSION_EXPIRED_MESSAGE };
+    return { success: false, error: MSG_SESSION_EXPIRED };
   }
-  return { success: false, error: body?.message || fallbackError };
+  return {
+    success: false,
+    error: toUserFacingApiError(
+      body?.message || body?.error,
+      body?.code,
+      fallbackError
+    ),
+  };
 }
 
 /** accessToken có thể null khi đăng nhập bằng httpOnly cookie. Thêm cache-bust để tránh trình duyệt trả response cache (giỏ trống sau khi vừa thêm). */

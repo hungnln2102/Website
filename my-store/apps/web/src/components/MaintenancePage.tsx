@@ -18,8 +18,13 @@ export default function MaintenancePage() {
           Chúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.
           <br />
           Vui lòng quay lại sau ít phút.
+          <br />
+          Nếu bạn cần hỗ trợ, vui lòng liên hệ với chúng tôi qua 
+          <br />
+          <a href="http://t.me/hung_culi">Telegram: @hung_culi</a>
+          <br />
+          <a href="https://www.facebook.com/mavrykpremium">Fanpage: Mavryk - Tài Khoản Premium </a>
         </p>
-
         <button
           onClick={() => window.location.reload()}
           className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3 font-semibold text-slate-900 transition-colors hover:bg-amber-400"

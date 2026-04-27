@@ -31,8 +31,12 @@ export const requireCaptcha = async (
 ) => {
   const ip = getClientIP(req);
 
+  if (captchaService.isDisabled()) {
+    return next();
+  }
+
   // Check if CAPTCHA is required for this IP
-  if (!captchaService.requiresCaptcha(ip)) {
+  if (!(await captchaService.requiresCaptcha(ip))) {
     return next();
   }
 
@@ -73,6 +77,10 @@ export const alwaysRequireCaptcha = async (
   res: Response,
   next: NextFunction
 ) => {
+  if (captchaService.isDisabled()) {
+    return next();
+  }
+
   const ip = getClientIP(req);
   const { captchaToken } = req.body;
 

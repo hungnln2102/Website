@@ -1,6 +1,7 @@
 import { getApiBase } from "@/lib/api/client";
 import { authFetch } from "@/features/auth/api/auth";
 import { ensureCsrfToken } from "@/features/auth/api/auth";
+import { toUserFacingApiError } from "@/lib/messages/apiUserErrors";
 import { fetchWithTimeoutAndRetry } from "@/lib/utils/fetchWithRetry";
 import type {
   PaymentHealthResponse,
@@ -54,7 +55,11 @@ export async function createPayment(
     if (!res.ok) {
       return {
         success: false,
-        error: body.error || body.message || "Không thể tạo thanh toán. Vui lòng thử lại.",
+        error: toUserFacingApiError(
+          body.error || body.message,
+          body.code,
+          "Không thể tạo thanh toán. Vui lòng thử lại."
+        ),
       };
     }
     return body;
@@ -84,7 +89,11 @@ export async function checkPaymentStatus(
     if (!res.ok) {
       return {
         success: false,
-        error: body.error || "Không thể kiểm tra trạng thái thanh toán.",
+        error: toUserFacingApiError(
+          body.error,
+          body.code,
+          "Không thể kiểm tra trạng thái thanh toán."
+        ),
       };
     }
     return body;
@@ -120,7 +129,10 @@ export async function createPaymentCodes(
     });
     const body = await res.json();
     if (!res.ok) {
-      return { success: false, error: body.error || "Không thể tạo mã đơn." };
+      return {
+        success: false,
+        error: toUserFacingApiError(body.error, body.code, "Không thể tạo mã đơn."),
+      };
     }
     return body;
   } catch {
@@ -156,7 +168,10 @@ export async function confirmBalancePayment(
     });
     const data = await res.json();
     if (!res.ok) {
-      return { success: false, error: data.error || "Xác nhận thanh toán thất bại." };
+      return {
+        success: false,
+        error: toUserFacingApiError(data.error, data.code, "Xác nhận thanh toán thất bại."),
+      };
     }
     return data;
   } catch {
@@ -180,7 +195,10 @@ export async function confirmTransfer(
     });
     const body = await res.json();
     if (!res.ok) {
-      return { success: false, error: body.error || "Xác nhận thanh toán thất bại." };
+      return {
+        success: false,
+        error: toUserFacingApiError(body.error, body.code, "Xác nhận thanh toán thất bại."),
+      };
     }
     return body;
   } catch {

@@ -127,12 +127,17 @@ export async function cancel(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const count = await cancelOrder(id_order);
-    if (count === 0) {
+    const result = await cancelOrder(id_order);
+    if (result.updated === 0) {
       res.status(404).json({ success: false, error: "Order not found in order_list" });
       return;
     }
-    res.status(200).json({ success: true, canceled: count });
+    res.status(200).json({
+      success: true,
+      canceled: result.updated,
+      refundedMcoin: result.refundedMcoin,
+      accountId: result.accountId,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;

@@ -161,15 +161,27 @@ export async function authFetch(
     if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
   }
 
-  const response = await fetchWithTimeoutAndRetry(
-    url,
-    {
-      ...options,
-      headers,
-      credentials: "include",
-    },
-    { timeoutMs: 15000, retries: 2 }
-  );
+  const runFetch = (h: Record<string, string>) =>
+    fetchWithTimeoutAndRetry(
+      url,
+      { ...options, headers: h, credentials: "include" },
+      { timeoutMs: 15000, retries: 2 }
+    );
+
+  let response = await runFetch(headers);
+
+  // Cookie còn nhưng Redis/phiên hết hạn → 403 CSRF_* — lấy token mới (giống cart.api) rồi thử 1 lần.
+  if (response.status === 403 && CSRF_PROTECTED_METHODS.has(method)) {
+    const body = await response.clone().json().catch(() => ({} as { code?: string }));
+    if (typeof body?.code === "string" && body.code.startsWith("CSRF_")) {
+      const refreshed = await ensureCsrfToken(true);
+      if (refreshed) {
+        const nextHeaders = { ...headers, [CSRF_HEADER_NAME]: refreshed };
+        response = await runFetch(nextHeaders);
+      }
+    }
+  }
+
   if (response.status === 401) {
     handleUnauthorized();
   }

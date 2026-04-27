@@ -17,6 +17,7 @@ import {
   MAVRYK_AUTH_SESSION_KEY,
 } from "@/features/auth/api/auth";
 import { getApiBase } from "@/lib/api/client";
+import { MSG_SESSION_EXPIRED } from "@/lib/messages/apiUserErrors";
 import { ROUTES } from "@/lib/constants";
 
 export interface User {
@@ -264,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
       });
 
-      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      toast.error(MSG_SESSION_EXPIRED);
       window.history.pushState({}, "", ROUTES.home);
       window.dispatchEvent(new PopStateEvent("popstate"));
     };

@@ -18,7 +18,14 @@ export type { DurationOption } from "./components";
 export { useProductData, useProductSelection } from "./hooks";
 
 // Utils
-export { formatCurrency, formatPriceOrContact, parseDurationToken, isNewPackage } from "./utils";
+export {
+  formatCurrency,
+  formatPriceOrContact,
+  parseDurationToken,
+  packageVariantDurationKey,
+  resolveDurationOptionKey,
+  isNewPackage,
+} from "./utils";
 
 // Page
 export { default as ProductDetailPage } from "./ProductDetailPage";

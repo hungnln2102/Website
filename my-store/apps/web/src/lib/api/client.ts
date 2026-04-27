@@ -12,6 +12,7 @@
  *   - `/image/articles/*` (ảnh bìa bài viết)
  */
 import { isSystemHubPath } from "@/lib/constants";
+import { MSG_SESSION_EXPIRED } from "@/lib/messages/apiUserErrors";
 
 export const getApiBase = (): string => {
   if (import.meta.env.DEV) return '';
@@ -144,7 +145,7 @@ export function handleApiError(res: Response, defaultMessage: string): never {
     throw new Error("Bạn không có quyền truy cập.");
   }
   if (res.status === 401) {
-    throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    throw new Error(MSG_SESSION_EXPIRED);
   }
   throw new Error(defaultMessage);
 }

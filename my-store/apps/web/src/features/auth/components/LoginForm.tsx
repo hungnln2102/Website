@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { Turnstile, resetTurnstile } from "./Turnstile";
@@ -78,13 +78,17 @@ export function LoginForm({
     }
   };
 
-  const handleCaptchaVerify = (token: string) => {
+  const handleCaptchaVerify = useCallback((token: string) => {
     setCaptchaToken(token);
-  };
+  }, []);
 
-  const handleCaptchaExpire = () => {
+  const handleCaptchaExpire = useCallback(() => {
     setCaptchaToken(null);
-  };
+  }, []);
+
+  const handleCaptchaError = useCallback(() => {
+    setCaptchaToken(null);
+  }, []);
 
   return (
     <div
@@ -190,9 +194,11 @@ export function LoginForm({
                 </span>
               </div>
               <Turnstile
+                key={captchaSiteKey}
                 siteKey={captchaSiteKey}
                 onVerify={handleCaptchaVerify}
                 onExpire={handleCaptchaExpire}
+                onError={handleCaptchaError}
                 theme="auto"
                 action="login"
               />

@@ -21,6 +21,11 @@ const MAINTENANCE_BYPASS_PREFIXES = [
   "/products",
   /** Probe + metrics vận hành (1.3) — không chặn khi bảo trì. */
   "/health",
+  /**
+   * Bot Telegram: danh sách NCC, notify-done, cancel — đã bảo vệ bằng NOTIFY_ORDER_API_KEY.
+   * Không bypass → bot báo SERVICE_UNAVAILABLE khi site bảo trì.
+   */
+  "/api/orders",
 ];
 
 function pathBypassesMaintenance(reqPath: string): boolean {
