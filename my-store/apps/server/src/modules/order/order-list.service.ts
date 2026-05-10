@@ -122,7 +122,7 @@ export async function insertOrderListFromPayment(params: InsertOrderListParams):
     COLS_OL.CONTACT,
     COLS_OL.ORDER_DATE,
     COLS_OL.DAYS,
-    COLS_OL.EXPIRED_AT,
+    COLS_OL.EXPIRY_DATE,
     COLS_OL.PRICE,
     COLS_OL.STATUS,
   ].join(", ");
@@ -223,7 +223,7 @@ export async function updateOrderDone(id_order: string, payload: NotifyDonePaylo
          ${COLS_OL.INFORMATION_ORDER} = COALESCE($2, ol.${COLS_OL.INFORMATION_ORDER}),
          ${COLS_OL.SLOT} = COALESCE($3, ol.${COLS_OL.SLOT}),
          ${COLS_OL.NOTE} = COALESCE($4, ol.${COLS_OL.NOTE}),
-         ${COLS_OL.SUPPLY_ID} = COALESCE($5::int, ol.${COLS_OL.SUPPLY_ID}),
+         ${COLS_OL.ID_SUPPLY} = COALESCE($5::int, ol.${COLS_OL.ID_SUPPLY}),
          ${COLS_OL.COST} = CASE
            WHEN $5::int IS NOT NULL THEN (
              SELECT sc.${COLS_SC.PRICE}

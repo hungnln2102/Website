@@ -5,10 +5,11 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 const cwd = process.cwd();
+/** Ưu tiên `apps/server/.env` của monorepo để `DATABASE_URL` luôn của storefront, không bị ghi đè bởi `.env` nhầm thư mục. */
 const envCandidates = [
-  path.join(cwd, ".env"),
   path.join(cwd, "apps", "server", ".env"),
   path.join(cwd, "my-store", "apps", "server", ".env"),
+  path.join(cwd, ".env"),
 ];
 const envPath = envCandidates.find((candidate) => fs.existsSync(candidate));
 if (envPath) {

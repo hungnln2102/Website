@@ -86,8 +86,18 @@ const parsePath = (categories: CategoryDto[]): RouteInfo => {
   if (matchesAppRoute(path, ROUTES.profile))
     return { view: "profile", slug: null, parentPath: ROUTES.home };
 
-  if (isFixAdobeEduPath(path))
+  if (isFixAdobeEduPath(path)) {
+    // Tự dọn URL cũ về URL chính `/system/adobe` (sau khi gom EDU + Renew + Ades).
+    const legacyAdobePaths = new Set([
+      "/system/adobe-edu",
+      "/check-profile",
+      "/otp",
+    ]);
+    if (typeof window !== "undefined" && legacyAdobePaths.has(`/${path}`)) {
+      window.history.replaceState({}, "", ROUTES.fixAdobeEdu);
+    }
     return { view: "otp", slug: null, parentPath: ROUTES.home };
+  }
 
   /** URL Renew Zoom đã bỏ — chuyển về trung tâm gói Adobe Edu. */
   const legacyZoom = new Set([

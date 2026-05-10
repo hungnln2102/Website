@@ -4,6 +4,7 @@
  */
 import type { Request, Response } from "express";
 import { getProductsList } from "./products-list.service";
+import { getBestSellingVariants } from "./best-selling-variants.service";
 import { getPromotionsList } from "./promotions.service";
 import { getCategoriesList } from "./categories.service";
 import { getProductPackages } from "./product-packages.service";
@@ -81,6 +82,22 @@ export async function getPromotions(_req: Request, res: Response): Promise<void>
   }
 }
 
+export async function getBestSellingVariantsHandler(_req: Request, res: Response): Promise<void> {
+  try {
+    const rows = await cachedQuery(
+      httpCacheKeys.bestSellingVariantsList(),
+      "best-selling-variants",
+      CACHE_TTL_SEC.BEST_SELLING_VARIANTS,
+      getBestSellingVariants,
+    );
+    setPublicCacheHeaders(res, 60, CACHE_TTL_SEC.BEST_SELLING_VARIANTS);
+    res.json({ data: rows });
+  } catch (err) {
+    console.error("Fetch best-selling variants error:", err);
+    res.status(500).json({ error: "Failed to fetch best-selling variants" });
+  }
+}
+
 export async function getCategories(_req: Request, res: Response): Promise<void> {
   try {
     const rows = await cachedQuery(
@@ -139,6 +156,8 @@ export function invalidateCache(req: Request, res: Response): void {
       }
     } else if (k === "promotions") {
       cache.delete(httpCacheKeys.promotionsList());
+    } else if (k === "best-selling-variants") {
+      cache.delete(httpCacheKeys.bestSellingVariantsList());
     } else if (k === "categories") {
       cache.delete(httpCacheKeys.categoriesList());
     } else if (k === "all") {

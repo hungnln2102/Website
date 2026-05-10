@@ -1,5 +1,5 @@
 import { ROUTES } from "@/lib/constants";
-import { GraduationCap, RefreshCw, Tv } from "lucide-react";
+import { Wrench, Tv } from "lucide-react";
 import {
   isFixAdobeEduPath,
   isNetflixPath,
@@ -7,9 +7,12 @@ import {
   normalizePathname,
 } from "@/lib/constants/serviceHubRoutes";
 
+/**
+ * Menu rút gọn: gom Adobe EDU + Renew Adobe + Fix Ades thành 1 mục "Fix lỗi Adobe".
+ * Backend tra `order_user_tracking.system_note` để dispatch flow tương ứng.
+ */
 const MENU_ITEMS = [
-  { id: "fix-adobe-edu", label: "Gói Adobe Edu", href: ROUTES.fixAdobeEdu, icon: GraduationCap },
-  { id: "renew-adobe", label: "Renew Adobe", href: ROUTES.renewAdobe, icon: RefreshCw },
+  { id: "fix-adobe", label: "Fix lỗi Adobe", href: ROUTES.fixAdobeEdu, icon: Wrench },
   { id: "netflix", label: "OTP Netflix", href: ROUTES.netflix, icon: Tv },
 ] as const;
 
@@ -17,14 +20,14 @@ export function ServicesSidebar() {
   const path =
     typeof window !== "undefined" ? normalizePathname(window.location.pathname) : "";
   const fixAdobePath = normalizePathname(ROUTES.fixAdobeEdu);
-  const renewAdobePath = normalizePathname(ROUTES.renewAdobe);
   const netflixPath = normalizePathname(ROUTES.netflix);
 
   const isActive = (href: string) => {
     const normalized = normalizePathname(href);
-    if (normalized === fixAdobePath)
-      return isFixAdobeEduPath(path);
-    if (normalized === renewAdobePath) return isRenewAdobePath(path);
+    if (normalized === fixAdobePath) {
+      // Cả route Renew Adobe cũ vẫn active button "Fix lỗi Adobe" để user không lạc.
+      return isFixAdobeEduPath(path) || isRenewAdobePath(path);
+    }
     if (normalized === netflixPath) return isNetflixPath(path);
     return path === normalized;
   };

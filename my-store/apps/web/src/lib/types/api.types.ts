@@ -4,6 +4,9 @@
 
 export type ProductDto = {
   id: number;
+  variant_id?: number;
+  product_id?: number;
+  id_product?: string | null;
   slug: string;
   name: string;
   package: string;

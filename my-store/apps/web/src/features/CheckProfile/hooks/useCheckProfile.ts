@@ -1,15 +1,34 @@
 import { useState } from "react";
 import type { CheckResultType, OtpResultType } from "../checkprofile.types";
 import {
-  checkProfileApi,
   activateProfileApi,
+  activateRenewAdobeApi,
+  checkFixAdesPublicApi,
+  checkProfileApi,
+  getRenewAdobeStatusApi,
+  renewFixAdesPublicApi,
+  resolveAdobeSystemApi,
   sendOtpApi,
   verifyOtpApi,
+  type AdobeSystemNote,
 } from "../checkprofile.api";
+
+type DispatcherDecision =
+  | { kind: "ok"; system: AdobeSystemNote }
+  | { kind: "blocked"; message: string };
+
+const FIX_ADES_NO_OTP_MSG =
+  "Hệ thống Fix Ades không cấp OTP profile — chỉ cần bấm Kiểm tra hoặc Renew ở khung bên trái.";
 
 export function useCheckProfile() {
   const [email, setEmail] = useState("");
   const [isCheckMode, setIsCheckMode] = useState(true);
+
+  /* ── Resolved system_note theo email (cache cuối cùng đã check) ── */
+  const [resolvedSystem, setResolvedSystem] = useState<AdobeSystemNote | null>(
+    null,
+  );
+  const [resolvedEmail, setResolvedEmail] = useState<string>("");
 
   /* ── Check + Activate state ── */
   const [loading, setLoading] = useState(false);
@@ -39,9 +58,29 @@ export function useCheckProfile() {
     setOtpResultType(null);
   };
 
+  /**
+   * Resolve system_note cho email — gọi backend tracking lookup.
+   * Trả về quyết định: ok (system_note + flow), hoặc blocked (lý do).
+   */
+  const resolveDispatcher = async (
+    targetEmail: string,
+  ): Promise<DispatcherDecision> => {
+    if (resolvedEmail === targetEmail && resolvedSystem) {
+      return { kind: "ok", system: resolvedSystem };
+    }
+    const result = await resolveAdobeSystemApi(targetEmail);
+    if (!result.ok) {
+      return { kind: "blocked", message: result.error };
+    }
+    setResolvedSystem(result.system_note);
+    setResolvedEmail(targetEmail);
+    return { kind: "ok", system: result.system_note };
+  };
+
   const handleCheckSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    const trimmed = email.trim();
+    if (!trimmed) {
       setMessage("Vui lòng nhập email để kiểm tra.");
       setResultType("info");
       return;
@@ -49,7 +88,20 @@ export function useCheckProfile() {
     setLoading(true);
     resetResult();
     try {
-      const result = await checkProfileApi(email.trim());
+      const decision = await resolveDispatcher(trimmed);
+      if (decision.kind === "blocked") {
+        setMessage(decision.message);
+        setResultType("error");
+        return;
+      }
+
+      const result =
+        decision.system === "fix_ades"
+          ? await checkFixAdesPublicApi(trimmed)
+          : decision.system === "renew_adobe"
+            ? await getRenewAdobeStatusApi(trimmed)
+            : await checkProfileApi(trimmed);
+
       setMessage(result.message);
       setResultType(result.type);
       setProfileName(result.profileName);
@@ -57,6 +109,7 @@ export function useCheckProfile() {
       setMessage(
         "Có lỗi kết nối tới máy chủ kiểm tra profile. Vui lòng thử lại sau.",
       );
+      setResultType("error");
       console.error("CheckProfile error:", err);
     } finally {
       setLoading(false);
@@ -64,11 +117,25 @@ export function useCheckProfile() {
   };
 
   const handleActivate = async () => {
-    if (!email.trim() || activating) return;
+    const trimmed = email.trim();
+    if (!trimmed || activating) return;
     setActivating(true);
     resetResult();
     try {
-      const result = await activateProfileApi(email.trim(), profileName);
+      const decision = await resolveDispatcher(trimmed);
+      if (decision.kind === "blocked") {
+        setMessage(decision.message);
+        setResultType("error");
+        return;
+      }
+
+      const result =
+        decision.system === "fix_ades"
+          ? await renewFixAdesPublicApi(trimmed)
+          : decision.system === "renew_adobe"
+            ? await activateRenewAdobeApi(trimmed)
+            : await activateProfileApi(trimmed, profileName);
+
       setMessage(result.message);
       setResultType(result.type);
       setProfileName(result.profileName);
@@ -85,13 +152,31 @@ export function useCheckProfile() {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || sendingOtp) return;
+    const trimmed = email.trim();
+    if (!trimmed || sendingOtp) return;
     setSendingOtp(true);
     setOtpMessage(null);
     setOtpResultType(null);
     setOtpSent(false);
     try {
-      const result = await sendOtpApi(email.trim());
+      // OTP profile chỉ áp dụng cho fix_adobe_edu — chặn các hệ thống khác.
+      const decision = await resolveDispatcher(trimmed);
+      if (decision.kind === "blocked") {
+        setOtpResultType("error");
+        setOtpMessage(decision.message);
+        return;
+      }
+      if (decision.system !== "fix_adobe_edu") {
+        setOtpResultType("info");
+        setOtpMessage(
+          decision.system === "renew_adobe"
+            ? "Hệ thống Renew Adobe không dùng OTP profile. Bấm Kiểm tra hoặc Kích hoạt ở khung bên trái."
+            : FIX_ADES_NO_OTP_MSG,
+        );
+        return;
+      }
+
+      const result = await sendOtpApi(trimmed);
       if (result.type === "error") {
         setOtpResultType("error");
         setOtpMessage(result.message);
@@ -132,11 +217,23 @@ export function useCheckProfile() {
     }
   };
 
+  const handleEmailChange = (next: string) => {
+    setEmail(next);
+    if (resolvedEmail && next.trim().toLowerCase() !== resolvedEmail.toLowerCase()) {
+      // Email mới → reset cache resolve để lần sau gọi lại API.
+      setResolvedSystem(null);
+      setResolvedEmail("");
+    }
+  };
+
   return {
     email,
-    setEmail,
+    setEmail: handleEmailChange,
     isCheckMode,
     setIsCheckMode,
+
+    /** System được gắn note cho email vừa kiểm tra (null nếu chưa resolve). */
+    resolvedSystem,
 
     loading,
     activating,

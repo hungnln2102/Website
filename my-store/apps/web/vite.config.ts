@@ -7,10 +7,8 @@ import { BRANDING_ASSET_STAMP } from './src/lib/brandingAssetStamp';
 
 const analyzeBundle = process.env.ANALYZE === 'true';
 
-/** my-store apps/server (sản phẩm, giỏ, thanh toán, …) */
+/** my-store apps/server (catalog, tin/banner Renew Adobe được forward tới admin qua `ADMIN_ORDERLIST_API_URL`). */
 const STORE_API_URL = process.env.VITE_STORE_API_URL || 'http://127.0.0.1:4000';
-/** admin_orderlist backend — tin tức /api/public/content/* (schema content) */
-const ADMIN_API_URL = process.env.VITE_ADMIN_API_URL || 'http://127.0.0.1:3001';
 const BRANDING_ASSET_PUBLIC_DIR = path.resolve(__dirname, './public/assets/images');
 const BRANDING_ASSET_EXTENSIONS = ['.webp', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.avif'];
 const FAVICON_EXTENSIONS = ['.ico', '.png', '.svg', '.webp', '.jpg', '.jpeg', '.avif'];
@@ -135,23 +133,26 @@ export default defineConfig({
     fs: { strict: false },
     proxy: {
       /**
-       * Tin tức + banner trang chủ công khai từ admin_orderlist (DB content), không phải apps/server.
+       * Tin / banner / Renew Adobe / ảnh CMS: dev đi qua my-store server :4000 (giống prod),
+       * apps/server forwarding tới `ADMIN_ORDERLIST_API_URL` — một file .env, không nhảy thẳng :3001 từ Vite.
        * Phải đứng trước `/api` để khớp prefix trước.
        */
-      '/api/public/content': proxyTo(ADMIN_API_URL, 'admin_orderlist (tin tức / banner)'),
-      /**
-       * Renew Adobe (Website Check Profile) — API thật nằm trên admin_orderlist backend,
-       * không phải my-store server (4000). Nếu proxy nhầm sang 4000 → 404 "Không tìm thấy dữ liệu".
-       */
+      '/api/public/content': proxyTo(STORE_API_URL, 'my-store server → ADMIN_ORDERLIST_API_URL (tin/banner)'),
       '/api/renew-adobe/public': proxyTo(
-        ADMIN_API_URL,
-        'admin_orderlist (Renew Adobe public)',
+        STORE_API_URL,
+        'my-store server → ADMIN_ORDERLIST_API_URL (Renew Adobe)',
         PROXY_TIMEOUT_RENEW_ADOBE_MS,
       ),
       '/api': proxyTo(STORE_API_URL, 'my-store server'),
-      /** Ảnh upload bài viết (admin_orderlist/static …/image/articles/) — phải trước `/image` */
-      '/image/articles': proxyTo(ADMIN_API_URL, 'admin_orderlist (ảnh bài viết)'),
-      '/image_variant': proxyTo(ADMIN_API_URL, 'admin_orderlist (ảnh biến thể)'),
+      /** Ảnh CMS — server :4000 proxy tới admin (cùng cơ chế trên). Phải trước `/image`. */
+      '/image/articles': proxyTo(
+        STORE_API_URL,
+        'my-store server → ADMIN_ORDERLIST_API_URL (ảnh bài viết)',
+      ),
+      '/image_variant': proxyTo(
+        STORE_API_URL,
+        'my-store server → ADMIN_ORDERLIST_API_URL (ảnh biến thể)',
+      ),
       '/image': proxyTo(STORE_API_URL, 'my-store server'),
       '/image_product': proxyTo(STORE_API_URL, 'my-store server'),
       '/products': proxyTo(STORE_API_URL, 'my-store server'),

@@ -6,6 +6,7 @@ import type { ProductSortLoadMore } from "@/features/catalog/hooks/useProductSor
 
 interface UseHomeFiltersOptions {
   products: NormalizedProduct[];
+  bestSellingVariants?: NormalizedProduct[];
   categoryProductsMap: Map<string, Set<string>>;
 }
 
@@ -21,7 +22,11 @@ const isNewProduct = (createdAt: string | null): boolean => {
   return diffDays <= 7;
 };
 
-export function useHomeFilters({ products, categoryProductsMap }: UseHomeFiltersOptions) {
+export function useHomeFilters({
+  products,
+  bestSellingVariants = [],
+  categoryProductsMap,
+}: UseHomeFiltersOptions) {
   const gridCols = useCatalogGridColumnCount();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [revealSteps, setRevealSteps] = useState(1);
@@ -60,8 +65,9 @@ export function useHomeFilters({ products, categoryProductsMap }: UseHomeFilters
   }, [products]);
 
   const bestSellingProducts = useMemo(() => {
-    return [...products]
-      .filter((p) => (p.sold_count_30d ?? 0) > 10)
+    const source = bestSellingVariants.length > 0 ? bestSellingVariants : products;
+    return [...source]
+      .filter((p) => (p.sold_count_30d ?? 0) > 50)
       .sort((a, b) => {
         const sold30dA = a.sold_count_30d ?? 0;
         const sold30dB = b.sold_count_30d ?? 0;
@@ -73,7 +79,7 @@ export function useHomeFilters({ products, categoryProductsMap }: UseHomeFilters
         return (b.sales_count ?? 0) - (a.sales_count ?? 0);
       })
       .slice(0, 10);
-  }, [products]);
+  }, [products, bestSellingVariants]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];

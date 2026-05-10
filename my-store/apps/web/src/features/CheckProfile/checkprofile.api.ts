@@ -5,6 +5,61 @@ import type {
   OtpApiResult,
 } from "./checkprofile.types";
 
+/** Đồng bộ với backend `adobeSystemConstants.js`. */
+export type AdobeSystemNote = "renew_adobe" | "fix_adobe_edu" | "fix_ades";
+
+export type ResolveSystemResult =
+  | { ok: true; email: string; system_note: AdobeSystemNote; order_id: string | null }
+  | { ok: false; status: number; error: string };
+
+export async function resolveAdobeSystemApi(
+  email: string,
+): Promise<ResolveSystemResult> {
+  try {
+    const url = `${getApiBase()}/api/renew-adobe/public/resolve-system?email=${encodeURIComponent(email)}`;
+    const res = await fetch(url, { method: "GET" });
+    const text = await res.clone().text().catch(() => "");
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = text ? (JSON.parse(text) as Record<string, unknown>) : null;
+    } catch {
+      parsed = null;
+    }
+
+    if (res.ok && parsed?.ok === true) {
+      const code = String(parsed.system_note ?? "").toLowerCase();
+      const allowed: AdobeSystemNote[] = [
+        "renew_adobe",
+        "fix_adobe_edu",
+        "fix_ades",
+      ];
+      const normalized = (allowed.includes(code as AdobeSystemNote)
+        ? code
+        : "fix_adobe_edu") as AdobeSystemNote;
+      return {
+        ok: true,
+        email: String(parsed.email ?? email),
+        system_note: normalized,
+        order_id: (parsed.order_id as string | null) ?? null,
+      };
+    }
+
+    return {
+      ok: false,
+      status: res.status,
+      error:
+        (parsed?.error as string) ||
+        "Email không có trong hệ thống. Vui lòng kiểm tra lại hoặc đặt gói trước.",
+    };
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      error: "Không kiểm tra được hệ thống cho email này lúc này.",
+    };
+  }
+}
+
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
     return text ? (JSON.parse(text) as Record<string, unknown>) : null;
@@ -234,6 +289,217 @@ export async function sendOtpApi(email: string): Promise<OtpApiResult> {
           }
         : undefined,
   };
+}
+
+/**
+ * Lấy status Renew Adobe của email — đã có sẵn ở admin_orderlist
+ * (`/api/renew-adobe/public/status`) và proxy qua Website server.
+ */
+export async function getRenewAdobeStatusApi(
+  email: string,
+): Promise<CheckProfileApiResult> {
+  try {
+    const url = `${getApiBase()}/api/renew-adobe/public/status?email=${encodeURIComponent(email)}`;
+    const res = await fetch(url, { method: "GET" });
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+
+    if (!res.ok) {
+      return {
+        type: "error",
+        message:
+          (parsed?.error as string) ||
+          (parsed?.message as string) ||
+          "Không kiểm tra được trạng thái Renew Adobe.",
+        profileName: null,
+      };
+    }
+
+    const status = String(parsed?.status ?? "").toLowerCase();
+    const message =
+      (parsed?.message as string) ||
+      "Đã kiểm tra trạng thái tài khoản Renew Adobe.";
+    const profileName = (parsed?.profileName as string) ?? null;
+
+    if (status === "active") {
+      return { type: "check-success", message, profileName };
+    }
+    if (status === "expired") {
+      return { type: "expired", message, profileName };
+    }
+    if (status === "error" || status === "not_found") {
+      return { type: "error", message, profileName };
+    }
+    return { type: "info", message, profileName };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ Renew Adobe. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
+}
+
+/**
+ * Check 1 email qua hệ thống Fix Ades (proxy public của admin_orderlist).
+ * Backend tự verify tracking system_note='fix_ades' trước khi gọi Ades.
+ */
+export async function checkFixAdesPublicApi(
+  email: string,
+): Promise<CheckProfileApiResult> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/fix-ades/check`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+
+    if (!res.ok) {
+      return {
+        type: "error",
+        message:
+          (parsed?.error as string) ||
+          "Không kiểm tra được tài khoản Fix Ades.",
+        profileName: null,
+      };
+    }
+
+    // /account/check trả FLAT user object (status, email, productName, teamName, …)
+    // — không phải { success: true, user: {...} } như renew.
+    const data = (parsed?.data as Record<string, unknown> | null) || null;
+    const status = String(data?.status ?? "").toLowerCase();
+    const teamName = String(data?.teamName || "").trim();
+
+    // "active" / "processing" / "Đang Xử Lý" → đang hoạt động.
+    const isActive =
+      status === "active" ||
+      status === "processing" ||
+      status === "đang xử lý" ||
+      status === "đang hoạt động";
+    const isExpired =
+      status === "expired" || status === "inactive" || status === "hết hạn";
+
+    return {
+      type: isActive ? "check-success" : isExpired ? "expired" : "info",
+      message: teamName || "—",
+      profileName: teamName || null,
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ Fix Ades. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
+}
+
+export async function renewFixAdesPublicApi(
+  email: string,
+): Promise<ActivateProfileApiResult> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/fix-ades/renew`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+
+    if (!res.ok) {
+      return {
+        type: "error",
+        message:
+          (parsed?.error as string) ||
+          "Không gia hạn được tài khoản Fix Ades.",
+        profileName: null,
+      };
+    }
+
+    const data = (parsed?.data as Record<string, unknown> | null) || null;
+    const userObj = (data?.user as Record<string, unknown> | undefined) || {};
+    const expiresAtRaw = String(userObj?.expiresAt ?? "");
+    const expiresAt = expiresAtRaw
+      ? new Date(expiresAtRaw).toLocaleDateString("vi-VN")
+      : null;
+    const products = Array.isArray(userObj?.products)
+      ? (userObj.products as string[]).join(", ")
+      : "";
+    const success = data?.success === true;
+    const message =
+      (data?.message as string) ||
+      (success
+        ? `Đã gia hạn thành công${
+            expiresAt ? ` đến ${expiresAt}` : ""
+          }${products ? ` — ${products}` : ""}.`
+        : "Đã gửi yêu cầu gia hạn Fix Ades.");
+
+    return {
+      type: success ? "activate-success" : "info",
+      message,
+      profileName: products || null,
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ Fix Ades. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
+}
+
+export async function activateRenewAdobeApi(
+  email: string,
+): Promise<ActivateProfileApiResult> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/activate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+
+    if (!res.ok) {
+      return {
+        type: "error",
+        message:
+          (parsed?.error as string) ||
+          (parsed?.message as string) ||
+          "Không kích hoạt được Renew Adobe.",
+        profileName: null,
+      };
+    }
+
+    const success = Boolean(parsed?.success);
+    const message =
+      (parsed?.message as string) ||
+      (success
+        ? "Đã kích hoạt thành công Renew Adobe."
+        : "Đã gửi yêu cầu Renew Adobe.");
+    const profileName = (parsed?.profileName as string) ?? null;
+    return {
+      type: success ? "activate-success" : "info",
+      message,
+      profileName,
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ Renew Adobe. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
 }
 
 export async function verifyOtpApi(

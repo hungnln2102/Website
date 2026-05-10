@@ -44,6 +44,7 @@ export default function ProductCard({
   is_active = true,
 }: ProductCardProps) {
   const displayPrice = (from_price != null ? from_price : base_price) || 0;
+  const originalPrice = Number(base_price ?? 0);
   const discountPercent = Number(discount_percentage ?? 0);
   const discountPercentRounded = Math.max(0, Math.round(discountPercent));
   const hasDiscount = discountPercentRounded > 0;
@@ -170,6 +171,16 @@ export default function ProductCard({
           >
             {name}
           </h3>
+          {!hidePriceAndDescription && (
+            <div className={`${compact ? "mb-1 min-h-[1.35rem]" : "mb-2 min-h-[1.5rem]"}`}>
+              {originalPrice > 0 ? (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-300/70 bg-gradient-to-r from-amber-50 to-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 shadow-sm dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10 dark:text-amber-300">
+                  <span className="font-bold uppercase tracking-[0.08em]">Giá gốc</span>
+                  <span>{formatCurrency(originalPrice)}</span>
+                </span>
+              ) : null}
+            </div>
+          )}
 
           {hasVisibleDescription && (
             <p
@@ -254,6 +265,16 @@ export default function ProductCard({
           >
             {name}
           </h3>
+          {!hidePriceAndDescription && (
+            <div className="mt-1 min-h-[1.7rem]">
+              {originalPrice > 0 ? (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-400/45 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-300 shadow-sm shadow-amber-900/20">
+                  <span className="font-bold uppercase tracking-[0.1em] text-amber-200">Giá gốc</span>
+                  <span>{formatCurrency(originalPrice)}</span>
+                </span>
+              ) : null}
+            </div>
+          )}
 
           {!hidePriceAndDescription && (
             <>

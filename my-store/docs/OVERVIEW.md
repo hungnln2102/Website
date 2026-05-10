@@ -179,9 +179,13 @@ npm run db:migrate:package-name -w @my-store/db
 
 ### 6.2 relation "product.variant_sold_count" does not exist
 
+Chuẩn bảng/order_list nằm ở DB admin_orderlist. Sau khi restore/migrate admin, chạy bản vá storefront:
+
 ```bash
-npm run db:migrate:variant-sold-count -w @my-store/db
+npm run db:migrate:all -w @my-store/db
 ```
+
+(Nếu báo thiếu bảng/schema: chưa đủ consolidated admin — đừng tạo DB “Website” tách).
 
 ### 6.3 503 / CORS blocked
 

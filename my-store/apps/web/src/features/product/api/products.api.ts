@@ -25,3 +25,17 @@ export async function fetchProducts(): Promise<ProductDto[]> {
     throw new Error("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.");
   }
 }
+
+export async function fetchBestSellingVariants(): Promise<ProductDto[]> {
+  try {
+    const res = await apiFetch(`${API_BASE}/products/best-selling-variants`, { credentials: "include" }, 20_000);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      handleApiError(res, "Không thể tải danh sách biến thể bán chạy. Vui lòng thử lại sau.");
+    }
+    return (body?.data ?? []) as ProductDto[];
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Không thể tải danh sách biến thể bán chạy. Vui lòng thử lại sau.");
+  }
+}

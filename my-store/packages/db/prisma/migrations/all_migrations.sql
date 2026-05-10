@@ -1,7 +1,16 @@
 -- =============================================================================
--- ALL MIGRATIONS — Chạy file này để áp dụng toàn bộ migrations
+-- ALL MIGRATIONS — Bản vá khi đã có database chuẩn từ admin_orderlist.
+--
+-- Chuẩn định nghĩa schema/tables/cột: đọc + restore từ
+--   admin_orderlist/database/migrations/000_consolidated_schema.sql
+-- và các migration Knex phía sau của admin (Không giữ một "DB Website" tách khác).
+--
+-- File này chỉ các việc bổ sung / lệch bản consolidated cũ: kiểu id_product varchar,
+-- materialized views bán hàng join theo variant_name, chỉ mục storefront…
+-- Các ALTER bọc EXISTS / IF NOT EXISTS để không vỡ trên DB đã được admin cập nhật.
+--
 -- Chạy: npm run db:migrate:all -w @my-store/db
--- Hoặc: psql $DATABASE_URL -f packages/db/prisma/migrations/all_migrations.sql
+-- Hoặc: psql "$DATABASE_URL" -f prisma/migrations/all_migrations.sql
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -34,10 +43,33 @@ ALTER TABLE product.variant ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFA
 CREATE UNIQUE INDEX IF NOT EXISTS idx_variant_product_display_name 
   ON product.variant(product_id, display_name);
 
-ALTER TABLE product.product_desc ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+-- admin_orderlist hiện dùng product.desc_variant (tên cũ product.product_desc có thể không tồn tại)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'product' AND table_name = 'product_desc'
+  ) THEN
+    ALTER TABLE product.product_desc ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'product' AND table_name = 'desc_variant'
+  ) THEN
+    ALTER TABLE product.desc_variant ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+  END IF;
+END $$;
 
-ALTER TABLE product.supplier_cost ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE product.supplier_cost ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'product' AND table_name = 'supplier_cost'
+  ) THEN
+    ALTER TABLE product.supplier_cost ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE product.supplier_cost ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT CURRENT_TIMESTAMP;
+  END IF;
+END $$;
 
 -- -----------------------------------------------------------------------------
 -- 3. order_list: order_expired -> expired_at
@@ -55,7 +87,15 @@ END $$;
 -- -----------------------------------------------------------------------------
 -- 4. supply_id (order_list, order_expired, order_canceled)
 -- -----------------------------------------------------------------------------
-ALTER TABLE orders.order_list ADD COLUMN IF NOT EXISTS supply_id INTEGER;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'orders' AND table_name = 'order_list'
+  ) THEN
+    ALTER TABLE orders.order_list ADD COLUMN IF NOT EXISTS supply_id INTEGER;
+  END IF;
+END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'orders' AND table_name = 'order_expired') THEN
@@ -203,7 +243,15 @@ BEGIN
   END IF;
 END $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS order_customer_id_order_key ON orders.order_customer (id_order);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'orders' AND table_name = 'order_customer'
+  ) THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS order_customer_id_order_key ON orders.order_customer (id_order);
+  END IF;
+END $$;
 
 -- -----------------------------------------------------------------------------
 -- 9. IP Whitelist & Site Settings (maintenance mode)
@@ -235,16 +283,33 @@ ON CONFLICT (key) DO NOTHING;
 -- -----------------------------------------------------------------------------
 -- customer_web.customer_profiles — cooldown đổi ngày sinh (365 ngày)
 -- -----------------------------------------------------------------------------
-ALTER TABLE customer_web.customer_profiles
-  ADD COLUMN IF NOT EXISTS date_of_birth_changed_at TIMESTAMPTZ;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'customer_web' AND table_name = 'customer_profiles'
+  ) THEN
+    ALTER TABLE customer_web.customer_profiles
+      ADD COLUMN IF NOT EXISTS date_of_birth_changed_at TIMESTAMPTZ;
+  END IF;
+END $$;
 
 -- -----------------------------------------------------------------------------
--- 10. Catalog /products + /promotions — chỉ mục hỗ trợ JOIN & GROUP BY (1.1)
+-- 10. Catalog /products + /promotions — chỉ mục (bảng phải tồn tại như consolidated admin)
 -- -----------------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_variant_margin_variant_id
-  ON product.variant_margin (variant_id);
-CREATE INDEX IF NOT EXISTS idx_supplier_cost_variant_id
-  ON product.supplier_cost (variant_id);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables WHERE table_schema = 'product' AND table_name = 'variant_margin'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_variant_margin_variant_id ON product.variant_margin (variant_id);
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables WHERE table_schema = 'product' AND table_name = 'supplier_cost'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_supplier_cost_variant_id ON product.supplier_cost (variant_id);
+  END IF;
+END $$;
 
 -- -----------------------------------------------------------------------------
 -- DONE

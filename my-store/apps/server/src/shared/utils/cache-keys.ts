@@ -14,6 +14,7 @@ function join(...parts: string[]): string {
 
 export const httpCacheKeys = {
   productsList: (scope: string) => join("products", "list", scope),
+  bestSellingVariantsList: () => join("products", "best-selling-variants-v2"),
   promotionsList: () => join("promotions", "list"),
   categoriesList: () => join("categories", "list"),
   packages: (packageName: string) =>

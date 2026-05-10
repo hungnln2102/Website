@@ -3,7 +3,7 @@
  */
 import prisma from "@my-store/db";
 import { TABLES } from "../../config/db.config";
-import { MARGIN_PIVOT_SQL } from "./product-sql.shared";
+import { getMarginPivotSql } from "./product-sql.shared";
 import { sqlPromoPrice, sqlRetailPrice } from "../../shared/utils/pricing";
 import { toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
@@ -17,6 +17,7 @@ type PackageProductRow = {
 };
 
 export async function getProductPackages(packageName: string) {
+  const marginPivotSql = await getMarginPivotSql();
   const query = `
     WITH supply_max AS (
       SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
@@ -44,7 +45,7 @@ export async function getProductPackages(packageName: string) {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
-      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+      LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       WHERE p.package_name ILIKE $1

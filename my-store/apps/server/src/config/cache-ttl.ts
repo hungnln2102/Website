@@ -7,6 +7,8 @@ export const CACHE_TTL_SEC = {
   PRODUCTS_LIST: 600,
   /** Danh sách khuyến mãi */
   PROMOTIONS_LIST: 600,
+  /** Biến thể bán chạy 30 ngày */
+  BEST_SELLING_VARIANTS: 600,
   /** Danh mục */
   CATEGORIES_LIST: 900,
   /** Chi tiết gói (product-packages) */

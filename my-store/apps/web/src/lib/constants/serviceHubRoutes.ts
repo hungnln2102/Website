@@ -2,7 +2,12 @@ import { ROUTES } from "./app.config";
 
 const trimSlashes = (value: string): string => value.replace(/^\/+|\/+$/g, "");
 
-const FIX_ADOBE_EDU_ALIASES = new Set(["check-profile", "otp"]);
+/** Alias cũ vẫn nhận để link bookmark / chia sẻ không vỡ sau khi đổi `/system/adobe`. */
+const FIX_ADOBE_EDU_ALIASES = new Set([
+  "check-profile",
+  "otp",
+  "system/adobe-edu",
+]);
 
 /** Legacy short paths (before `/system/...` canonical URLs). */
 const RENEW_ADOBE_ALIASES = new Set(["renew-adobe"]);

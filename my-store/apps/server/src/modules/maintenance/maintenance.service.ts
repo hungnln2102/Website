@@ -1,8 +1,9 @@
 import pool from "../../config/database";
+import { DB_SCHEMA } from "../../config/db.config";
 
-const SCHEMA = "admin";
-const IP_TABLE = `"${SCHEMA}"."ip_whitelist"`;
-const SETTINGS_TABLE = `"${SCHEMA}"."site_settings"`;
+const SCHEMA_ADMIN = DB_SCHEMA.IP_WHITELISTS!.SCHEMA;
+const IP_WHITELIST_TABLE = `"${SCHEMA_ADMIN}"."${DB_SCHEMA.IP_WHITELISTS!.TABLE}"`;
+const SETTINGS_TABLE = `"${SCHEMA_ADMIN}"."${DB_SCHEMA.SITE_SETTINGS!.TABLE}"`;
 
 // ─── In-memory cache (reload mỗi 30s) ──────────────────────────────────────
 let cachedWhitelist: Set<string> = new Set();
@@ -18,10 +19,10 @@ async function refreshCache() {
   try {
     const [ipRes, settRes] = await Promise.all([
       pool.query<{ ip_address: string }>(
-        `SELECT ip_address FROM ${IP_TABLE} WHERE is_active = true`
+        `SELECT ${DB_SCHEMA.IP_WHITELISTS!.COLS.IP_ADDRESS} FROM ${IP_WHITELIST_TABLE} WHERE ${DB_SCHEMA.IP_WHITELISTS!.COLS.IS_ACTIVE} = true`
       ),
       pool.query<{ value: string }>(
-        `SELECT value FROM ${SETTINGS_TABLE} WHERE key = 'maintenance_mode'`
+        `SELECT ${DB_SCHEMA.SITE_SETTINGS!.COLS.VALUE} FROM ${SETTINGS_TABLE} WHERE ${DB_SCHEMA.SITE_SETTINGS!.COLS.KEY} = 'maintenance_mode'`
       ),
     ]);
 

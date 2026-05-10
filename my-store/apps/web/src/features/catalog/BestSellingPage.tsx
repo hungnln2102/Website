@@ -2,9 +2,11 @@
 
 import { useMemo } from "react";
 import { TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { MetaTags } from "@/components/SEO";
 import { APP_CONFIG } from "@/lib/constants";
+import { fetchBestSellingVariants } from "@/features/product/api/products.api";
 import { slugify } from "@/lib/utils";
 import { CatalogLayout, PageHeader, ProductGrid, SortToolbar } from "./components";
 import { useCatalogData, useProductSort } from "./hooks";
@@ -22,11 +24,33 @@ export default function BestSellingPage({
   searchQuery,
   setSearchQuery,
 }: BestSellingPageProps) {
-  const { products, categories, loadingProducts, productsError, handleRetryProducts } = useCatalogData();
+  const { products, categories } = useCatalogData();
+  const {
+    data: bestSellingVariants = [],
+    isLoading: loadingProducts,
+    error: bestSellingError,
+    refetch: refetchBestSellingVariants,
+  } = useQuery({
+    queryKey: ["best-selling-variants"],
+    queryFn: fetchBestSellingVariants,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const productsError =
+    bestSellingError instanceof Error
+      ? bestSellingError.message
+      : bestSellingError
+      ? "Không thể tải danh sách biến thể bán chạy"
+      : null;
+  const handleRetryProducts = () => {
+    void refetchBestSellingVariants();
+  };
 
   const normalizedProducts = useMemo(
     () =>
-      products
+      bestSellingVariants
         .map((p) => ({
           id: String(p.id),
           name: p.name,
@@ -45,8 +69,8 @@ export default function BestSellingPage({
           package_count: p.package_count ?? 1,
           created_at: p.created_at || new Date().toISOString(),
         }))
-        .filter((p) => (p.sold_count_30d ?? 0) > 10),
-    [products]
+        .filter((p) => (p.sold_count_30d ?? 0) > 50),
+    [bestSellingVariants]
   );
 
   const {
@@ -94,7 +118,7 @@ export default function BestSellingPage({
           title="Sản phẩm"
           highlightedTitle="bán chạy"
           count={totalCount}
-          countLabel="gói được mua nhiều"
+          countLabel="biến thể vượt 50 lượt/30 ngày"
           gradientFrom="from-amber-500"
           gradientVia="via-orange-500"
           gradientTo="to-red-500"

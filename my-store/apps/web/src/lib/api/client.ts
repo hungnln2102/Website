@@ -1,9 +1,10 @@
 /**
  * Shared API base URL and error handling for all API modules.
  *
- * Dev: `getApiBase()` = '' — Vite proxy (vite.config.ts) gửi:
- *   - `/api/*` (chung) → my-store server :4000
- *   - `/api/public/content/*`, `/api/renew-adobe/public/*`, `/image/articles/*` → admin_orderlist :3001
+ * Dev: `getApiBase()` = '' — Vite proxy (vite.config.ts) gửi mọi prefix dưới đây → my-store server :4000;
+ * server (`ADMIN_ORDERLIST_API_URL` trong apps/server/.env) forward tới admin_orderlist (dev thường :3001):
+ *   - `/api/public/content/*`, `/api/renew-adobe/public/*`, `/image/articles/*`, `/image_variant/*`
+ *   - còn lại `/api/*` do chính apps/server xử lý / tRPC
  *
  * Prod: `VITE_API_URL` trỏ tới my-store server (vd. https://api…). Cùng host đó phải có proxy
  * tới admin_orderlist (`ADMIN_ORDERLIST_API_URL` trên apps/server) cho các prefix:
@@ -102,7 +103,7 @@ export async function apiFetch(
       const hint = import.meta.env.DEV
         ? isRenewActivate
           ? " Hết thời gian chờ (hoặc proxy đóng sớm). Kích hoạt Renew Adobe có thể mất vài phút — thử bấm Kiểm tra profile lại sau; đảm bảo Vite/apps/server proxy tới admin_orderlist đủ lâu (vài trăm giây)."
-          : " Kiểm tra my-store server (4000) và admin_orderlist (3001) nếu dùng tin tức."
+          : " Kiểm tra apps/server :4000 và `ADMIN_ORDERLIST_API_URL` (admin_orderlist, thường :3001) nếu dùng tin tức."
         : isRenewActivate
           ? " Thao tác kích hoạt có thể vẫn đang chạy trên máy chủ — thử kiểm tra profile lại sau vài phút."
           : "";
@@ -114,7 +115,7 @@ export async function apiFetch(
       /failed to fetch|networkerror|load failed/i.test(msg)
     ) {
       const hint = import.meta.env.DEV
-        ? " Trên dev, trình duyệt gọi Vite :4001 — proxy chuyển tiếp /api/renew-adobe/public tới admin_orderlist. Hãy bật `npm run dev` trong admin_orderlist/backend (cổng 3001) và chạy `npm run dev` ở Website/my-store (web+server). Có thể đặt `VITE_ADMIN_API_URL=http://127.0.0.1:3001` trong apps/web/.env."
+        ? " Trên dev, Vite :4001 → apps/server :4000 → admin_orderlist (theo `ADMIN_ORDERLIST_API_URL`). Bật cả server Website và admin_orderlist/backend."
         : " Kiểm tra kết nối mạng hoặc thử lại sau.";
       throw new Error("Không kết nối được máy chủ." + hint);
     }

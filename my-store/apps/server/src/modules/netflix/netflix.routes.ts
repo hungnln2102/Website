@@ -13,6 +13,17 @@ const UPSTREAM_HEADERS = {
 const stripHtml = (value: string | undefined) =>
   (value ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 
+/**
+ * URL trong href thường có entity `&amp;` (HTML-escaped). Browser tự xử lý
+ * khi navigate, nhưng nếu trả raw cho client/JS → cần decode trước để link sạch.
+ */
+const decodeHrefEntities = (value: string | undefined): string =>
+  (value ?? "")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#38;/g, "&")
+    .replace(/&#x26;/gi, "&")
+    .trim();
+
 function normalizeHouseholdMessage(message: string) {
   const text = stripHtml(message);
 
@@ -76,7 +87,32 @@ router.post("/household", async (req, res) => {
     console.log("[netflix] household headers:", Object.fromEntries(upstreamRes.headers.entries()));
     console.log("[netflix] household HTML:", html.substring(0, 2000));
 
+    /**
+     * Ưu tiên cao nhất: link có `?nftoken=...` — đây mới là URL Get Code có token
+     * cần thiết để Netflix xác thực và trả OTP. URL trần `…/travel/verify` (không token)
+     * sẽ chỉ hiện trang sign-in, không lấy được mã.
+     *
+     * Order:
+     *   1) href chứa nftoken / messageGuid (link Get Code có token)
+     *   2) <a>...Get Code...</a> match theo text (back-up nếu Netflix đổi key query)
+     *   3) href chứa /account/travel/verify (vẫn còn fallback)
+     *   4) href chứa "household" (email update household)
+     *   5) href bất kỳ chứa "netflix"
+     *   6) window.location.href = "..." (JS redirect)
+     */
+    const nftokenMatch = html.match(
+      /href=["']([^"']*[?&](?:nftoken|messageGuid)=[^"']+)["']/i,
+    );
+    const buttonTextMatch = html.match(
+      /<a[^>]+href=["']([^"']+)["'][^>]*>[\s\S]{0,400}?(?:Get\s+Code|Lấy\s+mã|Lay\s+ma)[\s\S]{0,200}?<\/a>/i,
+    );
+    const travelVerifyMatch = html.match(
+      /href=["'](https?:\/\/[^"']*\/(?:account\/travel\/verify|travel\/verify)[^"']*)["']/i,
+    );
     const linkMatch =
+      nftokenMatch ||
+      buttonTextMatch ||
+      travelVerifyMatch ||
       html.match(/href=["'](https?:\/\/[^"']*household[^"']*)["']/i) ||
       html.match(/href=["'](https?:\/\/[^"']*netflix[^"']*)["']/i) ||
       html.match(/window\.location\.href\s*=\s*["'](https?:\/\/[^"']+)["']/i);
@@ -94,7 +130,7 @@ router.post("/household", async (req, res) => {
     if (linkMatch?.[1]) {
       res.json({
         ok: true,
-        link: linkMatch[1],
+        link: decodeHrefEntities(linkMatch[1]),
         message: successMatch
           ? normalizeHouseholdMessage(successMatch[1] ?? "")
           : "Đã tìm thấy liên kết hộ gia đình.",

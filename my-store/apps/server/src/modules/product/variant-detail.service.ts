@@ -1,6 +1,6 @@
 import prisma from "@my-store/db";
 import { TABLES } from "../../config/db.config";
-import { MARGIN_PIVOT_SQL } from "./product-sql.shared";
+import { getMarginPivotSql } from "./product-sql.shared";
 import { deriveProductSeo } from "./product-seo";
 
 export interface VariantDetailInfo {
@@ -150,6 +150,7 @@ export class VariantDetailService {
    * Get all variants for a product (by base_name)
    */
   async getVariantsByBaseName(baseName: string): Promise<any[]> {
+    const marginPivotSql = await getMarginPivotSql();
     const query = `
       WITH supply_max AS (
         SELECT sc.variant_id, MAX(sc.price::numeric) AS price_max
@@ -176,7 +177,7 @@ export class VariantDetailService {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
-      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+      LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
       LEFT JOIN supply_max sm ON sm.variant_id = v.id

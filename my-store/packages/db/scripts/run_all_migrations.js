@@ -1,6 +1,6 @@
 /**
  * Chạy tất cả migrations từ all_migrations.sql
- * Dùng cho deploy mới hoặc khi cần áp dụng đầy đủ schema.
+ * Dùng sau khi đã có PostgreSQL chuẩn admin_orderlist (000_consolidated_schema + knex migrations).
  */
 import pg from 'pg';
 import dotenv from 'dotenv';

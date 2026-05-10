@@ -44,7 +44,6 @@ const CartPage = lazyWithRetry(() => import("@/features/cart/CartPage"));
 const ProfilePage = lazyWithRetry(() => import("@/features/profile/ProfilePage"));
 const TopupPage = lazyWithRetry(() => import("@/features/wallet/TopupPage"));
 const CheckProfilePage = lazyWithRetry(() => import("@/features/CheckProfile/checkprofile"));
-const RenewAdobePage = lazyWithRetry(() => import("@/features/CheckProfile/RenewAdobePage"));
 const NetflixPage = lazyWithRetry(() => import("@/features/CheckProfile/NetflixPage"));
 const AdobeGuidePage = lazyWithRetry(() => import("@/features/guide/AdobeGuidePage"));
 const AboutPage = lazyWithRetry(() => import("@/features/about/AboutPage"));
@@ -405,7 +404,8 @@ export default function App() {
         )}
         {view === "topup" && <TopupPage />}
         {view === "otp" && <CheckProfilePage />}
-        {view === "renew-adobe" && <RenewAdobePage />}
+        {/* Trang Renew Adobe cũ giờ dùng CheckProfilePage gom (dispatch theo system_note). */}
+        {view === "renew-adobe" && <CheckProfilePage />}
         {view === "netflix" && <NetflixPage />}
         {view === "adobe-guide" && <AdobeGuidePage />}
         {view === "about" && <AboutPage />}

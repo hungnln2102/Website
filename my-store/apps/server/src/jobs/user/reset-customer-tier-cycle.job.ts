@@ -7,7 +7,7 @@ const ACCOUNT_TABLE = `${DB_SCHEMA.ACCOUNT!.SCHEMA}.${DB_SCHEMA.ACCOUNT!.TABLE}`
 const TYPE_HISTORY_TABLE = `${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.SCHEMA}.${DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.TABLE}`;
 const CH = DB_SCHEMA.CUSTOMER_TYPE_HISTORY!.COLS as Record<string, string>;
 
-const TIER_CYCLES_TABLE = `${DB_SCHEMA.TIER_CYCLES!.SCHEMA}.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
+const TIER_CYCLES_TABLE_PREFERRED = `${DB_SCHEMA.TIER_CYCLES!.SCHEMA}.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
 const TC = DB_SCHEMA.TIER_CYCLES!.COLS as {
   ID: string;
   CYCLE_START_AT: string;
@@ -19,16 +19,34 @@ const PUBLIC_TIER_CYCLES = `public.${DB_SCHEMA.TIER_CYCLES!.TABLE}`;
 
 type TierCycleRow = { id: number; cycle_start_at: Date; cycle_end_at: Date; status: string };
 
-async function getTableToUse(): Promise<string> {
+/** Xác định schema qua catalogue — không trả schema “mặc định” khi bảng chưa tồn tại (tránh 42P01 lúc cron). */
+async function resolveTierCyclesTableSql(): Promise<string | null> {
+  const r = await pool.query<{ ts: string }>(
+    `SELECT table_schema AS ts
+     FROM information_schema.tables
+     WHERE table_name = 'tier_cycles'
+       AND table_schema IN ('customer_web', 'public')
+     ORDER BY CASE table_schema WHEN 'customer_web' THEN 0 WHEN 'public' THEN 1 END
+     LIMIT 1`
+  );
+  if (r.rows.length === 0) return null;
+  const schema = String(r.rows[0].ts).replace(/"/g, '""');
+  return `"${schema}"."tier_cycles"`;
+}
+
+/** Fallback: bảng ở schema khác không liệt kê trong IN (ít gặp) — probe SELECT 1. */
+async function getTierCyclesTableForQueries(): Promise<string | null> {
+  const fromCatalogue = await resolveTierCyclesTableSql();
+  if (fromCatalogue) return fromCatalogue;
   try {
-    await pool.query(`SELECT 1 FROM ${TIER_CYCLES_TABLE} LIMIT 1`);
-    return TIER_CYCLES_TABLE;
+    await pool.query(`SELECT 1 FROM ${TIER_CYCLES_TABLE_PREFERRED} LIMIT 1`);
+    return TIER_CYCLES_TABLE_PREFERRED;
   } catch {
     try {
       await pool.query(`SELECT 1 FROM ${PUBLIC_TIER_CYCLES} LIMIT 1`);
       return PUBLIC_TIER_CYCLES;
     } catch {
-      return TIER_CYCLES_TABLE;
+      return null;
     }
   }
 }
@@ -84,11 +102,11 @@ async function getCycleToClose(table: string): Promise<TierCycleRow | null> {
 }
 
 /**
- * Đóng chu kỳ (status = CLOSE).
+ * Đóng chu kỳ (status = CLOSED, khớp chk_tier_cycles_status trên consolidated).
  */
 async function closeCycle(client: PoolClient, table: string, id: number): Promise<void> {
   await client.query(
-    `UPDATE ${table} SET ${TC.STATUS} = 'CLOSE' WHERE ${TC.ID} = $1`,
+    `UPDATE ${table} SET ${TC.STATUS} = 'CLOSED' WHERE ${TC.ID} = $1`,
     [id]
   );
 }
@@ -158,7 +176,11 @@ async function resetCustomerTypeHistory(client: PoolClient, periodStart: Date, p
 }
 
 async function runTierCycleReset(): Promise<void> {
-  const table = await getTableToUse();
+  const table = await getTierCyclesTableForQueries();
+  if (!table) {
+    console.log("[TierCycleReset] Bỏ qua — không tìm thấy tier_cycles trong customer_web/public.");
+    return;
+  }
   const client = await pool.connect();
   try {
     const toClose = await getCycleToClose(table);
@@ -213,7 +235,11 @@ async function scheduleNextRun(): Promise<void> {
     nextRunTimer = null;
   }
   try {
-    const table = await getTableToUse();
+    const table = await getTierCyclesTableForQueries();
+    if (!table) {
+      console.log("[TierCycleReset] Không có bảng tier_cycles — bỏ qua lên lịch.");
+      return;
+    }
     const current = await getCurrentOpenCycle(table);
     if (!current) {
       console.log("[TierCycleReset] Không có chu kỳ OPEN, bỏ qua lên lịch.");

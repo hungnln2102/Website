@@ -3,7 +3,7 @@ import pool from "../../config/database";
 import { DB_SCHEMA } from "../../config/db.config";
 import { calculatePrices } from "../../shared/utils/pricing";
 import type { OrderListItemInput } from "../order/order-list.service";
-import { MARGIN_PIVOT_SQL } from "../product/product-sql.shared";
+import { getMarginPivotSql } from "../product/product-sql.shared";
 
 const CART_SCHEMA = DB_SCHEMA.CART_ITEMS!.SCHEMA;
 const CART_TABLE = DB_SCHEMA.CART_ITEMS!.TABLE;
@@ -245,6 +245,7 @@ function toNum(v: unknown): number {
 export async function getCartItemsEnriched(accountId: string | number): Promise<CartItemEnriched[]> {
   const accId = toAccountId(accountId);
   const schema = `"${PRODUCT_SCHEMA}"`;
+  const marginPivotSql = await getMarginPivotSql();
   const { rows } = await pool.query<{
     id: string;
     variant_id: string;
@@ -280,7 +281,7 @@ export async function getCartItemsEnriched(accountId: string | number): Promise<
      LEFT JOIN ${schema}.variant v ON v.id::text = c.variant_id::text
      LEFT JOIN ${schema}.product p ON p.id = v.product_id
      LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
-     LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+     LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = (v.id)::int
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max
@@ -376,6 +377,7 @@ export async function getVariantProductData(
   priceType: CartPriceType = "retail"
 ): Promise<VariantProductData | null> {
   const schema = `"${PRODUCT_SCHEMA}"`;
+  const marginPivotSql = await getMarginPivotSql();
   const rows = await prisma.$queryRawUnsafe<
     {
       variant_id: string;
@@ -406,7 +408,7 @@ export async function getVariantProductData(
      FROM ${schema}.variant v
      LEFT JOIN ${schema}.product p ON p.id = v.product_id
      LEFT JOIN ${schema}.desc_variant d ON d.id = v.id_desc
-     LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+     LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
      LEFT JOIN supply_max sm_v ON sm_v.variant_id = v.id
      LEFT JOIN LATERAL (
        SELECT MAX(sm.price_max) AS price_max

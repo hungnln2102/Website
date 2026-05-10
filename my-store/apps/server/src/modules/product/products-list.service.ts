@@ -13,7 +13,7 @@ import {
 } from "../../shared/utils/pricing";
 import type { ProductListPriceScope } from "../../shared/utils/role-code";
 import { normalizeProductListPriceScope } from "../../shared/utils/role-code";
-import { MARGIN_PIVOT_SQL, SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { getMarginPivotSql, SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, toNumber } from "./product.helpers";
 import { deriveProductSeo } from "./product-seo";
 
@@ -67,7 +67,8 @@ function scopeSaleSql(scope: ProductListPriceScope): string {
   }
 }
 
-function buildProductsListQuery(scope: ProductListPriceScope): string {
+async function buildProductsListQuery(scope: ProductListPriceScope): Promise<string> {
+  const marginPivotSql = await getMarginPivotSql();
   const saleExpr = scopeSaleSql(scope);
   const mavAdminNcc = scope === "MAV";
   const promoExpr = mavAdminNcc ? `(${saleExpr})` : sqlPromoPrice(PM, CTV, KH, PR);
@@ -77,7 +78,12 @@ function buildProductsListQuery(scope: ProductListPriceScope): string {
       SELECT
         p.id AS id,
         v.display_name AS id_product,
-        p.package_name AS package,
+        COALESCE(
+          NULLIF(TRIM(BOTH FROM p.package_name::text), ''),
+          NULLIF(TRIM(BOTH FROM v.display_name::text), ''),
+          NULLIF(TRIM(BOTH FROM v.variant_name::text), ''),
+          'product-' || p.id::text
+        ) AS package,
         v.variant_name AS package_product,
         v.is_active AS is_active,
         COALESCE(margins.pct_ctv, 0) AS pct_ctv,
@@ -95,11 +101,15 @@ function buildProductsListQuery(scope: ProductListPriceScope): string {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
-      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+      LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc
         ON vsc.variant_id = v.id
-      WHERE p.package_name IS NOT NULL
+      WHERE (
+          NULLIF(TRIM(BOTH FROM COALESCE(p.package_name::text, '')), '') IS NOT NULL
+          OR NULLIF(TRIM(BOTH FROM COALESCE(v.display_name::text, '')), '') IS NOT NULL
+          OR NULLIF(TRIM(BOTH FROM COALESCE(v.variant_name::text, '')), '') IS NOT NULL
+        )
         AND (p.is_active IS NULL OR p.is_active = true)
     ),
     sale_calc AS (
@@ -160,7 +170,7 @@ function buildProductsListQuery(scope: ProductListPriceScope): string {
 
 export async function getProductsList(scopeInput?: ProductListPriceScope | string) {
   const scope = normalizeProductListPriceScope(scopeInput);
-  const query = buildProductsListQuery(scope);
+  const query = await buildProductsListQuery(scope);
   const { rows } = await pool.query<RawProductRow>(query);
 
   return rows.map((row) => {

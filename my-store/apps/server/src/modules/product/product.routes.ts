@@ -7,6 +7,7 @@ import * as seoController from "./seo.controller";
 const router = express.Router();
 
 router.get("/products", optionalAuth, productController.getProducts);
+router.get("/products/best-selling-variants", productController.getBestSellingVariantsHandler);
 router.get("/promotions", productController.getPromotions);
 router.get("/categories", productController.getCategories);
 router.get("/product-packages/:package", strictLimiter, productController.getProductPackagesHandler);

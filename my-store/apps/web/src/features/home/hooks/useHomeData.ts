@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProducts, productsQueryKey } from "@/features/product/api/products.api";
+import {
+  fetchProducts,
+  fetchBestSellingVariants,
+  productsQueryKey,
+} from "@/features/product/api/products.api";
 import { fetchPromotions } from "@/features/catalog/api/promotions.api";
 import { fetchCategories } from "@/features/catalog/api/categories.api";
 import type { CategoryDto, PromotionDto } from "@/lib/types";
@@ -63,6 +67,20 @@ export function useHomeData() {
     refetchOnWindowFocus: false,
   });
 
+  const {
+    data: bestSellingVariants = [],
+    isLoading: loadingBestSellingVariants,
+    error: bestSellingVariantsError,
+    refetch: refetchBestSellingVariants,
+  } = useQuery({
+    queryKey: ["best-selling-variants"],
+    queryFn: fetchBestSellingVariants,
+    enabled: true,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   // Fetch promotions
   const {
     data: promotions = [] as PromotionDto[],
@@ -112,6 +130,12 @@ export function useHomeData() {
       : promotionsError
       ? "Không lấy được danh sách khuyến mãi"
       : null;
+  const bestSellingVariantsErrorMsg =
+    bestSellingVariantsError instanceof Error
+      ? bestSellingVariantsError.message
+      : bestSellingVariantsError
+      ? "Không lấy được danh sách biến thể bán chạy"
+      : null;
 
   // Retry handlers
   const handleRetryProducts = () => {
@@ -124,6 +148,10 @@ export function useHomeData() {
 
   const handleRetryPromotions = () => {
     refetchPromotions();
+  };
+
+  const handleRetryBestSellingVariants = () => {
+    refetchBestSellingVariants();
   };
 
   // Transform categories for UI
@@ -186,15 +214,46 @@ export function useHomeData() {
     [products]
   );
 
+  const normalizedBestSellingVariants = useMemo<NormalizedProduct[]>(
+    () =>
+      bestSellingVariants
+        .map((p: any) => ({
+          id: String(p.id),
+          category_id: null,
+          name: p.name,
+          package: p.package,
+          package_product: p.package_product ?? null,
+          slug: p.slug,
+          description: p.description,
+          full_description: null,
+          base_price: p.base_price ?? 0,
+          from_price: p.from_price != null ? p.from_price : undefined,
+          image_url: p.image_url,
+          is_featured: false,
+          discount_percentage: p.discount_percentage ?? 0,
+          has_promo: p.has_promo ?? false,
+          sales_count: p.sales_count ?? 0,
+          sold_count_30d: p.sold_count_30d ?? 0,
+          average_rating: p.average_rating ?? 0,
+          purchase_rules: null,
+          package_count: p.package_count ?? 1,
+          created_at: p.created_at || null,
+        }))
+        .filter((p) => (p.sold_count_30d ?? 0) > 50),
+    [bestSellingVariants]
+  );
+
   const loadingProducts = loading;
   const loadingPromotionList = loadingPromotions;
   const loadingCategoryList = loadingCategories;
+  const loadingBestSellingList = loadingBestSellingVariants;
 
   return {
     isCatalogReady: catalogReady,
 
     // Raw data
     products: normalizedProducts,
+    bestSellingVariants: normalizedBestSellingVariants,
     promotions,
     categories: categoriesUi,
     categoryProductsMap,
@@ -203,15 +262,18 @@ export function useHomeData() {
     loading: loadingProducts,
     loadingPromotions: loadingPromotionList,
     loadingCategories: loadingCategoryList,
+    loadingBestSellingVariants: loadingBestSellingList,
 
     // Errors
     productsError,
     categoriesError: categoriesErrorMsg,
     promotionsError: promotionsErrorMsg,
+    bestSellingVariantsError: bestSellingVariantsErrorMsg,
 
     // Retry handlers
     handleRetryProducts,
     handleRetryCategories,
     handleRetryPromotions,
+    handleRetryBestSellingVariants,
   };
 }

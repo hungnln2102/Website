@@ -1,12 +1,8 @@
 /**
- * Database Schema Configuration
+ * Registry schema.table + cột đồng bộ với `admin_orderlist/backend/src/config/dbSchema/`.
+ * Bảng/MV chỉ có ở storefront (cart, reviews, materialized views…) giữ nguyên; không có trong admin dbSchema thì không đổi tên bừa.
  *
- * Central registry of all database schemas, tables, and column mappings.
- * Organized by domain (product, orders, identity, customer, etc.).
- *
- * Usage:
- *   import { DB_SCHEMA, TABLES } from "./db.config";
- *   const { SCHEMA, TABLE, COLS } = DB_SCHEMA.PRODUCT;
+ * `SUPPLIER_COST` luôn dùng schema `product` như consolidated — xem `schemas/ordersProductPartner.js` + `shared.js` (SUPPLIER_COST_DEF).
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,7 +26,8 @@ const pickSchema = (...candidates: Array<string | undefined | null>) =>
 export const SCHEMA_PRODUCT       = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "product");
 const        SCHEMA_PARTNER       = pickSchema(process.env.DB_SCHEMA_PARTNER,       process.env.SCHEMA_PARTNER,       "partner");
 export const SCHEMA_SUPPLIER      = pickSchema(process.env.DB_SCHEMA_SUPPLIER,      process.env.SCHEMA_SUPPLIER,      SCHEMA_PARTNER, SCHEMA_PRODUCT);
-export const SCHEMA_SUPPLIER_COST = pickSchema(process.env.DB_SCHEMA_SUPPLIER_COST, process.env.SCHEMA_SUPPLIER_COST, SCHEMA_PRODUCT, SCHEMA_PARTNER);
+export const SCHEMA_SUPPLIER_COST =
+  pickSchema(process.env.DB_SCHEMA_SUPPLIER_COST, process.env.SCHEMA_SUPPLIER_COST) || SCHEMA_PRODUCT;
 export const SCHEMA_ORDERS        = pickSchema(process.env.DB_SCHEMA_ORDERS,        process.env.SCHEMA_ORDERS,        "orders");
 export const SCHEMA_RECEIPT       = pickSchema(process.env.DB_SCHEMA_RECEIPT,       process.env.SCHEMA_RECEIPT,       "receipt");
 export const SCHEMA_IDENTITY      = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
@@ -56,10 +53,8 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "product",
     COLS: {
       ID: "id",
-      CATEGORY_ID: "category_id",
       PACKAGE_NAME: "package_name",
       IMAGE_URL: "image_url",
-      CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
       IS_ACTIVE: "is_active",
     },
@@ -85,19 +80,14 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       ID: "id",
       PRODUCT_ID: "product_id",
       VARIANT_NAME: "variant_name",
-      DISPLAY_NAME: "display_name",
-      FORM_ID: "form_id",
       IS_ACTIVE: "is_active",
+      DISPLAY_NAME: "display_name",
       CREATED_AT: "created_at",
+      FORM_ID: "form_id",
       UPDATED_AT: "updated_at",
       DESC_VARIANT_ID: "id_desc",
       IMAGE_URL: "image_url",
       BASE_PRICE: "base_price",
-      /** Legacy: margin nằm ở variant_margin + pricing_tier (admin_orderlist), không còn cột trên variant. */
-      PCT_CTV: "pct_ctv",
-      PCT_KHACH: "pct_khach",
-      PCT_PROMO: "pct_promo",
-      PCT_STU: "pct_stu",
     },
   },
 
@@ -183,9 +173,10 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "desc_variant",
     COLS: {
       ID: "id",
+      RULES: "rules",
       DESCRIPTION: "description",
       SHORT_DESC: "short_desc",
-      RULES: "rules",
+      CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
     },
   },
@@ -307,7 +298,30 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
-  // ── Finance (admin_orderlist) ───────────────────────────────────────────────
+  IP_WHITELISTS: {
+    SCHEMA: SCHEMA_ADMIN,
+    TABLE: "ip_whitelist",
+    COLS: {
+      ID: "id",
+      IP_ADDRESS: "ip_address",
+      LABEL: "label",
+      IS_ACTIVE: "is_active",
+      CREATED_AT: "created_at",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  SITE_SETTINGS: {
+    SCHEMA: SCHEMA_ADMIN,
+    TABLE: "site_settings",
+    COLS: {
+      KEY: "key",
+      VALUE: "value",
+      UPDATED_AT: "updated_at",
+    },
+  },
+
+  // ── Finance (admin_orderlist dbSchema/schemas/adminFinance.js) ─────────────────
 
   MASTER_WALLET_TYPES: {
     SCHEMA: SCHEMA_FINANCE,
@@ -319,6 +333,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       ASSET_CODE: "asset_code",
       IS_INVESTMENT: "is_investment",
       LINKED_WALLET_ID: "linked_wallet_id",
+      BALANCE_SCOPE: "balance_scope",
     },
   },
 
@@ -417,9 +432,7 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     },
   },
 
-  // ── Orders ────────────────────────────────────────────────────────────────
-  // order_list (đồng bộ admin_orderlist): id_product = varchar — thường là
-  // product.variant.variant_name (MV sales join theo tên); có thể lưu chuỗi số id khi migrate từ hệ cũ.
+  // ── Orders (admin_orderlist dbSchema/schemas/ordersProductPartner.js: ORDERS_SCHEMA) ──
 
   ORDER_LIST: {
     SCHEMA: SCHEMA_ORDERS,
@@ -427,21 +440,24 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ID_ORDER: "id_order",
-      ID_PRODUCT: "id_product",       // varchar — variant_name hoặc id dạng text
+      ID_PRODUCT: "id_product",
       INFORMATION_ORDER: "information_order",
       CUSTOMER: "customer",
       CONTACT: "contact",
       SLOT: "slot",
-      ORDER_DATE: "order_date",       // date
-      DAYS: "days",                   // int4 — số ngày gói
-      EXPIRED_AT: "expired_at",        // date, ngày hết hạn
-      SUPPLY_ID: "supply_id",         // int4, id của partner.supplier
-      COST: "cost",                   // numeric
-      PRICE: "price",                 // numeric
+      ORDER_DATE: "order_date",
+      DAYS: "days",
+      /** admin dbSchema key EXPIRY_DATE → DB column expired_at */
+      EXPIRY_DATE: "expired_at",
+      ID_SUPPLY: "supply_id",
+      COST: "cost",
+      PRICE: "price",
+      GROSS_SELLING_PRICE: "gross_selling_price",
       NOTE: "note",
       STATUS: "status",
-      REFUND: "refund",               // numeric
-      CANCELED_AT: "canceled_at",     // timestamptz
+      REFUND: "refund",
+      CANCELED_AT: "canceled_at",
+      CREATED_AT: "created_at",
     },
   },
 
@@ -456,17 +472,10 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       RECEIVER: "receiver",
       NOTE: "note",
       SENDER: "sender",
-    },
-  },
-
-  REFUND: {
-    SCHEMA: SCHEMA_ORDERS,
-    TABLE: "refund",
-    COLS: {
-      ID: "id",
-      ORDER_CODE: "ma_don_hang",
-      PAID_DATE: "ngay_thanh_toan",
-      AMOUNT: "so_tien",
+      SEPAY_TRANSACTION_ID: "sepay_transaction_id",
+      REFERENCE_CODE: "reference_code",
+      TRANSFER_TYPE: "transfer_type",
+      GATEWAY: "gateway",
     },
   },
 
@@ -490,16 +499,15 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     TABLE: "accounts",
     COLS: {
       ID: "id",
-      USERNAME: "username",
       EMAIL: "email",
       PASSWORD_HASH: "password_hash",
       IS_ACTIVE: "is_active",
+      CREATED_AT: "created_at",
+      USERNAME: "username",
       SUSPENDED_UNTIL: "suspended_until",
       BAN_REASON: "ban_reason",
       UPDATED_AT: "updated_at",
-      CREATED_AT: "created_at",
       ROLE_ID: "role_id",
-      MAIL_BACKUP_ID: "mail_backup_id",
     },
   },
 
@@ -549,13 +557,13 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
     COLS: {
       ID: "id",
       ACCOUNT_ID: "account_id",
-      TIER_ID: "tier_id",
       FIRST_NAME: "first_name",
       LAST_NAME: "last_name",
       DATE_OF_BIRTH: "date_of_birth",
       DATE_OF_BIRTH_CHANGED_AT: "date_of_birth_changed_at",
       CREATED_AT: "created_at",
       UPDATED_AT: "updated_at",
+      TIER_ID: "tier_id",
     },
   },
 
@@ -655,11 +663,10 @@ export const DB_SCHEMA: Record<string, TableConfig> = {
       AMOUNT: "amount",
       BALANCE_BEFORE: "balance_before",
       BALANCE_AFTER: "balance_after",
-      PROMO_CODE: "promo_code",
-      PROMOTION_ID: "promotion_id",
-      BONUS_APPLIED: "bonus_applied",
       CREATED_AT: "created_at",
       METHOD: "method",
+      PROMOTION_ID: "promotion_id",
+      BONUS_APPLIED: "bonus_applied",
     },
   },
 
@@ -729,9 +736,10 @@ export const TABLES = {
   ORDER_LIST:         t("ORDER_LIST"),
   ORDER_CUSTOMER:     t("ORDER_CUSTOMER"),
   PAYMENT_RECEIPT:    t("PAYMENT_RECEIPT"),
-  REFUND:             t("REFUND"),
   // Admin
   ADMIN_USERS:        t("ADMIN_USERS"),
+  IP_WHITELISTS:      t("IP_WHITELISTS"),
+  SITE_SETTINGS:      t("SITE_SETTINGS"),
   // Finance
   MASTER_WALLET_TYPES:  t("MASTER_WALLET_TYPES"),
   TRANS_DAILY_BALANCES: t("TRANS_DAILY_BALANCES"),

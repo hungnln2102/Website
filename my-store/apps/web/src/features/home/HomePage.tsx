@@ -62,17 +62,21 @@ export default function HomePage({
   const {
     isCatalogReady,
     products,
+    bestSellingVariants,
     promotions,
     categories,
     categoryProductsMap,
     loading,
     loadingPromotions,
+    loadingBestSellingVariants,
     productsError,
     categoriesError,
     promotionsError,
+    bestSellingVariantsError,
     handleRetryProducts,
     handleRetryCategories,
     handleRetryPromotions,
+    handleRetryBestSellingVariants,
   } = useHomeData();
 
   const {
@@ -86,6 +90,7 @@ export default function HomePage({
     handleLogoClick,
   } = useHomeFilters({
     products,
+    bestSellingVariants,
     categoryProductsMap,
   });
 
@@ -256,7 +261,7 @@ export default function HomePage({
               )
             )}
 
-            {loading ? (
+            {loadingBestSellingVariants ? (
               <HomeSectionSkeleton tone="amber" />
             ) : (
               bestSellingProducts.length > 0 && (
@@ -273,9 +278,11 @@ export default function HomePage({
           productsError={productsError}
           categoriesError={categoriesError}
           promotionsError={promotionsError}
+          bestSellingVariantsError={bestSellingVariantsError}
           onRetryProducts={handleRetryProducts}
           onRetryCategories={handleRetryCategories}
           onRetryPromotions={handleRetryPromotions}
+          onRetryBestSellingVariants={handleRetryBestSellingVariants}
         />
 
         <AllProductsSection

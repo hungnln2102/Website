@@ -10,7 +10,7 @@ export {
 } from "@/features/auth/api/auth";
 export { getApiBase, handleApiError } from "./client";
 
-export { fetchProducts, productsQueryKey } from "@/features/product/api/products.api";
+export { fetchProducts, fetchBestSellingVariants, productsQueryKey } from "@/features/product/api/products.api";
 export { fetchPromotions } from "@/features/catalog/api/promotions.api";
 export { fetchCategories } from "@/features/catalog/api/categories.api";
 export { fetchProductPackages } from "@/features/product/api/product-packages.api";

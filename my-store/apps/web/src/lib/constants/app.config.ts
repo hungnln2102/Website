@@ -31,7 +31,8 @@ export const ROUTES = {
   topup: "/topup",
   /** Trung tâm gói — vào đây trước; các dịch vụ con: /system/... */
   otp: "/system",
-  fixAdobeEdu: "/system/adobe-edu",
+  /** URL chính cho trang Fix lỗi Adobe (gom EDU + Renew + Ades). Giữ key `fixAdobeEdu` cho back-compat. */
+  fixAdobeEdu: "/system/adobe",
   renewAdobe: "/system/renew-adobe",
   netflix: "/system/netflix",
   adobeGuide: "/huong-dan-adobe",
@@ -64,6 +65,7 @@ export function isSystemHubPath(pathname: string): boolean {
   if (
     noTrail === "/check-profile" ||
     noTrail === "/otp" ||
+    noTrail === "/system/adobe" ||
     noTrail === "/system/adobe-edu" ||
     noTrail === "/renew-adobe" ||
     noTrail === "/netflix"

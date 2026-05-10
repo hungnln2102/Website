@@ -58,16 +58,13 @@ export function BestSellingSection({ products, onProductClick }: BestSellingSect
                     Bán Chạy
                   </span>
                 </h2>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-slate-400 sm:text-xs">
-                  NHỮNG GÓI ĐƯỢC CHỌN MUA NHIỀU NHẤT
-                </p>
               </div>
             </div>
             <button
               onClick={handleViewAll}
               className="group inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-2 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30 dark:hover:text-amber-300 sm:self-center"
             >
-              <span>Xem các gói bán chạy</span>
+              <span>Xem Thêm</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
           </div>
@@ -76,7 +73,26 @@ export function BestSellingSection({ products, onProductClick }: BestSellingSect
             {products.slice(0, 5).map((product) => (
               <ProductCard
                 key={product.id}
-                {...product}
+                id={product.id}
+                category_id={null}
+                name={product.name}
+                package={product.package}
+                package_product={product.package_product ?? null}
+                slug={product.slug}
+                description={product.description}
+                full_description={null}
+                base_price={product.base_price}
+                from_price={product.base_price}
+                image_url={product.image_url}
+                is_featured={false}
+                discount_percentage={product.discount_percentage}
+                sales_count={product.sales_count}
+                sold_count_30d={product.sold_count_30d}
+                average_rating={product.average_rating}
+                purchase_rules={null}
+                package_count={product.package_count}
+                created_at={product.created_at ?? new Date().toISOString()}
+                is_active={true}
                 onClick={() => onProductClick(product.slug)}
                 variant="default"
               />

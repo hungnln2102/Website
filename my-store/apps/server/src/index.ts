@@ -41,6 +41,7 @@ import {
   variantImagesProxyRouter,
 } from "./modules/admin-orderlist/admin-public-content-proxy";
 import { warnIfAdminOrderlistUrlMissingInProduction } from "./modules/admin-orderlist/create-admin-orderlist-proxy";
+import { warnIfProductCatalogIncomplete } from "./config/db-catalog-preflight";
 import productsRouter from "./modules/product/product.routes";
 import debugRouter from "./modules/debug/debug.routes";
 import maintenanceRouter from "./modules/maintenance/maintenance.routes";
@@ -342,6 +343,7 @@ async function start() {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`[Server] Proxy/Vite có thể gọi http://127.0.0.1:${PORT}`);
     warnIfAdminOrderlistUrlMissingInProduction();
+    void warnIfProductCatalogIncomplete();
   });
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
@@ -354,24 +356,42 @@ async function start() {
   // Warm-up cache: chạy sau khi DB connect VÀ chạy thêm một lần sau 1.5s (như trước) để cache đầy sớm khi DB đã sẵn sàng
   const runWarmup = async () => {
     try {
-      const [{ getProductsList }, { getPromotionsList }, { getCategoriesList }, { cache }] = await Promise.all([
-        import("./modules/product/products-list.service"),
-        import("./modules/product/promotions.service"),
-        import("./modules/product/categories.service"),
-        import("./shared/utils/cache"),
-      ]);
-      await Promise.all([
-        getProductsList("MAVL").then((data) => {
-          cache.set(httpCacheKeys.productsList("MAVL"), data, CACHE_TTL_SEC.PRODUCTS_LIST);
-        }),
-        getPromotionsList().then((data) => {
-          cache.set(httpCacheKeys.promotionsList(), data, CACHE_TTL_SEC.PROMOTIONS_LIST);
-        }),
-        getCategoriesList().then((data) => {
-          cache.set(httpCacheKeys.categoriesList(), data, CACHE_TTL_SEC.CATEGORIES_LIST);
-        }),
-      ]);
-      console.log("[warmup] Product / category / promotion cache warmed");
+      const [{ getProductsList }, { getPromotionsList }, { getCategoriesList }, { cache }] =
+        await Promise.all([
+          import("./modules/product/products-list.service"),
+          import("./modules/product/promotions.service"),
+          import("./modules/product/categories.service"),
+          import("./shared/utils/cache"),
+        ]);
+
+      const failures: string[] = [];
+      try {
+        const data = await getProductsList("MAVL");
+        cache.set(httpCacheKeys.productsList("MAVL"), data, CACHE_TTL_SEC.PRODUCTS_LIST);
+      } catch (e) {
+        failures.push("products");
+        console.warn("[warmup] products failed:", (e as Error)?.message ?? e);
+      }
+      try {
+        const data = await getPromotionsList();
+        cache.set(httpCacheKeys.promotionsList(), data, CACHE_TTL_SEC.PROMOTIONS_LIST);
+      } catch (e) {
+        failures.push("promotions");
+        console.warn("[warmup] promotions failed:", (e as Error)?.message ?? e);
+      }
+      try {
+        const data = await getCategoriesList();
+        cache.set(httpCacheKeys.categoriesList(), data, CACHE_TTL_SEC.CATEGORIES_LIST);
+      } catch (e) {
+        failures.push("categories");
+        console.warn("[warmup] categories failed:", (e as Error)?.message ?? e);
+      }
+
+      if (failures.length === 0) {
+        console.log("[warmup] Product / category / promotion cache warmed");
+      } else if (failures.length === 3) {
+        setTimeout(runWarmup, 2000);
+      }
     } catch (err) {
       console.warn("[warmup] Cache warm-up failed:", (err as Error)?.message ?? err);
       setTimeout(runWarmup, 2000);

@@ -4,16 +4,22 @@
 import pool from "../../config/database";
 import { TABLES } from "../../config/db.config";
 import { sqlRetailPrice, sqlPromoPrice } from "../../shared/utils/pricing";
-import { MARGIN_PIVOT_SQL, SUPPLY_MAX_CTE } from "./product-sql.shared";
+import { getMarginPivotSql, SUPPLY_MAX_CTE } from "./product-sql.shared";
 import { resolveImageUrl, slugify, stripHtml, toNumber } from "./product.helpers";
 
 export async function getPromotionsList() {
+  const marginPivotSql = await getMarginPivotSql();
   const query = `
     WITH ${SUPPLY_MAX_CTE},
     priced AS (
       SELECT
         p.id AS product_id,
-        p.package_name AS package,
+        COALESCE(
+          NULLIF(TRIM(BOTH FROM p.package_name::text), ''),
+          NULLIF(TRIM(BOTH FROM v.display_name::text), ''),
+          NULLIF(TRIM(BOTH FROM v.variant_name::text), ''),
+          'product-' || p.id::text
+        ) AS package,
         v.id AS variant_id,
         v.variant_name AS package_product,
         v.display_name AS id_product,
@@ -28,7 +34,7 @@ export async function getPromotionsList() {
       FROM ${TABLES.VARIANT} v
       LEFT JOIN ${TABLES.PRODUCT} p ON p.id = v.product_id
       LEFT JOIN ${TABLES.DESC_VARIANT} d ON d.id = v.id_desc
-      LEFT JOIN LATERAL (${MARGIN_PIVOT_SQL}) margins ON TRUE
+      LEFT JOIN LATERAL (${marginPivotSql}) margins ON TRUE
       LEFT JOIN supply_max sm ON sm.variant_id = v.id
       LEFT JOIN ${TABLES.VARIANT_SOLD_COUNT} vsc ON vsc.variant_id = v.id
       WHERE (p.is_active IS NULL OR p.is_active = true)
