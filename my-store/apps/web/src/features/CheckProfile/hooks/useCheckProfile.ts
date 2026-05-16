@@ -36,6 +36,7 @@ export function useCheckProfile() {
   const [resultType, setResultType] = useState<CheckResultType>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [canRenewOnError, setCanRenewOnError] = useState(false);
 
   /* ── OTP state ── */
   const [otpSent, setOtpSent] = useState(false);
@@ -49,6 +50,7 @@ export function useCheckProfile() {
     setResultType(null);
     setMessage(null);
     setProfileName(null);
+    setCanRenewOnError(false);
   };
 
   const resetOtp = () => {
@@ -105,6 +107,10 @@ export function useCheckProfile() {
       setMessage(result.message);
       setResultType(result.type);
       setProfileName(result.profileName);
+      setCanRenewOnError(
+        result.type === "error" &&
+          (decision.system === "renew_adobe" || decision.system === "fix_ades"),
+      );
     } catch (err) {
       setMessage(
         "Có lỗi kết nối tới máy chủ kiểm tra profile. Vui lòng thử lại sau.",
@@ -240,6 +246,7 @@ export function useCheckProfile() {
     resultType,
     message,
     profileName,
+    canRenewOnError,
     handleCheckSubmit,
     handleActivate,
 

@@ -101,6 +101,7 @@ export default function CheckProfilePage() {
                   resultType={cp.resultType}
                   message={cp.message}
                   profileName={cp.profileName}
+                  canRenewOnError={cp.canRenewOnError}
                   onCheckSubmit={cp.handleCheckSubmit}
                   onActivate={cp.handleActivate}
                   onSwitchToOtp={() => cp.setIsCheckMode(false)}

@@ -19,6 +19,7 @@ type CheckActivatePanelProps = {
   resultType: CheckResultType;
   message: string | null;
   profileName: string | null;
+  canRenewOnError: boolean;
   onCheckSubmit: (e: React.FormEvent) => void;
   onActivate: () => void;
   onSwitchToOtp: () => void;
@@ -33,10 +34,13 @@ export function CheckActivatePanel({
   resultType,
   message,
   profileName,
+  canRenewOnError,
   onCheckSubmit,
   onActivate,
   onSwitchToOtp,
 }: CheckActivatePanelProps) {
+  const showRenewAction = resultType === "expired" || (resultType === "error" && canRenewOnError);
+
   return (
     <div
       className={`relative p-6 sm:p-8 transition-opacity duration-500 ${
@@ -183,7 +187,7 @@ export function CheckActivatePanel({
             </div>
           )}
 
-          {resultType === "expired" ? (
+          {showRenewAction ? (
             <button
               type="button"
               onClick={onActivate}
@@ -193,12 +197,12 @@ export function CheckActivatePanel({
               {activating ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Đang kích hoạt...
+                  {resultType === "error" ? "Đang gia hạn..." : "Đang kích hoạt..."}
                 </>
               ) : (
                 <>
                   <RefreshCw className="h-4 w-4" />
-                  Kích hoạt lại ngay
+                  {resultType === "error" ? "Gia hạn ngay" : "Kích hoạt lại ngay"}
                 </>
               )}
             </button>
