@@ -374,6 +374,9 @@ export async function checkFixAdesPublicApi(
     const data = (parsed?.data as Record<string, unknown> | null) || null;
     const status = String(data?.status ?? "").toLowerCase();
     const teamName = String(data?.teamName || "").trim();
+    const rawMessage = String(
+      data?.message ?? data?.error ?? parsed?.error ?? parsed?.message ?? "",
+    ).trim();
 
     // "active" / "processing" / "Đang Xử Lý" → đang hoạt động.
     const isActive =
@@ -382,11 +385,35 @@ export async function checkFixAdesPublicApi(
       status === "đang xử lý" ||
       status === "đang hoạt động";
     const isExpired =
-      status === "expired" || status === "inactive" || status === "hết hạn";
+      status === "expired" ||
+      status === "inactive" ||
+      status === "hết hạn" ||
+      status === "not active" ||
+      status === "not_active";
+    const isError =
+      status === "error" ||
+      status === "failed" ||
+      status === "fail" ||
+      status === "not_found";
 
     return {
-      type: isActive ? "check-success" : isExpired ? "expired" : "info",
-      message: teamName || "—",
+      type: isActive
+        ? "check-success"
+        : isExpired
+          ? "expired"
+          : isError
+            ? "error"
+            : "info",
+      message:
+        rawMessage ||
+        teamName ||
+        (isActive
+          ? "Tài khoản Fix Ades đang hoạt động."
+          : isExpired
+            ? "Tài khoản Fix Ades chưa active hoặc đã hết gói."
+            : isError
+              ? "Tài khoản Fix Ades đang lỗi, vui lòng kiểm tra lại."
+              : "Đã kiểm tra trạng thái tài khoản Fix Ades."),
       profileName: teamName || null,
     };
   } catch {
