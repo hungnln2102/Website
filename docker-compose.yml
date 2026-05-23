@@ -21,6 +21,10 @@ services:
     ports:
       - "127.0.0.1:4000:4000"
     restart: unless-stopped
+    networks:
+      - default
+      # Cùng mạng với admin_orderlist-postgres → DATABASE_URL @postgres:5432 như backend admin
+      - admin_orderlist_db
 
   web:
     build:
@@ -35,4 +39,10 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+networks:
+  admin_orderlist_db:
+    external: true
+    # Tên mạng compose admin_orderlist (thư mục ~/apps/admin_orderlist): docker network ls | grep app-network
+    name: admin_orderlist_app-network
 
