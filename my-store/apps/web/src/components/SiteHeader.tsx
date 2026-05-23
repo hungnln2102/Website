@@ -88,7 +88,7 @@ export default function SiteHeader({
               <span className="text-blue-600 dark:text-blue-500">{APP_CONFIG.nameAccent}</span>
             </div>
             <p
-              className={`mt-0.5 hidden text-[10px] font-bold leading-none tracking-[0.2em] text-gray-500 transition-opacity duration-300 dark:text-slate-400 lg:block lg:min-h-[12px] ${
+              className={`mt-0.5 text-[9px] font-bold leading-tight tracking-[0.12em] text-gray-500 transition-opacity duration-300 dark:text-slate-400 sm:text-[10px] sm:tracking-[0.16em] md:min-h-[12px] ${
                 isScrolled ? "opacity-0" : "opacity-100"
               }`}
               aria-hidden={isScrolled}
