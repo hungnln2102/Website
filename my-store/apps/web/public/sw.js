@@ -1,4 +1,4 @@
-// Service Worker for Mavryk Premium Store
+// Service Worker for Mavryk Technology
 // Tăng VERSION mỗi lần deploy nếu cần xóa sạch runtime cache cũ (ảnh/API đã put vào RUNTIME).
 const VERSION = 'v9';
 const CACHE_NAME = `mavryk-store-${VERSION}`;

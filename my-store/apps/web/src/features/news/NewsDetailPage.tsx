@@ -98,7 +98,7 @@ export default function NewsDetailPage({
       return {
         title: `Tin tức - ${APP_CONFIG.name}`,
         description: "Đang tải bài viết…",
-        keywords: "tin tức, bài viết, Mavryk Premium Store",
+        keywords: "tin tức, bài viết, Mavryk Technology",
         url: `${APP_CONFIG.url}${ROUTES.news}`,
         image: `${APP_CONFIG.url}${BRANDING_ASSETS.logo512}`,
         type: "website" as const,
@@ -109,7 +109,7 @@ export default function NewsDetailPage({
         title: `Bài viết không tồn tại - ${APP_CONFIG.name}`,
         description:
           "Bài viết bạn đang tìm không tồn tại hoặc đã được cập nhật đường dẫn trong chuyên mục tin tức.",
-        keywords: "tin tức, bài viết, Mavryk Premium Store",
+        keywords: "tin tức, bài viết, Mavryk Technology",
         url: `${APP_CONFIG.url}${ROUTES.newsArticle(slug)}`,
         image: `${APP_CONFIG.url}${BRANDING_ASSETS.logo512}`,
         type: "website" as const,

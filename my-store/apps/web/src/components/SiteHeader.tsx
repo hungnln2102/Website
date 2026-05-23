@@ -1,5 +1,6 @@
 "use client";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
+import { APP_CONFIG } from "@/lib/constants";
 import { SearchBar } from "@/components/header/SearchBar";
 import { CartHeaderButton } from "@/components/header/CartHeaderButton";
 import { UserMenu } from "@/components/header/UserMenu";
@@ -76,22 +77,23 @@ export default function SiteHeader({
           <img
             src={BRANDING_ASSETS.logoTransparent}
             alt="Mavryk Logo"
-            title="Mavryk Premium Store"
+            title={APP_CONFIG.name}
             width={160}
             height={48}
             className="h-9 w-auto max-h-9 max-w-[10.5rem] shrink-0 object-contain object-left sm:max-w-[12rem] md:h-10 md:max-h-10"
           />
           <div className="hidden min-h-[2.75rem] flex-col justify-center text-left sm:flex">
             <div className="font-bold tracking-tight text-gray-900 dark:text-white text-sm sm:text-base md:text-lg">
-              Mavryk Premium <span className="text-blue-600 dark:text-blue-500">Store</span>
+              {APP_CONFIG.namePrimary}{" "}
+              <span className="text-blue-600 dark:text-blue-500">{APP_CONFIG.nameAccent}</span>
             </div>
             <p
-              className={`mt-0.5 hidden text-[10px] font-bold uppercase leading-none tracking-[0.2em] text-gray-500 transition-opacity duration-300 dark:text-slate-400 lg:block lg:min-h-[12px] ${
+              className={`mt-0.5 hidden text-[10px] font-bold leading-none tracking-[0.2em] text-gray-500 transition-opacity duration-300 dark:text-slate-400 lg:block lg:min-h-[12px] ${
                 isScrolled ? "opacity-0" : "opacity-100"
               }`}
               aria-hidden={isScrolled}
             >
-              Phần mềm bản quyền chính hãng
+              {APP_CONFIG.tagline}
             </p>
           </div>
         </a>

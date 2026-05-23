@@ -1,6 +1,6 @@
 import { Facebook, Mail, MessageCircle, Youtube } from "lucide-react";
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
-import { ROUTES } from "@/lib/constants";
+import { APP_CONFIG, ROUTES } from "@/lib/constants";
 
 const socialLinks = [
   { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
@@ -23,24 +23,25 @@ export default function Footer() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className="mb-2 flex items-center gap-2 text-left transition-opacity hover:opacity-90"
-              aria-label="Về trang chủ Mavryk Premium Store"
+              aria-label={`Về trang chủ ${APP_CONFIG.name}`}
             >
               <img
                 src={BRANDING_ASSETS.logoTransparent}
                 alt=""
                 aria-hidden="true"
-                title="Mavryk Premium Store"
+                title={APP_CONFIG.name}
                 loading="lazy"
                 width={160}
                 height={48}
                 className="h-7 w-auto max-h-7 max-w-[8rem] shrink-0 object-contain object-left"
               />
               <span className="text-base font-bold text-white">
-                Mavryk Premium <span className="text-blue-400">Store</span>
+                {APP_CONFIG.namePrimary}{" "}
+                <span className="text-blue-400">{APP_CONFIG.nameAccent}</span>
               </span>
             </a>
             <p className="text-xs leading-snug break-words text-slate-300">
-              Mavryk Premium Store ra đời với mục đích giúp khách hàng mua key phần mềm bản quyền
+              {APP_CONFIG.name} ra đời với mục đích giúp khách hàng mua key phần mềm bản quyền
               chính hãng một cách nhanh chóng, an toàn và có hỗ trợ sau bán hàng rõ ràng.
             </p>
             <p className="mt-1.5 text-xs leading-snug break-words text-slate-300">
@@ -108,7 +109,7 @@ export default function Footer() {
         <div className="mt-4 flex flex-col items-center justify-between gap-2 border-t border-slate-800/80 pt-2 pb-[5px] sm:flex-row">
           <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <p className="text-center text-[11px] text-slate-400 sm:text-left">
-              &copy; {new Date().getFullYear()} Mavryk Premium Store. All rights reserved.
+              &copy; {new Date().getFullYear()} {APP_CONFIG.name}. All rights reserved.
             </p>
           </div>
           <a

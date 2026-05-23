@@ -3,7 +3,10 @@
  */
 
 export const APP_CONFIG = {
-  name: "Mavryk Premium Store",
+  name: "Mavryk Technology",
+  namePrimary: "Mavryk",
+  nameAccent: "Technology",
+  tagline: "Kênh Thông Tin Công Nghệ Số",
   description: "Cửa hàng phần mềm bản quyền chính hãng - Phần mềm bản quyền giá tốt nhất",
   url: typeof window !== "undefined" ? window.location.origin : "https://www.mavrykpremium.store",
   locale: "vi-VN",

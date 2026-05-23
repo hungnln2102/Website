@@ -57,7 +57,7 @@ export default function HomePage({
   const isScrolled = useScroll();
   const { user, logout, updateUser } = useAuth();
   useSyncUserBalance(user, updateUser);
-  const homeHeading = `${APP_CONFIG.name} - Phần mềm bản quyền chính hãng`;
+  const homeHeading = `${APP_CONFIG.name} - ${APP_CONFIG.tagline}`;
 
   const {
     isCatalogReady,

@@ -31,9 +31,9 @@ function buildFallbackSlides(): BannerSlide[] {
   const i4 = buildResponsiveImage("photo-1483478550801-ceba5fe50e8e");
   return [
     {
-      title: `${APP_CONFIG.name} - Phần mềm bản quyền chính hãng`,
+      title: `${APP_CONFIG.name} - ${APP_CONFIG.tagline}`,
       description:
-        "Mavryk Premium Store cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
+        "Mavryk Technology cung cấp key và tài khoản bản quyền cho Windows, Office, Adobe, Autodesk cùng nhiều phần mềm làm việc khác. Sản phẩm rõ nguồn gốc, hướng dẫn kích hoạt chi tiết, xử lý đơn nhanh và hỗ trợ sau bán hàng tận tâm.",
       tagText: "Giới thiệu",
       cta: "Tìm hiểu thêm",
       href: ROUTES.about,

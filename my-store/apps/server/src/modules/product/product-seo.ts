@@ -22,7 +22,7 @@ export type DerivedProductSeo = {
 const DEFAULT_HEADING = "Chi tiết sản phẩm";
 const DEFAULT_META =
   "Nội dung chi tiết sản phẩm sẽ được lấy từ short_desc, description và rules.";
-const DEFAULT_SITE_NAME = "Mavryk Premium";
+const DEFAULT_SITE_NAME = "Mavryk Technology";
 
 const decodeHtmlEntities = (value: string): string =>
   value

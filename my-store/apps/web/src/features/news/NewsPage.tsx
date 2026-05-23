@@ -93,14 +93,14 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
       ? `Tin tức - ${APP_CONFIG.name}`
       : `Tin tức ${activeCategory} - ${APP_CONFIG.name}`;
     const description = isAll
-      ? "Trang tin tức tổng hợp hướng dẫn, cập nhật vận hành, bài viết danh mục và khuyến mãi mới nhất từ Mavryk Premium Store."
-      : `Danh mục tin tức ${activeCategory} tại Mavryk Premium Store, cập nhật bài viết mới và thông tin quan trọng cho khách hàng.`;
+      ? "Trang tin tức tổng hợp hướng dẫn, cập nhật vận hành, bài viết danh mục và khuyến mãi mới nhất từ Mavryk Technology."
+      : `Danh mục tin tức ${activeCategory} tại Mavryk Technology, cập nhật bài viết mới và thông tin quan trọng cho khách hàng.`;
 
     return {
       title,
       description,
       keywords:
-        "tin tức phần mềm, hướng dẫn sử dụng, cập nhật khuyến mãi, bài viết Mavryk Premium Store",
+        "tin tức phần mềm, hướng dẫn sử dụng, cập nhật khuyến mãi, bài viết Mavryk Technology",
       url: `${APP_CONFIG.url}${ROUTES.news}`,
       image: `${APP_CONFIG.url}${BRANDING_ASSETS.logo512}`,
       type: "website" as const,
@@ -187,7 +187,7 @@ export default function NewsPage({ onProductClick, searchQuery, setSearchQuery }
             Tin tức
           </div>
           <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl dark:text-white">
-            Cập nhật mới nhất từ Mavryk Premium Store
+            Cập nhật mới nhất từ Mavryk Technology
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base dark:text-slate-300">
             Tổng hợp bài viết hướng dẫn, thông báo vận hành và cập nhật danh mục để bạn theo dõi nhanh các thay

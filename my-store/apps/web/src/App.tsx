@@ -141,31 +141,31 @@ export default function App() {
         return {
           title: `${selectedSlug ? `Danh mục ${decodeURIComponent(selectedSlug)} - ` : ""}${APP_CONFIG.name}`,
           description: "Trang danh mục phần mềm bản quyền với bộ lọc và sản phẩm liên quan theo nhu cầu.",
-          keywords: "danh mục phần mềm, phần mềm bản quyền, Mavryk Premium Store",
+          keywords: "danh mục phần mềm, phần mềm bản quyền, Mavryk Technology",
           url: getCurrentUrl(ROUTES.home),
           type: "website" as const,
         };
       case "new-products":
         return {
           title: `Sản phẩm mới - ${APP_CONFIG.name}`,
-          description: "Khám phá các sản phẩm mới cập nhật tại Mavryk Premium Store.",
-          keywords: "sản phẩm mới, phần mềm mới, Mavryk Premium Store",
+          description: "Khám phá các sản phẩm mới cập nhật tại Mavryk Technology.",
+          keywords: "sản phẩm mới, phần mềm mới, Mavryk Technology",
           url: getCurrentUrl(ROUTES.newProducts),
           type: "website" as const,
         };
       case "all-products":
         return {
           title: `Tất cả sản phẩm - ${APP_CONFIG.name}`,
-          description: "Danh sách đầy đủ phần mềm bản quyền và dịch vụ đang có tại Mavryk Premium Store.",
-          keywords: "tất cả sản phẩm, phần mềm bản quyền, Mavryk Premium Store",
+          description: "Danh sách đầy đủ phần mềm bản quyền và dịch vụ đang có tại Mavryk Technology.",
+          keywords: "tất cả sản phẩm, phần mềm bản quyền, Mavryk Technology",
           url: getCurrentUrl(ROUTES.allProducts),
           type: "website" as const,
         };
       case "about":
         return {
           title: `Giới thiệu - ${APP_CONFIG.name}`,
-          description: "Thông tin giới thiệu, cam kết hỗ trợ và quy trình vận hành của Mavryk Premium Store.",
-          keywords: "giới thiệu cửa hàng, hỗ trợ khách hàng, Mavryk Premium Store",
+          description: "Thông tin giới thiệu, cam kết hỗ trợ và quy trình vận hành của Mavryk Technology.",
+          keywords: "giới thiệu cửa hàng, hỗ trợ khách hàng, Mavryk Technology",
           url: getCurrentUrl(ROUTES.about),
           type: "website" as const,
         };
@@ -173,15 +173,15 @@ export default function App() {
         return {
           title: `Hướng dẫn Adobe - ${APP_CONFIG.name}`,
           description: "Tài liệu hướng dẫn sử dụng Adobe Creative Cloud dành cho khách hàng mới.",
-          keywords: "hướng dẫn adobe, adobe creative cloud, Mavryk Premium Store",
+          keywords: "hướng dẫn adobe, adobe creative cloud, Mavryk Technology",
           url: getCurrentUrl(ROUTES.adobeGuide),
           type: "website" as const,
         };
       case "topup":
         return {
           title: `Nạp tiền - ${APP_CONFIG.name}`,
-          description: "Trang nạp tiền tài khoản để thanh toán nhanh hơn trên Mavryk Premium Store.",
-          keywords: "nạp tiền tài khoản, ví khách hàng, Mavryk Premium Store",
+          description: "Trang nạp tiền tài khoản để thanh toán nhanh hơn trên Mavryk Technology.",
+          keywords: "nạp tiền tài khoản, ví khách hàng, Mavryk Technology",
           url: getCurrentUrl(ROUTES.topup),
           type: "website" as const,
           robots: "noindex, follow",
@@ -198,7 +198,7 @@ export default function App() {
       case "login":
         return {
           title: `${selectedSlug === "register" ? "Đăng ký" : "Đăng nhập"} - ${APP_CONFIG.name}`,
-          description: "Truy cập hoặc tạo tài khoản để mua hàng và quản lý đơn hàng tại Mavryk Premium Store.",
+          description: "Truy cập hoặc tạo tài khoản để mua hàng và quản lý đơn hàng tại Mavryk Technology.",
           keywords: "đăng nhập, đăng ký, tài khoản khách hàng",
           url: getCurrentUrl(ROUTES.login),
           type: "website" as const,
@@ -208,7 +208,7 @@ export default function App() {
         return {
           title: `Giỏ hàng - ${APP_CONFIG.name}`,
           description: "Kiểm tra sản phẩm trong giỏ hàng trước khi thanh toán.",
-          keywords: "giỏ hàng, thanh toán, Mavryk Premium Store",
+          keywords: "giỏ hàng, thanh toán, Mavryk Technology",
           url: getCurrentUrl(ROUTES.cart),
           type: "website" as const,
           robots: "noindex, follow",
@@ -226,7 +226,7 @@ export default function App() {
         return {
           title: `Trung tâm gói - ${APP_CONFIG.name}`,
           description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
-          keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
+          keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Technology",
           url: getCurrentUrl(ROUTES.fixAdobeEdu),
           type: "website" as const,
           robots: "noindex, follow",
@@ -236,7 +236,7 @@ export default function App() {
         return {
           title: `Hỗ trợ dịch vụ - ${APP_CONFIG.name}`,
           description: "Trang kiểm tra và hỗ trợ dịch vụ dành cho khách hàng hiện có.",
-          keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Premium Store",
+          keywords: "hỗ trợ dịch vụ, kiểm tra tài khoản, Mavryk Technology",
           url: getCurrentUrl(
             view === "renew-adobe" ? ROUTES.renewAdobe : ROUTES.netflix
           ),
@@ -249,7 +249,7 @@ export default function App() {
         return {
           title: `Kết quả thanh toán - ${APP_CONFIG.name}`,
           description: "Thông tin trạng thái thanh toán đơn hàng.",
-          keywords: "thanh toán, kết quả đơn hàng, Mavryk Premium Store",
+          keywords: "thanh toán, kết quả đơn hàng, Mavryk Technology",
           url: getCurrentUrl(ROUTES.paymentSuccess),
           type: "website" as const,
           robots: "noindex, follow",
@@ -265,9 +265,9 @@ export default function App() {
         };
       default:
         return {
-          title: `${APP_CONFIG.name} - Phần mềm bản quyền chính hãng`,
+          title: `${APP_CONFIG.name} - ${APP_CONFIG.tagline}`,
           description: APP_CONFIG.description,
-          keywords: "phần mềm bản quyền, tài khoản số, Mavryk Premium Store",
+          keywords: "phần mềm bản quyền, tài khoản số, Mavryk Technology",
           url: getCurrentUrl(ROUTES.home),
           type: "website" as const,
         };

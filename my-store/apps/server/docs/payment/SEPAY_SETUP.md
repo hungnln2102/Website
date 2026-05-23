@@ -1,6 +1,6 @@
 # 🏦 SePay Payment Gateway - Tài liệu tích hợp
 
-> Tài liệu hướng dẫn tích hợp cổng thanh toán SePay cho Mavryk Premium Store
+> Tài liệu hướng dẫn tích hợp cổng thanh toán SePay cho Mavryk Technology
 
 ---
 

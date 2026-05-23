@@ -11,7 +11,7 @@ export interface FAQ {
 export const faqs: FAQ[] = [
   {
     question: "Phần mềm có phải bản quyền chính hãng không?",
-    answer: "Có, tất cả phần mềm tại Mavryk Premium Store đều là bản quyền chính hãng, được cung cấp trực tiếp từ nhà sản xuất hoặc đối tác ủy quyền chính thức.",
+    answer: "Có, tất cả phần mềm tại Mavryk Technology đều là bản quyền chính hãng, được cung cấp trực tiếp từ nhà sản xuất hoặc đối tác ủy quyền chính thức.",
   },
   {
     question: "Tôi có thể sử dụng phần mềm trên nhiều máy tính không?",

@@ -68,8 +68,8 @@ export default function PromotionsPage({
     () => ({
       title: `Khuyến mãi - ${APP_CONFIG.name}`,
       description:
-        "Danh sách các sản phẩm đang khuyến mãi, giảm giá hấp dẫn tại Mavryk Premium Store. Cập nhật ưu đãi phần mềm bản quyền mỗi ngày.",
-      keywords: "khuyến mãi phần mềm, giảm giá phần mềm, ưu đãi phần mềm bản quyền, Mavryk Premium Store",
+        "Danh sách các sản phẩm đang khuyến mãi, giảm giá hấp dẫn tại Mavryk Technology. Cập nhật ưu đãi phần mềm bản quyền mỗi ngày.",
+      keywords: "khuyến mãi phần mềm, giảm giá phần mềm, ưu đãi phần mềm bản quyền, Mavryk Technology",
       url: `${APP_CONFIG.url}/khuyen-mai`,
     }),
     []

@@ -93,9 +93,9 @@ export default function BestSellingPage({
     () => ({
       title: `Sản phẩm bán chạy - ${APP_CONFIG.name}`,
       description:
-        "Danh sách các sản phẩm bán chạy nhất tại Mavryk Premium Store, được sắp xếp theo mức độ mua nhiều và quan tâm cao.",
+        "Danh sách các sản phẩm bán chạy nhất tại Mavryk Technology, được sắp xếp theo mức độ mua nhiều và quan tâm cao.",
       keywords:
-        "sản phẩm bán chạy, phần mềm bán chạy, tài khoản bán chạy, Mavryk Premium Store",
+        "sản phẩm bán chạy, phần mềm bán chạy, tài khoản bán chạy, Mavryk Technology",
       url: `${APP_CONFIG.url}${typeof window !== "undefined" ? "/best-selling" : "/best-selling"}`,
     }),
     []

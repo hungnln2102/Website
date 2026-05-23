@@ -75,7 +75,7 @@ export function InfoHighlightsSection() {
 
       <div className="relative mx-auto max-w-2xl text-center">
         <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl dark:text-white">
-          Tại sao chọn Mavryk Premium Store?
+          Tại sao chọn Mavryk Technology?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600 sm:text-base dark:text-slate-300">
           Chúng tôi sắp xếp sản phẩm, thông tin và hỗ trợ theo hướng dễ tìm, dễ hiểu và

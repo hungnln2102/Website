@@ -3,9 +3,9 @@
  *
  * Biến môi trường:
  * - SEND_MAIL_API_KEY — API key Resend (đã dùng cho webhook)
- * - MAIL_FROM — ví dụ: Mavryk Premium <no-reply@mavrykpremium.store> (domain đã verify trên Resend)
+ * - MAIL_FROM — ví dụ: Mavryk Technology <no-reply@mavrykpremium.store> (domain đã verify trên Resend)
  * - MAIL_FROM_PASSWORD_RESET — (tùy chọn) from cho mail OTP; mặc định Support <support@mavrykpremium.store>
- * - MAIL_COMPANY_NAME — thay {{company_name}} trong mail OTP (mặc định Mavryk Premium)
+ * - MAIL_COMPANY_NAME — thay {{company_name}} trong mail OTP (mặc định Mavryk Technology)
  * - FRONTEND_URL — link trong nội dung mail (tùy chọn)
  * - MAIL_LOGO_URL — (tùy chọn) URL tuyệt đối ảnh logo mail OTP; mặc định {FRONTEND_URL}/assets/images/logo-transparent.png (khớp brandingAssets trên web)
  */
@@ -14,10 +14,10 @@ import { Resend } from "resend";
 import logger from "../../shared/utils/logger";
 
 const API_KEY = process.env.SEND_MAIL_API_KEY;
-const MAIL_FROM = process.env.MAIL_FROM?.trim() || "Mavryk Premium <onboarding@resend.dev>";
+const MAIL_FROM = process.env.MAIL_FROM?.trim() || "Mavryk Technology <onboarding@resend.dev>";
 const PASSWORD_RESET_FROM =
   process.env.MAIL_FROM_PASSWORD_RESET?.trim() || "Support <support@mavrykpremium.store>";
-const COMPANY_NAME = process.env.MAIL_COMPANY_NAME?.trim() || "Mavryk Premium";
+const COMPANY_NAME = process.env.MAIL_COMPANY_NAME?.trim() || "Mavryk Technology";
 const FRONTEND_URL = (process.env.FRONTEND_URL || "https://mavrykpremium.store").replace(/\/+$/, "");
 
 /** Cùng đường dẫn logo mail: cùng URL như `BRANDING_ASSETS.logoTransparent` (logo-transparent.png) */
@@ -143,7 +143,7 @@ function wrapHtml(title: string, inner: string): string {
 <tr><td align="center">
 <table width="100%" style="max-width:560px;background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155;">
 <tr><td style="padding:24px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);">
-<p style="margin:0;color:#e0e7ff;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Mavryk Premium</p>
+<p style="margin:0;color:#e0e7ff;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Mavryk Technology</p>
 <h1 style="margin:8px 0 0;color:#fff;font-size:20px;font-weight:700;">${escapeHtml(title)}</h1>
 </td></tr>
 <tr><td style="padding:28px;color:#e2e8f0;font-size:15px;line-height:1.6;">${inner}</td></tr>
@@ -186,7 +186,7 @@ ${oldEmail ? `<p>Email trước đó: ${escapeHtml(oldEmail)}</p>` : ""}
 `;
   await sendMail({
     to,
-    subject: "[Mavryk Premium] Email tài khoản đã được cập nhật",
+    subject: "[Mavryk Technology] Email tài khoản đã được cập nhật",
     html: wrapHtml("Cập nhật email", inner),
   });
 }
@@ -233,7 +233,7 @@ export async function sendOrderPaymentSuccessEmail(params: {
 `;
   await sendMail({
     to,
-    subject: `[Mavryk Premium] Đã nhận thanh toán (${orderIds.length} đơn)`,
+    subject: `[Mavryk Technology] Đã nhận thanh toán (${orderIds.length} đơn)`,
     html: wrapHtml("Thanh toán thành công", inner),
   });
 }
@@ -256,7 +256,7 @@ ${infoSnippet ? `<p style="white-space:pre-wrap;background:#0f172a;padding:12px;
 `;
   await sendMail({
     to,
-    subject: `[Mavryk Premium] Đơn ${idOrder} đã sẵn sàng`,
+    subject: `[Mavryk Technology] Đơn ${idOrder} đã sẵn sàng`,
     html: wrapHtml("Đơn hàng đã hoàn tất", inner),
   });
 }
@@ -281,7 +281,7 @@ ${productHint ? `<p>${escapeHtml(productHint)}</p>` : ""}
 `;
   await sendMail({
     to,
-    subject: `[Mavryk Premium] Nhắc: đơn ${idOrder} sắp hết hạn`,
+    subject: `[Mavryk Technology] Nhắc: đơn ${idOrder} sắp hết hạn`,
     html: wrapHtml("Sắp đến hạn", inner),
   });
 }
@@ -303,7 +303,7 @@ ${reason ? `<p>Lý do / ghi chú: ${escapeHtml(reason)}</p>` : ""}
 `;
   await sendMail({
     to,
-    subject: `[Mavryk Premium] Hoàn tiền đơn ${idOrder}`,
+    subject: `[Mavryk Technology] Hoàn tiền đơn ${idOrder}`,
     html: wrapHtml("Hoàn tiền", inner),
   });
 }

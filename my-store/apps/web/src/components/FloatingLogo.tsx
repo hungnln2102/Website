@@ -6,6 +6,7 @@ import { MessageCircle, PhoneCall, Send, X } from 'lucide-react';
 
 import ContactMessageBlock from '@/components/ContactMessageBlock';
 import { BRANDING_ASSETS } from '@/lib/brandingAssets';
+import { APP_CONFIG } from '@/lib/constants';
 
 const actions = [
   {
@@ -101,7 +102,7 @@ export default function FloatingLogo() {
               <img
                 src={BRANDING_ASSETS.logoTransparent}
                 alt="Logo"
-                title="Mavryk Premium Store"
+                title={APP_CONFIG.name}
                 width={160}
                 height={48}
                 className="h-9 max-h-9 w-auto max-w-full object-contain object-center sm:h-11 sm:max-h-11"

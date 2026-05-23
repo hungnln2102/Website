@@ -1,6 +1,7 @@
 "use client";
 
 import { BRANDING_ASSETS } from "@/lib/brandingAssets";
+import { APP_CONFIG } from "@/lib/constants";
 
 interface AuthLogoProps {
   onBack: () => void;
@@ -23,10 +24,11 @@ export function AuthLogo({ onBack }: AuthLogoProps) {
         />
         <div className="hidden sm:block text-left">
           <h1 className="text-lg font-bold tracking-tight text-white">
-            Mavryk Premium <span className="text-blue-200">Store</span>
+            {APP_CONFIG.namePrimary}{" "}
+            <span className="text-blue-200">{APP_CONFIG.nameAccent}</span>
           </h1>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
-            Phần mềm bản quyền chính hãng
+          <p className="text-[10px] font-bold tracking-[0.2em] text-white/60">
+            {APP_CONFIG.tagline}
           </p>
         </div>
       </button>

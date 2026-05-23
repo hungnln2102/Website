@@ -1,7 +1,7 @@
 {
-  "name": "Mavryk Premium Store",
-  "short_name": "Mavryk Store",
-  "description": "Cửa hàng phần mềm bản quyền chính hãng - Phần mềm bản quyền giá tốt nhất",
+  "name": "Mavryk Technology",
+  "short_name": "Mavryk Tech",
+  "description": "Kênh Thông Tin Công Nghệ Số - Cửa hàng phần mềm bản quyền chính hãng",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

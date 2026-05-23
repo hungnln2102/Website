@@ -43,7 +43,7 @@ export const NEWS_ARTICLES: NewsArticle[] = [
     id: "about-store",
     slug: "quy-trinh-xu-ly-don-va-ho-tro-sau-mua",
     category: "Nội bộ",
-    title: "Cách Mavryk Premium Store xử lý đơn và hỗ trợ sau mua",
+    title: "Cách Mavryk Technology xử lý đơn và hỗ trợ sau mua",
     summary:
       "Tóm tắt cách cửa hàng tiếp nhận đơn, gửi key, hỗ trợ kích hoạt và đồng hành với khách hàng trong quá trình sử dụng.",
     publishedAt: "2026-03-24",

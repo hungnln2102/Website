@@ -6,7 +6,7 @@ import { useScroll } from "@/hooks/useScroll";
 import { useAuth } from "@/features/auth/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts, fetchCategories, productsQueryKey } from "@/lib/api";
-import { ROUTES } from "@/lib/constants";
+import { APP_CONFIG, ROUTES } from "@/lib/constants";
 import { Loader2, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { useRenewAdobe } from "./hooks/useRenewAdobe";
 import { RenewStatusDisplay } from "./components/RenewStatusDisplay";
@@ -175,11 +175,11 @@ export default function RenewAdobePage() {
             </div>
 
             <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-600">
-              <span>© 2026 Renew Adobe Tool by Mavryk Premium Store</span>
+              <span>© 2026 Renew Adobe Tool by {APP_CONFIG.name}</span>
               <span className="text-slate-700">·</span>
               <span className="flex items-center gap-1">
                 <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                Bảo mật bởi Mavryk Premium Store
+                Bảo mật bởi {APP_CONFIG.name}
               </span>
             </div>
           </div>

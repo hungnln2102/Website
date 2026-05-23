@@ -77,7 +77,7 @@ export function OrderHistory() {
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lịch sử đơn hàng</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-          Hiển thị thông tin các sản phẩm bạn đã mua tại Mavryk Premium Store
+          Hiển thị thông tin các sản phẩm bạn đã mua tại Mavryk Technology
         </p>
       </div>
 

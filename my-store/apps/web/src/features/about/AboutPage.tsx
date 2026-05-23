@@ -69,10 +69,10 @@ export default function AboutPage() {
       <main className="mx-auto max-w-4xl px-4 py-10 sm:py-12 lg:py-16">
         <header className="mb-8 sm:mb-10">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Giới thiệu về Mavryk Premium Store
+            Giới thiệu về Mavryk Technology
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300 sm:text-base">
-            Mavryk Premium Store là nền tảng chuyên cung cấp key và tài khoản bản quyền cho các phần mềm
+            Mavryk Technology là nền tảng chuyên cung cấp key và tài khoản bản quyền cho các phần mềm
             phục vụ học tập, làm việc và kinh doanh với mức giá hợp lý, giao dịch nhanh chóng và hỗ trợ tận tâm.
           </p>
         </header>
@@ -84,7 +84,7 @@ export default function AboutPage() {
             </h2>
             <p>
               Nhiều người dùng cá nhân và doanh nghiệp nhỏ vẫn đang gặp khó khăn khi tìm mua phần mềm bản
-              quyền với chi phí hợp lý và quy trình mua bán minh bạch. Mavryk Premium Store được tạo ra để
+              quyền với chi phí hợp lý và quy trình mua bán minh bạch. Mavryk Technology được tạo ra để
               giúp bạn tiếp cận các sản phẩm chính hãng một cách đơn giản: chọn gói phù hợp, thanh toán an
               toàn và nhận hướng dẫn kích hoạt chi tiết chỉ trong vài phút.
             </p>
@@ -100,7 +100,7 @@ export default function AboutPage() {
               về loại key, thời hạn sử dụng, cách kích hoạt và chính sách hỗ trợ để bạn dễ dàng chọn lựa.
             </p>
             <p>
-              Bên cạnh đó, Mavryk Premium Store liên tục cập nhật các chương trình khuyến mãi, combo ưu đãi
+              Bên cạnh đó, Mavryk Technology liên tục cập nhật các chương trình khuyến mãi, combo ưu đãi
               và các gói bản quyền dành riêng cho học sinh, sinh viên hoặc doanh nghiệp nhỏ nhằm tối ưu chi
               phí nhưng vẫn đảm bảo tính hợp pháp của phần mềm.
             </p>
