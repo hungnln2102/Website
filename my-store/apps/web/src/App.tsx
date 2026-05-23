@@ -4,8 +4,10 @@ import { MetaTags } from "@/components/SEO";
 import SkipLinks from "@/components/accessibility/SkipLinks";
 import HomePage from "@/features/home/HomePage";
 import { useRouter, type View } from "@/hooks/useRouter";
-import { isMaintenanceMode, onMaintenanceChange } from "@/lib/api/client";
+import { isMaintenanceMode, onMaintenanceChange, syncMaintenanceStatusFromServer } from "@/lib/api/client";
 import { APP_CONFIG, isSystemHubPath, ROUTES } from "@/lib/constants";
+
+const MAINTENANCE_CHECK_INTERVAL_MS = 15_000;
 
 const SYSTEM_HUB_VIEWS = new Set<View>([
   "otp",
@@ -55,8 +57,6 @@ const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentE
 const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
 const NotFoundPage = lazyWithRetry(() => import("@/components/NotFoundPage"));
 const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
-/** Trang bảo trì — lazy vì chỉ tải khi API báo maintenance. */
-const MaintenancePage = lazyWithRetry(() => import("@/components/MaintenancePage"));
 
 const VIEWS_WITH_OWN_SEO = new Set<View>([
   "home",
@@ -77,7 +77,32 @@ const getCurrentUrl = (fallbackPath: string) => {
 
 export default function App() {
   const [maintenance, setMaintenance] = useState(isMaintenanceMode);
+  const [maintenanceCheckDone, setMaintenanceCheckDone] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return (
+      isSystemHubPath(window.location.pathname) ||
+      window.location.pathname === "/maintenance.html"
+    );
+  });
   useEffect(() => onMaintenanceChange(setMaintenance), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const runCheck = async () => {
+      const blocked = await syncMaintenanceStatusFromServer();
+      if (!cancelled && !blocked) {
+        setMaintenanceCheckDone(true);
+      }
+    };
+    void runCheck();
+    const timer = window.setInterval(() => {
+      void syncMaintenanceStatusFromServer();
+    }, MAINTENANCE_CHECK_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const {
     view,
@@ -280,17 +305,14 @@ export default function App() {
     SYSTEM_HUB_VIEWS.has(view) ||
     (typeof window !== "undefined" && isSystemHubPath(window.location.pathname));
 
-  if (maintenance && !allowSiteDuringMaintenance) {
+  if (
+    (!maintenanceCheckDone || maintenance) &&
+    !allowSiteDuringMaintenance
+  ) {
     return (
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-200">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
-          </div>
-        }
-      >
-        <MaintenancePage />
-      </Suspense>
+      <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-200">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
+      </div>
     );
   }
 

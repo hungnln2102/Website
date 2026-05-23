@@ -17,10 +17,22 @@ import { MSG_SESSION_EXPIRED } from "@/lib/messages/apiUserErrors";
 
 export const getApiBase = (): string => {
   if (import.meta.env.DEV) return '';
-  const fromEnv =
-    import.meta.env.VITE_API_URL ?? import.meta.env.VITE_SERVER_URL;
+  const fromEnv = (
+    import.meta.env.VITE_API_URL ?? import.meta.env.VITE_SERVER_URL
+  )?.replace(/\/$/, '');
+  if (fromEnv && !/localhost|127\.0\.0\.1/i.test(fromEnv)) {
+    return fromEnv;
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('mavrykpremium.store')) {
+      return 'https://api.mavrykpremium.store';
+    }
+  }
   return fromEnv || 'http://localhost:4000';
 };
+
+export const MAINTENANCE_PAGE_PATH = '/maintenance.html';
 
 // SECURITY: Enforce HTTPS in production
 const API_BASE = getApiBase();
@@ -43,6 +55,66 @@ function setMaintenanceMode(on: boolean) {
   if (_maintenanceMode === on) return;
   _maintenanceMode = on;
   _maintenanceListeners.forEach((cb) => cb(on));
+}
+
+export function redirectToMaintenancePage(): void {
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname === MAINTENANCE_PAGE_PATH) return;
+  window.location.replace(MAINTENANCE_PAGE_PATH);
+}
+
+/**
+ * Đồng bộ trạng thái bảo trì từ GET /api/maintenance/status.
+ * Trả về true nếu user nên bị chặn (maintenance ON và không whitelist).
+ */
+export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  if (window.location.pathname === MAINTENANCE_PAGE_PATH) {
+    try {
+      const res = await fetch(`${getApiBase()}/api/maintenance/status`, {
+        credentials: "include",
+      });
+      if (!res.ok) return true;
+      const body = (await res.json()) as {
+        maintenance?: boolean;
+        whitelisted?: boolean;
+      };
+      const stillBlocked = Boolean(body.maintenance) && !body.whitelisted;
+      if (!stillBlocked) {
+        setMaintenanceMode(false);
+        window.location.replace("/");
+      }
+      return stillBlocked;
+    } catch {
+      return true;
+    }
+  }
+
+  if (isSystemHubPath(window.location.pathname)) {
+    if (_maintenanceMode) setMaintenanceMode(false);
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${getApiBase()}/api/maintenance/status`, {
+      credentials: "include",
+    });
+    if (!res.ok) return _maintenanceMode;
+
+    const body = (await res.json()) as {
+      maintenance?: boolean;
+      whitelisted?: boolean;
+    };
+    const shouldBlock = Boolean(body.maintenance) && !body.whitelisted;
+    setMaintenanceMode(shouldBlock);
+    if (shouldBlock) {
+      redirectToMaintenancePage();
+    }
+    return shouldBlock;
+  } catch {
+    return _maintenanceMode;
+  }
 }
 
 /** Fetch with timeout to avoid hanging when backend is slow or down. */
@@ -86,13 +158,13 @@ export async function apiFetch(
             isSystemHubPath(window.location.pathname);
           if (!onSystemHub) {
             setMaintenanceMode(true);
+            redirectToMaintenancePage();
           }
         }
       } catch { /* ignore parse errors */ }
-    } else if (_maintenanceMode) {
-      // Backend responded normally → maintenance is off
-      setMaintenanceMode(false);
     }
+    // Không tự tắt maintenance khi API khác trả 200 — /categories, /products bypass guard
+    // và vẫn 200 trong lúc bảo trì. syncMaintenanceStatusFromServer() là nguồn tắt/bật chính xác.
 
     return res;
   } catch (err) {
