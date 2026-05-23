@@ -47,8 +47,6 @@ export const getMaintenanceStatusUrl = (): string => {
   return `${getApiBase()}/api/maintenance/status`;
 };
 
-export const MAINTENANCE_PAGE_PATH = '/maintenance.html';
-
 // SECURITY: Enforce HTTPS in production
 const API_BASE = getApiBase();
 if (import.meta.env.PROD && API_BASE && !API_BASE.startsWith("https://")) {
@@ -72,39 +70,12 @@ function setMaintenanceMode(on: boolean) {
   _maintenanceListeners.forEach((cb) => cb(on));
 }
 
-export function redirectToMaintenancePage(): void {
-  if (typeof window === 'undefined') return;
-  if (window.location.pathname === MAINTENANCE_PAGE_PATH) return;
-  window.location.replace(MAINTENANCE_PAGE_PATH);
-}
-
 /**
  * Đồng bộ trạng thái bảo trì từ GET /api/maintenance/status.
  * Trả về true nếu user nên bị chặn (maintenance ON và không whitelist).
  */
 export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-
-  if (window.location.pathname === MAINTENANCE_PAGE_PATH) {
-    try {
-      const res = await fetch(getMaintenanceStatusUrl(), {
-        credentials: "include",
-      });
-      if (!res.ok) return true;
-      const body = (await res.json()) as {
-        maintenance?: boolean;
-        whitelisted?: boolean;
-      };
-      const stillBlocked = Boolean(body.maintenance) && !body.whitelisted;
-      if (!stillBlocked) {
-        setMaintenanceMode(false);
-        window.location.replace("/");
-      }
-      return stillBlocked;
-    } catch {
-      return true;
-    }
-  }
 
   if (isSystemHubPath(window.location.pathname)) {
     if (_maintenanceMode) setMaintenanceMode(false);
@@ -123,9 +94,6 @@ export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
     };
     const shouldBlock = Boolean(body.maintenance) && !body.whitelisted;
     setMaintenanceMode(shouldBlock);
-    if (shouldBlock) {
-      redirectToMaintenancePage();
-    }
     return shouldBlock;
   } catch {
     return _maintenanceMode;
@@ -173,7 +141,6 @@ export async function apiFetch(
             isSystemHubPath(window.location.pathname);
           if (!onSystemHub) {
             setMaintenanceMode(true);
-            redirectToMaintenancePage();
           }
         }
       } catch { /* ignore parse errors */ }

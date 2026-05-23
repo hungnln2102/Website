@@ -83,37 +83,6 @@
     </style>
 
     <title>Mavryk Technology - Trang Thông Tin Công Nghệ Số</title>
-    <script>
-      (function () {
-        var path = window.location.pathname || "/";
-        if (path === "/maintenance.html") return;
-
-        function isSystemHub(pathname) {
-          var normalized = pathname.replace(/\/+$/, "") || "/";
-          if (normalized === "/system" || pathname.indexOf("/system/") === 0) return true;
-          return ["/check-profile", "/otp", "/renew-adobe", "/netflix"].indexOf(normalized) >= 0;
-        }
-        if (isSystemHub(path)) return;
-
-        function maintenanceStatusUrl() {
-          var host = window.location.hostname;
-          if (host === "localhost" || host === "127.0.0.1") return "/api/maintenance/status";
-          if (host.indexOf("mavrykpremium.store") >= 0) return "/api/maintenance/status";
-          return apiBase() + "/api/maintenance/status";
-        }
-
-        fetch(maintenanceStatusUrl(), { credentials: "include" })
-          .then(function (res) {
-            return res.ok ? res.json() : null;
-          })
-          .then(function (body) {
-            if (body && body.maintenance && !body.whitelisted) {
-              window.location.replace("/maintenance.html");
-            }
-          })
-          .catch(function () {});
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

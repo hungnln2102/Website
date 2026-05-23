@@ -57,6 +57,7 @@ const PaymentErrorPage = lazyWithRetry(() => import("@/features/payment/PaymentE
 const PaymentCancelPage = lazyWithRetry(() => import("@/features/payment/PaymentCancelPage"));
 const NotFoundPage = lazyWithRetry(() => import("@/components/NotFoundPage"));
 const FloatingLogo = lazyWithRetry(() => import("@/components/FloatingLogo"));
+const MaintenancePage = lazyWithRetry(() => import("@/components/MaintenancePage"));
 
 const VIEWS_WITH_OWN_SEO = new Set<View>([
   "home",
@@ -79,18 +80,15 @@ export default function App() {
   const [maintenance, setMaintenance] = useState(isMaintenanceMode);
   const [maintenanceCheckDone, setMaintenanceCheckDone] = useState(() => {
     if (typeof window === "undefined") return true;
-    return (
-      isSystemHubPath(window.location.pathname) ||
-      window.location.pathname === "/maintenance.html"
-    );
+    return isSystemHubPath(window.location.pathname);
   });
   useEffect(() => onMaintenanceChange(setMaintenance), []);
 
   useEffect(() => {
     let cancelled = false;
     const runCheck = async () => {
-      const blocked = await syncMaintenanceStatusFromServer();
-      if (!cancelled && !blocked) {
+      await syncMaintenanceStatusFromServer();
+      if (!cancelled) {
         setMaintenanceCheckDone(true);
       }
     };
@@ -314,14 +312,25 @@ export default function App() {
     SYSTEM_HUB_VIEWS.has(view) ||
     (typeof window !== "undefined" && isSystemHubPath(window.location.pathname));
 
-  if (
-    (!maintenanceCheckDone || maintenance) &&
-    !allowSiteDuringMaintenance
-  ) {
+  if (!maintenanceCheckDone && !allowSiteDuringMaintenance) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-200">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
       </div>
+    );
+  }
+
+  if (maintenance && !allowSiteDuringMaintenance) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-200">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
+          </div>
+        }
+      >
+        <MaintenancePage />
+      </Suspense>
     );
   }
 
