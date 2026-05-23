@@ -63,3 +63,9 @@ export async function addMyIP(req: Request, res: Response) {
   const row = await svc.addWhitelistIP(ip, "Auto: my IP");
   res.status(201).json(row);
 }
+
+/** POST /api/maintenance/cache/invalidate — nội bộ: xóa cache whitelist sau khi admin cập nhật */
+export async function invalidateMaintenanceCache(_req: Request, res: Response) {
+  svc.invalidateCache();
+  res.json({ ok: true });
+}

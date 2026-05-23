@@ -7,6 +7,7 @@ const router = Router();
 
 // Public — ai cũng có thể check trạng thái maintenance
 router.get("/status", asyncHandler(ctrl.getStatus));
+router.post("/cache/invalidate", asyncHandler(ctrl.invalidateMaintenanceCache));
 
 // Admin-only — CRUD whitelist + toggle maintenance
 router.use(authenticate, authorize("admin"));

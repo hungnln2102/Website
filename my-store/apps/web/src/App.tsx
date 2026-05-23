@@ -7,7 +7,7 @@ import { useRouter, type View } from "@/hooks/useRouter";
 import { isMaintenanceMode, onMaintenanceChange, syncMaintenanceStatusFromServer } from "@/lib/api/client";
 import { APP_CONFIG, isSystemHubPath, ROUTES } from "@/lib/constants";
 
-const MAINTENANCE_CHECK_INTERVAL_MS = 15_000;
+const MAINTENANCE_CHECK_INTERVAL_MS = 3_000;
 
 const SYSTEM_HUB_VIEWS = new Set<View>([
   "otp",
@@ -94,13 +94,22 @@ export default function App() {
         setMaintenanceCheckDone(true);
       }
     };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void runCheck();
+      }
+    };
     void runCheck();
     const timer = window.setInterval(() => {
       void syncMaintenanceStatusFromServer();
     }, MAINTENANCE_CHECK_INTERVAL_MS);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", onVisibilityChange);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", onVisibilityChange);
     };
   }, []);
 
