@@ -32,6 +32,21 @@ export const getApiBase = (): string => {
   return fromEnv || 'http://localhost:4000';
 };
 
+/** Same-origin trên production web — tránh CORS khi kiểm tra bảo trì. */
+export const getMaintenanceStatusUrl = (): string => {
+  if (typeof window === "undefined") {
+    return `${getApiBase()}/api/maintenance/status`;
+  }
+  if (import.meta.env.DEV) {
+    return "/api/maintenance/status";
+  }
+  const host = window.location.hostname;
+  if (host.includes("mavrykpremium.store")) {
+    return "/api/maintenance/status";
+  }
+  return `${getApiBase()}/api/maintenance/status`;
+};
+
 export const MAINTENANCE_PAGE_PATH = '/maintenance.html';
 
 // SECURITY: Enforce HTTPS in production
@@ -72,7 +87,7 @@ export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
 
   if (window.location.pathname === MAINTENANCE_PAGE_PATH) {
     try {
-      const res = await fetch(`${getApiBase()}/api/maintenance/status`, {
+      const res = await fetch(getMaintenanceStatusUrl(), {
         credentials: "include",
       });
       if (!res.ok) return true;
@@ -97,7 +112,7 @@ export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
   }
 
   try {
-    const res = await fetch(`${getApiBase()}/api/maintenance/status`, {
+    const res = await fetch(getMaintenanceStatusUrl(), {
       credentials: "include",
     });
     if (!res.ok) return _maintenanceMode;

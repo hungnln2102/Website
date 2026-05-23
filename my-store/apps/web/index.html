@@ -95,14 +95,14 @@
         }
         if (isSystemHub(path)) return;
 
-        function apiBase() {
+        function maintenanceStatusUrl() {
           var host = window.location.hostname;
-          if (host === "localhost" || host === "127.0.0.1") return "";
-          if (host.indexOf("mavrykpremium.store") >= 0) return "https://api.mavrykpremium.store";
-          return "";
+          if (host === "localhost" || host === "127.0.0.1") return "/api/maintenance/status";
+          if (host.indexOf("mavrykpremium.store") >= 0) return "/api/maintenance/status";
+          return apiBase() + "/api/maintenance/status";
         }
 
-        fetch(apiBase() + "/api/maintenance/status", { credentials: "include" })
+        fetch(maintenanceStatusUrl(), { credentials: "include" })
           .then(function (res) {
             return res.ok ? res.json() : null;
           })

@@ -90,8 +90,14 @@
         if (h.indexOf("mavrykpremium.store") >= 0) return "https://api.mavrykpremium.store";
         return "";
       }
+      function maintenanceStatusUrl() {
+        var h = window.location.hostname;
+        if (h === "localhost" || h === "127.0.0.1") return "/api/maintenance/status";
+        if (h.indexOf("mavrykpremium.store") >= 0) return "/api/maintenance/status";
+        return apiBase() + "/api/maintenance/status";
+      }
       function checkEnded() {
-        fetch(apiBase() + "/api/maintenance/status", { credentials: "include" })
+        fetch(maintenanceStatusUrl(), { credentials: "include" })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (body) {
             if (!body || !body.maintenance || body.whitelisted) {
