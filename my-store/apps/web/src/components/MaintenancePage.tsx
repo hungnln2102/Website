@@ -19,11 +19,6 @@ export default function MaintenancePage() {
           <br />
           Vui lòng quay lại sau ít phút.
           <br />
-          Nếu bạn cần hỗ trợ, vui lòng liên hệ với chúng tôi qua 
-          <br />
-          <a href="http://t.me/hung_culi">Telegram: @hung_culi</a>
-          <br />
-          <a href="https://www.facebook.com/mavrykpremium">Fanpage: Mavryk - Tài Khoản Premium </a>
         </p>
         <button
           onClick={() => window.location.reload()}
