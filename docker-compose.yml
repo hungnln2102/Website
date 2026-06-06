@@ -17,7 +17,7 @@ services:
     environment:
       NODE_ENV: production
       # KHÔNG ghi ADMIN_ORDERLIST_API_URL ở đây — dùng my-store/apps/server/.env để đặt đúng domain production
-      # (vd. https://admin.mavrykpremium.store). Nếu ghi ở đây sẽ lại ghi đè env_file.
+      # (vd. https://admin.mavrykpremium.com). Nếu ghi ở đây sẽ lại ghi đè env_file.
     ports:
       - "127.0.0.1:4000:4000"
     restart: unless-stopped
@@ -31,8 +31,8 @@ services:
       context: ${BUILD_CONTEXT:-https://github.com/hungnln2102/Website.git#main:my-store}
       dockerfile: ${WEB_DOCKERFILE:-apps/web/Dockerfile}
       args:
-        VITE_SERVER_URL: ${VITE_SERVER_URL:-https://api.mavrykpremium.store}
-        VITE_API_URL: ${VITE_API_URL:-https://api.mavrykpremium.store}
+        VITE_SERVER_URL: ${VITE_SERVER_URL:-https://api.mavrykpremium.com}
+        VITE_API_URL: ${VITE_API_URL:-https://api.mavrykpremium.com}
     container_name: website-web
     ports:
       - "127.0.0.1:4001:80"

@@ -66,11 +66,11 @@ export default function Footer() {
               ))}
             </div>
             <a
-              href="mailto:support@mavrykpremium.store"
+              href="mailto:support@mavrykpremium.com"
               className="flex items-center gap-1.5 text-xs text-slate-300 transition-colors hover:text-blue-400"
             >
               <Mail className="h-3.5 w-3.5 shrink-0" />
-              support@mavrykpremium.store
+              support@mavrykpremium.com
             </a>
             <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto text-xs text-slate-300 [&>*]:whitespace-nowrap">
               <a
@@ -113,7 +113,7 @@ export default function Footer() {
             </p>
           </div>
           <a
-            href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73&refurl=https://mavrykpremium.store/&rlo=true"
+            href="//www.dmca.com/Protection/Status.aspx?ID=c788f409-9a7f-422c-9359-bf1582035d73&refurl=https://mavrykpremium.com/&rlo=true"
             title="DMCA.com Protection Status"
             className="transition-opacity hover:opacity-90"
             target="_blank"

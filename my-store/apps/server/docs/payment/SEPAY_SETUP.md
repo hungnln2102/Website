@@ -137,9 +137,9 @@ SEPAY_MERCHANT_ID=SP-TEST-MS275B87          # Your Merchant ID
 SEPAY_SECRET_KEY=spsk_test_xxxxxxxxxxxxx    # Your Secret Key
 
 # Callback URLs
-SEPAY_SUCCESS_URL=https://mavrykpremium.store/payment/success
-SEPAY_ERROR_URL=https://mavrykpremium.store/payment/error
-SEPAY_CANCEL_URL=https://mavrykpremium.store/payment/cancel
+SEPAY_SUCCESS_URL=https://mavrykpremium.com/payment/success
+SEPAY_ERROR_URL=https://mavrykpremium.com/payment/error
+SEPAY_CANCEL_URL=https://mavrykpremium.com/payment/cancel
 ```
 
 ### Bước 4: Cài đặt SDK
@@ -175,7 +175,7 @@ curl http://localhost:4000/api/payment/health
 | Environment | URL |
 |-------------|-----|
 | Development | `http://localhost:4000/api/payment` |
-| Production | `https://api.mavrykpremium.store/api/payment` |
+| Production | `https://api.mavrykpremium.com/api/payment` |
 
 ### Endpoints
 
@@ -305,7 +305,7 @@ IPN (Instant Payment Notification) là endpoint trên server nhận thông báo 
 ### Cấu hình IPN
 
 1. Vào SePay Dashboard → **Payment Gateway** → **Cài đặt**
-2. Nhập IPN URL: `https://api.mavrykpremium.store/api/payment/webhook`
+2. Nhập IPN URL: `https://api.mavrykpremium.com/api/payment/webhook`
 3. Lưu cấu hình
 
 ![IPN Config](https://developer.sepay.vn/_next/image?url=%2Fimages%2Fquick_start%2Fstep_1_4.png&w=1080&q=75)
@@ -529,9 +529,9 @@ SEPAY_ENV=production
 SEPAY_MERCHANT_ID=<production-merchant-id>
 SEPAY_SECRET_KEY=<production-secret-key>
 
-SEPAY_SUCCESS_URL=https://mavrykpremium.store/payment/success
-SEPAY_ERROR_URL=https://mavrykpremium.store/payment/error
-SEPAY_CANCEL_URL=https://mavrykpremium.store/payment/cancel
+SEPAY_SUCCESS_URL=https://mavrykpremium.com/payment/success
+SEPAY_ERROR_URL=https://mavrykpremium.com/payment/error
+SEPAY_CANCEL_URL=https://mavrykpremium.com/payment/cancel
 ```
 
 ### Endpoints Production

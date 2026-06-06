@@ -154,7 +154,7 @@ MONITOR_BASE_URL=http://127.0.0.1:4000 npm run monitor:infra-routes
 
 ### Ghi chú staging
 
-- Thử chạy với `SMOKE_BASE_URL=https://api.mavrykpremium.store` đang trả `503 SERVICE_UNAVAILABLE` (maintenance), nên chưa thể hoàn tất vòng đo staging ở thời điểm này.
+- Thử chạy với `SMOKE_BASE_URL=https://api.mavrykpremium.com` đang trả `503 SERVICE_UNAVAILABLE` (maintenance), nên chưa thể hoàn tất vòng đo staging ở thời điểm này.
 - Khi staging mở lại: re-run đúng 4 lệnh ở trên với base URL staging và cập nhật lại bảng KPI + delta.
 
 ## 6. Frontend KPI (Lighthouse) trước/sau tối ưu (2026-04-12)

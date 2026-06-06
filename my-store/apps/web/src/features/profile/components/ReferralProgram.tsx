@@ -1,6 +1,6 @@
 export function ReferralProgram({ user }: { user: any }) {
   const referralCode = user?.referralCode || "MAVRYK123";
-  const referralLink = `https://mavrykpremium.store/ref/${referralCode}`;
+  const referralLink = `https://mavrykpremium.com/ref/${referralCode}`;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -9,7 +9,7 @@ export function ReferralProgram({ user }: { user: any }) {
   return (
     <div className="p-6">
       <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Giới thiệu bạn bè</h2>
-      
+
       <div className="max-w-lg">
         <p className="text-gray-600 dark:text-slate-300 mb-6">
           Giới thiệu bạn bè đăng ký và mua hàng để nhận hoa hồng. Bạn sẽ được nhận 5% giá trị đơn hàng của người được giới thiệu.

@@ -25,8 +25,8 @@ export const getApiBase = (): string => {
   }
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    if (host.includes('mavrykpremium.store')) {
-      return 'https://api.mavrykpremium.store';
+    if (host.includes('mavrykpremium.com')) {
+      return 'https://api.mavrykpremium.com';
     }
   }
   return fromEnv || 'http://localhost:4000';
@@ -41,7 +41,7 @@ export const getMaintenanceStatusUrl = (): string => {
     return "/api/maintenance/status";
   }
   const host = window.location.hostname;
-  if (host.includes("mavrykpremium.store")) {
+  if (host.includes("mavrykpremium.com")) {
     return "/api/maintenance/status";
   }
   return `${getApiBase()}/api/maintenance/status`;

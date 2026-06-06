@@ -21,15 +21,15 @@ class Cache {
    * Get value from cache
    */
   get<T>(key: string): T | null {
-    const entry = this.store.get(key);
-    
+    const entry = this.com.get(key);
+
     if (!entry) {
       return null;
     }
 
     // Check if expired
     if (Date.now() > entry.expiresAt) {
-      this.store.delete(key);
+      this.com.delete(key);
       return null;
     }
 
@@ -48,7 +48,7 @@ class Cache {
   ): void {
     const ttl = applyJitter ? ttlJitterSeconds(ttlSeconds) : ttlSeconds;
     const expiresAt = Date.now() + ttl * 1000;
-    this.store.set(key, { data, expiresAt });
+    this.com.set(key, { data, expiresAt });
   }
 
   /**
@@ -89,7 +89,7 @@ class Cache {
    * Delete value from cache
    */
   delete(key: string): void {
-    this.store.delete(key);
+    this.com.delete(key);
     this.inflight.delete(key);
   }
 
@@ -97,7 +97,7 @@ class Cache {
    * Clear all cache
    */
   clear(): void {
-    this.store.clear();
+    this.com.clear();
     this.inflight.clear();
   }
 
@@ -106,9 +106,9 @@ class Cache {
    */
   cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.store.entries()) {
+    for (const [key, entry] of this.com.entries()) {
       if (now > entry.expiresAt) {
-        this.store.delete(key);
+        this.com.delete(key);
       }
     }
   }
@@ -138,7 +138,7 @@ export function cached<T>(
 
     descriptor.value = async function (...args: any[]) {
       const cacheKey = `${keyPrefix}:${JSON.stringify(args)}`;
-      
+
       // Try to get from cache
       const cached = cache.get<T>(cacheKey);
       if (cached !== null) {
@@ -149,10 +149,10 @@ export function cached<T>(
       // Execute original method
       console.log(`Cache miss: ${cacheKey}`);
       const result = await originalMethod.apply(this, args);
-      
+
       // Store in cache
       cache.set(cacheKey, result, ttlSeconds);
-      
+
       return result;
     };
 

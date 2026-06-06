@@ -3,8 +3,8 @@
  *
  * Biến môi trường:
  * - SEND_MAIL_API_KEY — API key Resend (đã dùng cho webhook)
- * - MAIL_FROM — ví dụ: Mavryk Technology <no-reply@mavrykpremium.store> (domain đã verify trên Resend)
- * - MAIL_FROM_PASSWORD_RESET — (tùy chọn) from cho mail OTP; mặc định Support <support@mavrykpremium.store>
+ * - MAIL_FROM — ví dụ: Mavryk Technology <no-reply@mavrykpremium.com> (domain đã verify trên Resend)
+ * - MAIL_FROM_PASSWORD_RESET — (tùy chọn) from cho mail OTP; mặc định Support <support@mavrykpremium.com>
  * - MAIL_COMPANY_NAME — thay {{company_name}} trong mail OTP (mặc định Mavryk Technology)
  * - FRONTEND_URL — link trong nội dung mail (tùy chọn)
  * - MAIL_LOGO_URL — (tùy chọn) URL tuyệt đối ảnh logo mail OTP; mặc định {FRONTEND_URL}/assets/images/logo-transparent.png (khớp brandingAssets trên web)
@@ -16,9 +16,9 @@ import logger from "../../shared/utils/logger";
 const API_KEY = process.env.SEND_MAIL_API_KEY;
 const MAIL_FROM = process.env.MAIL_FROM?.trim() || "Mavryk Technology <onboarding@resend.dev>";
 const PASSWORD_RESET_FROM =
-  process.env.MAIL_FROM_PASSWORD_RESET?.trim() || "Support <support@mavrykpremium.store>";
+  process.env.MAIL_FROM_PASSWORD_RESET?.trim() || "Support <support@mavrykpremium.com>";
 const COMPANY_NAME = process.env.MAIL_COMPANY_NAME?.trim() || "Mavryk Technology";
-const FRONTEND_URL = (process.env.FRONTEND_URL || "https://mavrykpremium.store").replace(/\/+$/, "");
+const FRONTEND_URL = (process.env.FRONTEND_URL || "https://mavrykpremium.com").replace(/\/+$/, "");
 
 /** Cùng đường dẫn logo mail: cùng URL như `BRANDING_ASSETS.logoTransparent` (logo-transparent.png) */
 const PASSWORD_RESET_EMAIL_LOGO_URL =

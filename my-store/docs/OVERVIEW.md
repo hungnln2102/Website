@@ -152,7 +152,7 @@ npm run db:migrate:all -w @my-store/db
 
 ### 4.3 CORS
 
-- `CORS_ORIGIN`: Cho phép origin (vd. https://mavrykpremium.store)
+- `CORS_ORIGIN`: Cho phép origin (vd. https://mavrykpremium.com)
 - Code tự thêm www / non-www variants
 
 ---

@@ -97,9 +97,8 @@ export default function AdobeGuidePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <div
-        className={`sticky top-0 z-40 transition-all duration-500 ${
-          isScrolled ? "shadow-xl shadow-blue-900/20 backdrop-blur-xl" : ""
-        }`}
+        className={`sticky top-0 z-40 transition-all duration-500 ${isScrolled ? "shadow-xl shadow-blue-900/20 backdrop-blur-xl" : ""
+          }`}
       >
         <SiteHeader
           isScrolled={isScrolled}
@@ -173,12 +172,12 @@ export default function AdobeGuidePage() {
             <p className="mb-3 text-sm text-slate-300">
               Truy cập{" "}
               <a
-                href="https://mavrykpremium.store/system"
+                href="https://mavrykpremium.com/system"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-purple-400 underline underline-offset-2 hover:text-purple-300"
               >
-                mavrykpremium.store/system
+                mavrykpremium.com/system
               </a>
               , nhập email Adobe được cấp vào ô Email Address rồi bấm{" "}
               <span className="font-semibold text-slate-100">Get Profile Active</span>.

@@ -149,10 +149,10 @@ app.use(
 // CORS configuration - SECURITY: Fail fast if CORS_ORIGIN missing in production
 const corsOriginList = env.CORS_ORIGIN || [];
 if (process.env.NODE_ENV === 'production' && corsOriginList.length === 0) {
-  throw new Error('CORS_ORIGIN must be set in production (e.g. https://mavrykpremium.store,https://www.mavrykpremium.store)');
+  throw new Error('CORS_ORIGIN must be set in production (e.g. https://mavrykpremium.com,https://www.mavrykpremium.com)');
 }
 
-/** Thêm cả www và non-www cho mỗi origin (vd. https://mavrykpremium.store ↔ https://www.mavrykpremium.store) */
+/** Thêm cả www và non-www cho mỗi origin (vd. https://mavrykpremium.com ↔ https://www.mavrykpremium.com) */
 function withWwwVariants(origins: string[]): string[] {
   const set = new Set<string>(origins);
   for (const url of origins) {
@@ -180,10 +180,10 @@ if (process.env.NODE_ENV !== "production") {
   console.log("[Server] CORS allowed origins:", baseCorsOrigins);
 }
 
-// Fallback CORS: luôn cho phép www + non-www mavrykpremium.store (tránh lỗi khi env/build chưa đồng bộ)
+// Fallback CORS: luôn cho phép www + non-www mavrykpremium.com (tránh lỗi khi env/build chưa đồng bộ)
 const ALLOWED_ORIGINS_FALLBACK = [
-  "https://mavrykpremium.store",
-  "https://www.mavrykpremium.store",
+  "https://mavrykpremium.com",
+  "https://www.mavrykpremium.com",
 ];
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -206,7 +206,7 @@ app.use(
 
 // Mail webhook – mount trước express.json() để nhận raw body (verify chữ ký Svix)
 app.use("/api/mail", mailRouter);
-// Alias đúng URL Resend đang gọi: https://api.mavrykpremium.store/webhook/mail
+// Alias đúng URL Resend đang gọi: https://api.mavrykpremium.com/webhook/mail
 app.post(
   "/webhook/mail",
   webhookLimiter,

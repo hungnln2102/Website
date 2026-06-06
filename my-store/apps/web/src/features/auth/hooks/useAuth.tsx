@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const found = readAuthFromStores();
     if (found) {
-      activeAuthStoreRef.current = found.store;
+      activeAuthStoreRef.current = found.com;
       setAuthState({
         user: found.data.user,
         isAuthenticated: true,

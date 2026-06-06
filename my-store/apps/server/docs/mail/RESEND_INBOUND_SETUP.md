@@ -1,4 +1,4 @@
-# Cấu hình nhận mail (Inbound) – support@mavrykpremium.store
+# Cấu hình nhận mail (Inbound) – support@mavrykpremium.com
 
 Theo [Resend Docs – Receiving Emails](https://resend.com/docs/dashboard/inbound/introduction) và [Custom Receiving Domains](https://resend.com/docs/dashboard/receiving/custom-domains).
 
@@ -6,10 +6,10 @@ Theo [Resend Docs – Receiving Emails](https://resend.com/docs/dashboard/inboun
 
 ## Vì sao bị "554 Relay access denied"?
 
-Khi Gmail (hoặc máy chủ khác) gửi tới **support@mavrykpremium.store**, nó tra cứu **MX record** của domain. Nếu:
+Khi Gmail (hoặc máy chủ khác) gửi tới **support@mavrykpremium.com**, nó tra cứu **MX record** của domain. Nếu:
 
 - Chưa có MX trỏ tới Resend, hoặc  
-- MX đang trỏ sang hòm thư khác (Google, hosting…) và máy đó **không** chấp nhận relay cho `mavrykpremium.store`  
+- MX đang trỏ sang hòm thư khác (Google, hosting…) và máy đó **không** chấp nhận relay cho `mavrykpremium.com`  
 
 → sẽ trả **554 5.7.1 Relay access denied**.
 
@@ -22,24 +22,24 @@ Khi Gmail (hoặc máy chủ khác) gửi tới **support@mavrykpremium.store**,
 ### Bước 1: Domain trong Resend
 
 1. Vào **[Domains](https://resend.com/domains)**.
-2. Nếu chưa có **mavrykpremium.store**: **Add Domain** → nhập `mavrykpremium.store` (hoặc subdomain, xem bước 2).
+2. Nếu chưa có **mavrykpremium.com**: **Add Domain** → nhập `mavrykpremium.com` (hoặc subdomain, xem bước 2).
 3. Verify domain (SPF + DKIM) theo hướng dẫn trên dashboard. Chỉ khi domain **Verified** mới bật được Receiving.
 
 ### Bước 2: Dùng root domain hay subdomain?
 
-- **Đang dùng Gmail/Google Workspace (hoặc MX khác) cho `@mavrykpremium.store`?**  
-  → Nên dùng **subdomain** cho Resend Inbound để tránh đụng MX, ví dụ: **mail.mavrykpremium.store**.  
-  Khi đó bạn nhận mail tại **support@mail.mavrykpremium.store** (hoặc địa chỉ Resend gợi ý trên subdomain đó).  
-  Nếu muốn **support@mavrykpremium.store** (root domain) nhận qua Resend thì phải **đổi MX root** sang Resend (sẽ không còn nhận qua Gmail ở root).
+- **Đang dùng Gmail/Google Workspace (hoặc MX khác) cho `@mavrykpremium.com`?**  
+  → Nên dùng **subdomain** cho Resend Inbound để tránh đụng MX, ví dụ: **mail.mavrykpremium.com**.  
+  Khi đó bạn nhận mail tại **support@mail.mavrykpremium.com** (hoặc địa chỉ Resend gợi ý trên subdomain đó).  
+  Nếu muốn **support@mavrykpremium.com** (root domain) nhận qua Resend thì phải **đổi MX root** sang Resend (sẽ không còn nhận qua Gmail ở root).
 
-- **Chưa dùng MX nào cho mavrykpremium.store**  
-  → Có thể thêm domain root **mavrykpremium.store** trong Resend và thêm MX nhận mail cho root → nhận được **support@mavrykpremium.store**.
+- **Chưa dùng MX nào cho mavrykpremium.com**  
+  → Có thể thêm domain root **mavrykpremium.com** trong Resend và thêm MX nhận mail cho root → nhận được **support@mavrykpremium.com**.
 
 Tóm lại: quyết định dùng **root** hay **subdomain** trước, rồi add đúng tên đó trong Resend.
 
 ### Bước 3: Bật Receiving và lấy MX record
 
-1. Vào **[Domains](https://resend.com/domains)** → chọn domain (ví dụ `mavrykpremium.store` hoặc `mail.mavrykpremium.store`).
+1. Vào **[Domains](https://resend.com/domains)** → chọn domain (ví dụ `mavrykpremium.com` hoặc `mail.mavrykpremium.com`).
 2. Trong phần **Receiving** (Inbound): bật **Enable receiving** (toggle).
 3. Resend hiển thị **MX record** cần thêm (host + giá trị + priority). Ví dụ dạng:
    - **Type:** MX  
@@ -62,7 +62,7 @@ Tài liệu tham khảo: [How do I avoid conflicts with my MX records?](https://
 
 1. Vào **[Webhooks](https://resend.com/webhooks)**.
 2. **Add** → Event: **email.received**.
-3. **Endpoint URL:** `https://api.mavrykpremium.store/webhook/mail` (đúng URL server đang lắng).
+3. **Endpoint URL:** `https://api.mavrykpremium.com/webhook/mail` (đúng URL server đang lắng).
 4. Lưu **Signing secret** (whsec_...) → ghi vào `.env` là **SIGNING_SECRET**.
 
 Server đã có route `POST /webhook/mail` và verify chữ ký Svix; chỉ cần URL và secret khớp.
@@ -73,7 +73,7 @@ Trong `.env` của server:
 
 ```env
 SEND_MAIL_API_KEY=re_xxxx
-MAIL_WEBHOOK_URL=https://api.mavrykpremium.store/webhook/mail
+MAIL_WEBHOOK_URL=https://api.mavrykpremium.com/webhook/mail
 SIGNING_SECRET=whsec_xxxx
 ```
 
@@ -81,8 +81,8 @@ SIGNING_SECRET=whsec_xxxx
 
 ## Kiểm tra nhanh
 
-1. **MX:** `dig MX mavrykpremium.store` (hoặc subdomain) → thấy host Resend, priority đúng.
-2. **Gửi thử:** Gửi một mail từ Gmail (hoặc hộp khác) tới **support@mavrykpremium.store** (hoặc support@mail.mavrykpremium.store nếu dùng subdomain).
+1. **MX:** `dig MX mavrykpremium.com` (hoặc subdomain) → thấy host Resend, priority đúng.
+2. **Gửi thử:** Gửi một mail từ Gmail (hoặc hộp khác) tới **support@mavrykpremium.com** (hoặc support@mail.mavrykpremium.com nếu dùng subdomain).
 3. **Resend:** Vào [Emails → Receiving](https://resend.com/emails/receiving) xem có bản ghi nhận.
 4. **Webhook:** Xem [Webhooks](https://resend.com/webhooks) có event `email.received` và response 200.
 

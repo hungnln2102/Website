@@ -12,7 +12,7 @@ function getBaseUrl(): string {
   if (fromEnv && fromEnv.startsWith("http")) return fromEnv.replace(/\/$/, "");
   const firstOrigin = env.CORS_ORIGIN?.[0];
   if (firstOrigin) return firstOrigin.replace(/\/$/, "");
-  return "https://mavrykpremium.store";
+  return "https://mavrykpremium.com";
 }
 
 export async function getSitemap(_req: Request, res: Response): Promise<void> {

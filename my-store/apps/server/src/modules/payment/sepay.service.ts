@@ -13,7 +13,7 @@ const SEPAY_SECRET_KEY = process.env.SEPAY_SECRET_KEY || '';
 const FRONTEND_BASE_URL =
   (process.env.FRONTEND_URL ||
     (process.env.NODE_ENV === "production"
-      ? "https://mavrykpremium.store"
+      ? "https://mavrykpremium.com"
       : "http://localhost:4001")).replace(/\/+$/, "");
 const SEPAY_SUCCESS_URL = process.env.SEPAY_SUCCESS_URL || `${FRONTEND_BASE_URL}/payment/success`;
 const SEPAY_ERROR_URL = process.env.SEPAY_ERROR_URL || `${FRONTEND_BASE_URL}/payment/error`;
@@ -335,7 +335,7 @@ export class SepayService {
    */
   verifyReturnUrl(params: any): boolean {
     const { signature, ...data } = params;
-    
+
     if (!signature) {
       logSecurityEvent('MISSING_RETURN_URL_SIGNATURE', {
         orderId:

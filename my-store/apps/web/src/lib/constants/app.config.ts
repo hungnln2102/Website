@@ -8,7 +8,7 @@ export const APP_CONFIG = {
   nameAccent: "Technology",
   tagline: "Trang Thông Tin Công Nghệ Số",
   description: "Trang Thông Tin Công Nghệ Số",
-  url: typeof window !== "undefined" ? window.location.origin : "https://www.mavrykpremium.store",
+  url: typeof window !== "undefined" ? window.location.origin : "https://www.mavrykpremium.com",
   locale: "vi-VN",
   productsPerPage: 12,
   carouselAutoPlayInterval: 8000,

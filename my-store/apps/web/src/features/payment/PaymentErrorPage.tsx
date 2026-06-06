@@ -161,10 +161,10 @@ export default function PaymentErrorPage({
           <p className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             Cần hỗ trợ? Liên hệ{" "}
             <a
-              href="mailto:support@mavrykpremium.store"
+              href="mailto:support@mavrykpremium.com"
               className="text-red-600 dark:text-red-400 hover:underline"
             >
-              support@mavrykpremium.store
+              support@mavrykpremium.com
             </a>
           </p>
         </div>

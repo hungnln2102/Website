@@ -104,7 +104,7 @@ Tài liệu mô tả **trạng thái thực tế** của monorepo `Website/my-st
 ### 5.2 Rủi ro và việc cần làm
 
 - **`/.well-known/security.txt`:** hiện placeholder (`security@example.com`) — **nên** thay contact và policy thật trước khi mở rộng quy mô người dùng.
-- **Fallback CORS cứng** cho `mavrykpremium.store` / `www` — tiện nhưng cần đảm bảo không mâu thuẫn với chính sách origin chính thức và không che giấu lỗi cấu hình env.
+- **Fallback CORS cứng** cho `mavrykpremium.com` / `www` — tiện nhưng cần đảm bảo không mâu thuẫn với chính sách origin chính thức và không che giấu lỗi cấu hình env.
 - **Debug router** chỉ khi `NODE_ENV !== "production"` — cần xác nhận build/deploy luôn đặt `NODE_ENV=production`.
 - **Bí mật:** đảm bảo `.env` không commit; rotate key định kỳ (JWT, SePay, Telegram, API notify đơn).
 - **Kiểm thử:** đăng nhập, reset mật khẩu, giỏ hàng, thanh toán, IDOR trên `/api/user` — nên có checklist hoặc pentest nhẹ trước go-live lớn.

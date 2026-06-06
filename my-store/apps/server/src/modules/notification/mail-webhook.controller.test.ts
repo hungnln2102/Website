@@ -1,11 +1,11 @@
 /**
- * Unit tests – mail webhook controller (nhận mail về support@mavrykpremium.store)
+ * Unit tests – mail webhook controller (nhận mail về support@mavrykpremium.com)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mailWebhook } from "./mail-webhook.controller";
 
-const SUPPORT_EMAIL = "support@mavrykpremium.store";
+const SUPPORT_EMAIL = "support@mavrykpremium.com";
 
 function createMockRequest(body: Buffer, headers: Record<string, string> = {}) {
   return {
@@ -32,7 +32,7 @@ describe("mail.webhook.controller", () => {
     process.env.SIGNING_SECRET = originalSecret;
   });
 
-  describe("mailWebhook – email.received về support@mavrykpremium.store", () => {
+  describe("mailWebhook – email.received về support@mavrykpremium.com", () => {
     it("trả 200 và trả lại event khi type = email.received gửi tới support", async () => {
       const payload = {
         type: "email.received",

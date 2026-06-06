@@ -132,10 +132,10 @@ export default function PaymentSuccessPage({
           <p className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             Nếu có thắc mắc, vui lòng liên hệ{" "}
             <a
-              href="mailto:support@mavrykpremium.store"
+              href="mailto:support@mavrykpremium.com"
               className="text-green-600 dark:text-green-400 hover:underline"
             >
-              support@mavrykpremium.store
+              support@mavrykpremium.com
             </a>
           </p>
         </div>

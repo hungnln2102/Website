@@ -11,7 +11,7 @@ Tai lieu nay tap trung xu ly 2 loi Critical ban vua gap:
 
 - URL khong ton tai phai tra dung `404` (khong tra `200`).
 - `/index.html` va `/index.php` phai `301` ve URL chuan `/`.
-- Co 1 URL canonical duy nhat cho trang chu (`https://mavrykpremium.store/`).
+- Co 1 URL canonical duy nhat cho trang chu (`https://mavrykpremium.com/`).
 - Khong de duplicate content do index pages.
 
 ---
@@ -49,11 +49,11 @@ Vi du Nginx:
 
 ```nginx
 location = /index.html {
-  return 301 https://mavrykpremium.store/;
+  return 301 https://mavrykpremium.com/;
 }
 
 location = /index.php {
-  return 301 https://mavrykpremium.store/;
+  return 301 https://mavrykpremium.com/;
 }
 ```
 
@@ -82,7 +82,7 @@ Trang 404 nen co:
 ## 4) Canonical + robots lien quan
 
 - Home page:
-  - `<link rel="canonical" href="https://mavrykpremium.store/" />`
+  - `<link rel="canonical" href="https://mavrykpremium.com/" />`
 - Trang 404:
   - `<meta name="robots" content="noindex, follow" />`
 - Khong de canonical tro den `/index.html`.
@@ -94,10 +94,10 @@ Trang 404 nen co:
 Chay tren production:
 
 ```bash
-curl -I https://mavrykpremium.store/index.html
-curl -I https://mavrykpremium.store/index.php
-curl -I https://mavrykpremium.store/duong-dan-khong-ton-tai-123
-curl -I https://mavrykpremium.store/
+curl -I https://mavrykpremium.com/index.html
+curl -I https://mavrykpremium.com/index.php
+curl -I https://mavrykpremium.com/duong-dan-khong-ton-tai-123
+curl -I https://mavrykpremium.com/
 ```
 
 Ket qua mong doi:

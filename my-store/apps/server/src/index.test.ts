@@ -163,8 +163,8 @@ describe('API Integration Tests', () => {
     });
   });
 
-  describe('Mail Webhook – nhận mail về support@mavrykpremium.store', () => {
-    const SUPPORT_EMAIL = 'support@mavrykpremium.store';
+  describe('Mail Webhook – nhận mail về support@mavrykpremium.com', () => {
+    const SUPPORT_EMAIL = 'support@mavrykpremium.com';
     const WEBHOOK_URL = `${API_URL}/api/mail/webhook`;
 
     it('nên chấp nhận event email.received gửi tới support', async () => {
