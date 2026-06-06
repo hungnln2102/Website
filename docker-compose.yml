@@ -7,23 +7,23 @@ services:
       dockerfile: ${SERVER_DOCKERFILE:-apps/server/Dockerfile}
     container_name: website-api
     env_file:
-      - ./my-store/apps/server/.env
-    # admin_orderlist publish :3001 ra HOST — trong container KHÔNG dùng 127.0.0.1:3001
-    # Linux VPS: IP mặc định là gateway bridge (thường 172.17.0.1). Nếu sai: DOCKER_HOST_GATEWAY trong .env cạnh file compose
+      - ./my-store/apps/server/.env.docker
+    # admin_orderlist publish :3001 ra HOST â€” trong container KHÃ”NG dÃ¹ng 127.0.0.1:3001
+    # Linux VPS: IP máº·c Ä‘á»‹nh lÃ  gateway bridge (thÆ°á»ng 172.17.0.1). Náº¿u sai: DOCKER_HOST_GATEWAY trong .env cáº¡nh file compose
     #   docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}'
-    # Chỉ cần khi dùng ADMIN_ORDERLIST_API_URL kiểu http://host.docker.internal:3001 (IP bridge)
+    # Chá»‰ cáº§n khi dÃ¹ng ADMIN_ORDERLIST_API_URL kiá»ƒu http://host.docker.internal:3001 (IP bridge)
     extra_hosts:
       - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.17.0.1}"
     environment:
       NODE_ENV: production
-      # KHÔNG ghi ADMIN_ORDERLIST_API_URL ở đây — dùng my-store/apps/server/.env để đặt đúng domain production
-      # (vd. https://admin.mavrykpremium.com). Nếu ghi ở đây sẽ lại ghi đè env_file.
+      # KHÃ”NG ghi ADMIN_ORDERLIST_API_URL á»Ÿ Ä‘Ã¢y â€” dÃ¹ng my-store/apps/server/.env Ä‘á»ƒ Ä‘áº·t Ä‘Ãºng domain production
+      # (vd. https://admin.mavrykpremium.com). Náº¿u ghi á»Ÿ Ä‘Ã¢y sáº½ láº¡i ghi Ä‘Ã¨ env_file.
     ports:
       - "127.0.0.1:4000:4000"
     restart: unless-stopped
     networks:
       - default
-      # Cùng mạng với admin_orderlist-postgres → DATABASE_URL @postgres:5432 như backend admin
+      # CÃ¹ng máº¡ng vá»›i admin_orderlist-postgres â†’ DATABASE_URL @postgres:5432 nhÆ° backend admin
       - admin_orderlist_db
 
   web:
@@ -43,6 +43,6 @@ services:
 networks:
   admin_orderlist_db:
     external: true
-    # Tên mạng compose admin_orderlist (thư mục ~/apps/admin_orderlist): docker network ls | grep app-network
+    # TÃªn máº¡ng compose admin_orderlist (thÆ° má»¥c ~/apps/admin_orderlist): docker network ls | grep app-network
     name: admin_orderlist_app-network
 

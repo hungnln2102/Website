@@ -1,5 +1,5 @@
 /**
- * In-memory cache + singleflight (tránh stampede) + TTL jitter tùy chọn.
+ * In-memory cache + singleflight (trÃ¡nh stampede) + TTL jitter tÃ¹y chá»n.
  */
 
 interface CacheEntry<T> {
@@ -21,7 +21,7 @@ class Cache {
    * Get value from cache
    */
   get<T>(key: string): T | null {
-    const entry = this.com.get(key);
+    const entry = this.store.get(key);
 
     if (!entry) {
       return null;
@@ -29,7 +29,7 @@ class Cache {
 
     // Check if expired
     if (Date.now() > entry.expiresAt) {
-      this.com.delete(key);
+      this.store.delete(key);
       return null;
     }
 
@@ -38,7 +38,7 @@ class Cache {
 
   /**
    * Set value in cache with TTL in seconds.
-   * `applyJitter` — cộng ngẫu nhiên 0…`CACHE_TTL_JITTER_SEC` (tránh expire đồng loạt).
+   * `applyJitter` â€” cá»™ng ngáº«u nhiÃªn 0â€¦`CACHE_TTL_JITTER_SEC` (trÃ¡nh expire Ä‘á»“ng loáº¡t).
    */
   set<T>(
     key: string,
@@ -48,12 +48,12 @@ class Cache {
   ): void {
     const ttl = applyJitter ? ttlJitterSeconds(ttlSeconds) : ttlSeconds;
     const expiresAt = Date.now() + ttl * 1000;
-    this.com.set(key, { data, expiresAt });
+    this.store.set(key, { data, expiresAt });
   }
 
   /**
-   * Lấy hoặc tính một lần cho cùng key (singleflight — nhiều request đồng thời chỉ gọi factory một lần).
-   * `cacheHit === false` chỉ trên request “leader” chạy factory; request chờ chung promise có `cacheHit === true`.
+   * Láº¥y hoáº·c tÃ­nh má»™t láº§n cho cÃ¹ng key (singleflight â€” nhiá»u request Ä‘á»“ng thá»i chá»‰ gá»i factory má»™t láº§n).
+   * `cacheHit === false` chá»‰ trÃªn request â€œleaderâ€ cháº¡y factory; request chá» chung promise cÃ³ `cacheHit === true`.
    */
   async getOrSet<T>(
     key: string,
@@ -89,7 +89,7 @@ class Cache {
    * Delete value from cache
    */
   delete(key: string): void {
-    this.com.delete(key);
+    this.store.delete(key);
     this.inflight.delete(key);
   }
 
@@ -97,7 +97,7 @@ class Cache {
    * Clear all cache
    */
   clear(): void {
-    this.com.clear();
+    this.store.clear();
     this.inflight.clear();
   }
 
@@ -106,9 +106,9 @@ class Cache {
    */
   cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.com.entries()) {
+    for (const [key, entry] of this.store.entries()) {
       if (now > entry.expiresAt) {
-        this.com.delete(key);
+        this.store.delete(key);
       }
     }
   }
