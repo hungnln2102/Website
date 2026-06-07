@@ -8,22 +8,21 @@ services:
     container_name: website-api
     env_file:
       - ./my-store/apps/server/.env.docker
-    # admin_orderlist publish :3001 ra HOST â€” trong container KHÃ”NG dÃ¹ng 127.0.0.1:3001
-    # Linux VPS: IP máº·c Ä‘á»‹nh lÃ  gateway bridge (thÆ°á»ng 172.17.0.1). Náº¿u sai: DOCKER_HOST_GATEWAY trong .env cáº¡nh file compose
-    #   docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}'
-    # Chá»‰ cáº§n khi dÃ¹ng ADMIN_ORDERLIST_API_URL kiá»ƒu http://host.docker.internal:3001 (IP bridge)
     extra_hosts:
       - "host.docker.internal:${DOCKER_HOST_GATEWAY:-172.17.0.1}"
     environment:
       NODE_ENV: production
-      # KHÃ”NG ghi ADMIN_ORDERLIST_API_URL á»Ÿ Ä‘Ã¢y â€” dÃ¹ng my-store/apps/server/.env Ä‘á»ƒ Ä‘áº·t Ä‘Ãºng domain production
-      # (vd. https://admin.mavrykpremium.com). Náº¿u ghi á»Ÿ Ä‘Ã¢y sáº½ láº¡i ghi Ä‘Ã¨ env_file.
     ports:
       - "127.0.0.1:4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
     networks:
       - default
-      # CÃ¹ng máº¡ng vá»›i admin_orderlist-postgres â†’ DATABASE_URL @postgres:5432 nhÆ° backend admin
       - admin_orderlist_db
 
   web:
@@ -36,6 +35,12 @@ services:
     container_name: website-web
     ports:
       - "127.0.0.1:4001:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     depends_on:
       - api
     restart: unless-stopped
@@ -43,6 +48,4 @@ services:
 networks:
   admin_orderlist_db:
     external: true
-    # TÃªn máº¡ng compose admin_orderlist (thÆ° má»¥c ~/apps/admin_orderlist): docker network ls | grep app-network
     name: admin_orderlist_app-network
-
