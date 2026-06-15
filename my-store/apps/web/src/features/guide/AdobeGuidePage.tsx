@@ -11,18 +11,15 @@ import { ChevronLeft, AlertTriangle, Info, CheckCircle2, Youtube } from "lucide-
 const CC_ICON =
   "https://4216176300-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FoBm1hkWlFGKdeqecZYLv%2Fuploads%2FlyucHFe8F44zjAS0bIeK%2FAdobe_Creative_Cloud_rainbow_icon.svg.png?alt=media&token=2727aae3-5729-4104-a3ac-a4782fee3fbb";
 
-const IMG_LOGIN_SCREEN =
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjtPPPmo84OJHRdtygu2wy20a_7GnCuEYRie2mMpUgZ2VUUG2_zo3_Aoz5bsqODzy67zPTVRrRQ2hvSnbtNnQgkkIEQIRKQFvGuz7_yzEh-R4m2iUWyqguN4ofiWHODLI7dhD4XXIQNoTQnSYmnctw7JHBZNdvaS2eo4Wg4-zBmp-4pztr1BYeHx_Ra2J15/s16000/qqqq.jpg";
+const IMG_LOGIN_SCREEN = "/assets/images/guides/adobe-step-2-check-profile.png";
 
 const IMG_SIGN_OUT =
   "https://4216176300-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FoBm1hkWlFGKdeqecZYLv%2Fuploads%2FOIPXi2gjjiymfg82wy7h%2Fimage.png?alt=media&token=d149163f-aad8-4c22-9dd9-8eeafebdb356";
 
 const IMG_SIGN_IN = "/assets/images/guides/adobe-login-step.png";
 
-const IMG_PASSWORD =
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIeMFsyjH-IMABtjyx1rhPjDkZBKEhuq6uItWI_SaA1BA5JKJgPEd3gxc4GftxFvF9AVSCeh9eDypD2ijGj2TxwrDme6U697nOqINHuiWqRCtQZgI7tycraA5sJDgj1fTCi9YGhGPNOvLrS19SASCk31o3hHsQGxyUMusJaMFJMVRtjl7Das7AuEifubG7/s16000/screenshot_1767925641.png";
 
-const IMG_PROFILE = "/assets/images/guides/adobe-profile-check.png";
+const IMG_PROFILE = "/assets/images/guides/adobe-step-3-select-profile.png";
 
 const IMG_PHONE =
   "https://4216176300-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FoBm1hkWlFGKdeqecZYLv%2Fuploads%2FmJo45UvJB0k4dxiEbDGb%2Fimage.png?alt=media&token=ec8a8f8a-0ecf-46a6-b53c-da2c8f0c30df";
@@ -231,7 +228,6 @@ export default function AdobeGuidePage() {
               </p>
               <GuideImage src={IMG_SIGN_IN} alt="Login Adobe và chọn jointeam" />
               <p className="text-sm text-slate-300">Nhập mật khẩu tài khoản.</p>
-              <GuideImage src={IMG_PASSWORD} alt="Nhập mật khẩu" />
 
               <NoteBadge type="warning">
                 <strong>Nếu có lời mời jointeam</strong> thì chọn jointeam. Nếu không có thì bỏ qua bước này.
@@ -247,7 +243,7 @@ export default function AdobeGuidePage() {
             </div>
             <p className="mb-3 text-sm text-slate-300">
               Khi hiện danh sách profile, chọn{" "}
-              <span className="font-semibold text-slate-100">Company or School</span> theo kết quả lấy
+              <span className="font-semibold text-slate-100">Profile Active</span> theo kết quả lấy
               được từ Bước 1.
             </p>
             <GuideImage src={IMG_PROFILE} alt="Chọn profile" />
