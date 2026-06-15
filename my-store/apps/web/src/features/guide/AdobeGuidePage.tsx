@@ -17,14 +17,12 @@ const IMG_LOGIN_SCREEN =
 const IMG_SIGN_OUT =
   "https://4216176300-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FoBm1hkWlFGKdeqecZYLv%2Fuploads%2FOIPXi2gjjiymfg82wy7h%2Fimage.png?alt=media&token=d149163f-aad8-4c22-9dd9-8eeafebdb356";
 
-const IMG_SIGN_IN =
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbVFNATdzeoeOqLt9AnFeUMFWNYLtUEMIouS7wpsYbV1gBz0PStEaEhhN9Vh2Tnxa2jdyL5DE0XaW1BPxybtc85PpVL-ZoeJmAVq_CkB8SEp4LnpJkaN-H3t2CE2bSSFtcx-kzTeVwDtAtTdTFHKFSNp_hljcvCDaWHwDUCq7S4YOjJbKGGrNIMKcEf3gt/s16000/a2.png";
+const IMG_SIGN_IN = "/assets/images/guides/adobe-login-step.png";
 
 const IMG_PASSWORD =
   "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIeMFsyjH-IMABtjyx1rhPjDkZBKEhuq6uItWI_SaA1BA5JKJgPEd3gxc4GftxFvF9AVSCeh9eDypD2ijGj2TxwrDme6U697nOqINHuiWqRCtQZgI7tycraA5sJDgj1fTCi9YGhGPNOvLrS19SASCk31o3hHsQGxyUMusJaMFJMVRtjl7Das7AuEifubG7/s16000/screenshot_1767925641.png";
 
-const IMG_PROFILE =
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6gkIbd6tCTBY2XHMbFxBrTnp8kJG63T0AkwGDkVh3k0311WeJ2zcelG_eo3NsVvdGPN1zUBv3K3AmI4C_qVJ6fvlAE4gZh-bsVgyaud4Lb4Mrd_r7WMrGmCZu5ArlU2j80BC2imMTf-BthVruvsjPqKyrjJk7R5CRgigqeAaTcrj5Bx_8Rn7o-VkCjVMZ/s16000/screenshot_1768016295.png";
+const IMG_PROFILE = "/assets/images/guides/adobe-profile-check.png";
 
 const IMG_PHONE =
   "https://4216176300-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FoBm1hkWlFGKdeqecZYLv%2Fuploads%2FmJo45UvJB0k4dxiEbDGb%2Fimage.png?alt=media&token=ec8a8f8a-0ecf-46a6-b53c-da2c8f0c30df";
@@ -229,15 +227,14 @@ export default function AdobeGuidePage() {
                 <h3 className="text-sm font-bold text-slate-200">Đăng nhập tài khoản mới</h3>
               </div>
               <p className="text-sm text-slate-300">
-                Điền email Adobe được cấp vào ô đăng nhập.
+                Login xong nếu có lời mời jointeam thì chọn jointeam, nếu không có thì bỏ qua bước này.
               </p>
-              <GuideImage src={IMG_SIGN_IN} alt="Đăng nhập Creative Cloud" />
+              <GuideImage src={IMG_SIGN_IN} alt="Login Adobe và chọn jointeam" />
               <p className="text-sm text-slate-300">Nhập mật khẩu tài khoản.</p>
               <GuideImage src={IMG_PASSWORD} alt="Nhập mật khẩu" />
 
               <NoteBadge type="warning">
-                <strong>Nếu hỏi mã đăng nhập</strong> → inbox cho người bán để lấy mã (một số máy sẽ
-                yêu cầu, một số thì không).
+                <strong>Nếu có lời mời jointeam</strong> thì chọn jointeam. Nếu không có thì bỏ qua bước này.
               </NoteBadge>
             </div>
           </section>
