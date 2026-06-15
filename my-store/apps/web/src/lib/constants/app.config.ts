@@ -70,6 +70,7 @@ export function isSystemHubPath(pathname: string): boolean {
     noTrail === "/otp" ||
     noTrail === "/system/adobe" ||
     noTrail === "/system/adobe-edu" ||
+    noTrail === ROUTES.adobeGuide ||
     noTrail === "/renew-adobe" ||
     noTrail === "/netflix"
   ) {

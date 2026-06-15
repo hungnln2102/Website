@@ -15,6 +15,7 @@ const MAINTENANCE_BYPASS_PREFIXES = [
   "/api/fix-adobe",
   "/api/netflix",
   "/api/renew-adobe/public",
+  "/huong-dan-adobe",
   /** Route check trạng thái maintenance (đặt trước guard, vẫn keep ở đây để chống regression). */
   "/api/maintenance/status",
   "/categories",
