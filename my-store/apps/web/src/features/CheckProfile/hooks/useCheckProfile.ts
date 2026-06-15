@@ -165,20 +165,17 @@ export function useCheckProfile() {
     setOtpResultType(null);
     setOtpSent(false);
     try {
-      // OTP profile chỉ áp dụng cho fix_adobe_edu — chặn các hệ thống khác.
       const decision = await resolveDispatcher(trimmed);
       if (decision.kind === "blocked") {
         setOtpResultType("error");
         setOtpMessage(decision.message);
         return;
       }
-      if (decision.system !== "fix_adobe_edu") {
+      
+      // Cho phép cả fix_adobe_edu và fix_ades lấy OTP.
+      if (decision.system === "renew_adobe") {
         setOtpResultType("info");
-        setOtpMessage(
-          decision.system === "renew_adobe"
-            ? "Hệ thống Renew Adobe không dùng OTP profile. Bấm Kiểm tra hoặc Kích hoạt ở khung bên trái."
-            : FIX_ADES_NO_OTP_MSG,
-        );
+        setOtpMessage("Hệ thống Renew Adobe không dùng OTP profile. Bấm Kiểm tra hoặc Kích hoạt ở khung bên trái.");
         return;
       }
 

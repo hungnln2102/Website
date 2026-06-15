@@ -244,7 +244,7 @@ export async function activateProfileApi(
 }
 
 export async function sendOtpApi(email: string): Promise<OtpApiResult> {
-  const res = await fetch(`${getApiBase()}/api/fix-adobe/send-otp`, {
+  const res = await fetch(`${getApiBase()}/api/renew-adobe/public/get-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -264,30 +264,23 @@ export async function sendOtpApi(email: string): Promise<OtpApiResult> {
     };
   }
 
+  const data = (parsed?.data as Record<string, unknown> | null) || null;
+  const otpData = (data?.otp as Record<string, unknown> | null) || null;
+
   return {
     type: "info",
     message:
       (parsed?.message as string) ||
-      `Đã lấy OTP cho ${email} từ hệ thống OTP.`,
-    otp:
-      parsed?.otp && typeof parsed.otp === "object"
-        ? {
-            code: String((parsed.otp as Record<string, unknown>).code ?? ""),
-            service: String(
-              (parsed.otp as Record<string, unknown>).service ?? "unknown",
-            ),
-            timeStr:
-              ((parsed.otp as Record<string, unknown>).time_str as
-                | string
-                | undefined) ?? null,
-            timestampMs: Number.parseInt(
-              String(
-                (parsed.otp as Record<string, unknown>).timestamp_ms ?? "",
-              ),
-              10,
-            ) || null,
-          }
-        : undefined,
+      `Đã lấy OTP cho ${email} thành công.`,
+    otp: otpData
+      ? {
+          code: String(otpData.code ?? ""),
+          service: String(otpData.service ?? "unknown"),
+          timeStr: (otpData.time_str as string | undefined) ?? null,
+          timestampMs:
+            Number.parseInt(String(otpData.timestamp_ms ?? ""), 10) || null,
+        }
+      : undefined,
   };
 }
 
