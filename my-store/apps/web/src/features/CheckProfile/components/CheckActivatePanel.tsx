@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   XCircle,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import type { CheckResultType } from "../checkprofile.types";
@@ -109,6 +110,15 @@ export function CheckActivatePanel({
                       {profileName}
                     </p>
                   )}
+                  <a
+                    href={ROUTES.adobeGuide}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-4 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/15"
+                  >
+                    Hướng dẫn fix lỗi Adobe
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                 </div>
               )}
 
