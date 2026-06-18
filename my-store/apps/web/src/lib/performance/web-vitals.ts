@@ -16,13 +16,13 @@ interface Metric {
 
 type ReportCallback = (metric: Metric) => void;
 
-/** Enable web-vitals observers in dev, or in prod when URL has ?perf=1. */
+/** Enable web-vitals observers only when URL has ?perf=1. */
 function isDetailedPerfEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return import.meta.env.DEV || new URLSearchParams(window.location.search).has('perf');
+    return new URLSearchParams(window.location.search).has('perf');
   } catch {
-    return import.meta.env.DEV;
+    return false;
   }
 }
 

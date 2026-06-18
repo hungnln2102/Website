@@ -3,6 +3,7 @@ import type {
   CheckProfileApiResult,
   ActivateProfileApiResult,
   OtpApiResult,
+  type FixAdesTransferInfo,
 } from "./checkprofile.types";
 
 /** Đồng bộ với backend `adobeSystemConstants.js`. */
@@ -66,6 +67,120 @@ function tryParseJson(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function getFixAdesTransferResponse(
+  parsed: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const outerData = asRecord(parsed?.data);
+  const transferData = asRecord(outerData?.data);
+  return asRecord(transferData?.transferTeamResponse);
+}
+
+
+const FIX_ADES_DIRECT_ORIGIN = "https://api-2026-02.ades.support";
+const FIX_ADES_DIRECT_BASE_URL = `${FIX_ADES_DIRECT_ORIGIN}/ades-support`;
+const FIX_ADES_DIRECT_HEADERS = {
+  Accept: "application/json, text/plain, */*",
+  "Content-Type": "application/json",
+};
+
+async function fetchFixAdesDirectToken(): Promise<{
+  token: string;
+  fallbackPayload: Record<string, unknown> | null;
+}> {
+  const tokenRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/auth/token`, {
+    method: "POST",
+    headers: FIX_ADES_DIRECT_HEADERS,
+    body: "{}",
+  });
+  const tokenText = await tokenRes.text().catch(() => "");
+  const tokenJson = tryParseJson(tokenText);
+  const tokenData = asRecord(tokenJson?.data);
+  const token = String(tokenData?.token ?? tokenJson?.token ?? "").trim();
+  if (!tokenRes.ok) return { token: "", fallbackPayload: null };
+  return { token, fallbackPayload: token ? null : tokenJson };
+}
+
+function buildFixAdesDirectAuthHeaders(token: string) {
+  return {
+    ...FIX_ADES_DIRECT_HEADERS,
+    Authorization: `Bearer ${token}`,
+    "x-access-token": token,
+  };
+}
+
+async function fetchFixAdesTransferStatusDirect(
+  email: string,
+): Promise<Record<string, unknown> | null> {
+  const { token, fallbackPayload } = await fetchFixAdesDirectToken();
+  if (!token) return fallbackPayload;
+
+  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/check-transfer-status`, {
+    method: "POST",
+    headers: buildFixAdesDirectAuthHeaders(token),
+    body: JSON.stringify({ email }),
+  });
+  const statusText = await statusRes.text().catch(() => "");
+  const statusJson = tryParseJson(statusText);
+  if (!statusRes.ok || !statusJson) return null;
+
+  return {
+    ok: true,
+    status: statusRes.status,
+    data: statusJson,
+  };
+}
+
+function createFixAdesTransferInfo(
+  status: string,
+  currentTeam: string | null,
+  targetTeam: string | null,
+  fallbackStatusText: string,
+  options: { action?: FixAdesTransferInfo["action"]; showTeams?: boolean } = {},
+): FixAdesTransferInfo {
+  const normalizedStatus = status.trim().toLowerCase();
+  const hasTeamMismatch = Boolean(
+    currentTeam &&
+      targetTeam &&
+      currentTeam.trim().toLowerCase() !== targetTeam.trim().toLowerCase(),
+  );
+  const needsTransfer =
+    hasTeamMismatch ||
+    normalizedStatus === "sync-required" ||
+    normalizedStatus === "inactive" ||
+    normalizedStatus === "expired" ||
+    normalizedStatus === "not active" ||
+    normalizedStatus === "not_active" ||
+    normalizedStatus === "het han";
+  const isActive =
+    !needsTransfer &&
+    (normalizedStatus === "active" ||
+      normalizedStatus === "processing" ||
+      normalizedStatus === "dang xu ly" ||
+      normalizedStatus === "dang hoat dong");
+  const isSyncAction = options.action === "sync" || options.showTeams === false;
+
+  return {
+    statusText: isSyncAction
+      ? fallbackStatusText || "Chưa đồng bộ dữ liệu"
+      : isActive
+        ? "T\u00e0i kho\u1ea3n \u0111ang ho\u1ea1t \u0111\u1ed9ng"
+        : needsTransfer
+          ? "C\u1ea7n chuy\u1ec3n Profile"
+          : fallbackStatusText || "\u0110\u00e3 ki\u1ec3m tra tr\u1ea1ng th\u00e1i",
+    statusTone: isActive ? "success" : needsTransfer || isSyncAction ? "warning" : "error",
+    currentTeam,
+    targetTeam,
+    action: options.action ?? (needsTransfer ? "renew" : "none"),
+    showTeams: options.showTeams ?? true,
+  };
 }
 
 function getReadableServerText(text: string): string {
@@ -284,6 +399,54 @@ export async function sendOtpApi(email: string): Promise<OtpApiResult> {
   };
 }
 
+export async function sendFixAdesOtpApi(email: string): Promise<OtpApiResult> {
+  const res = await fetch(
+    `${FIX_ADES_DIRECT_ORIGIN}/mail/read-otp-gpm?email=${encodeURIComponent(email)}`,
+    {
+      method: "GET",
+      headers: FIX_ADES_DIRECT_HEADERS,
+    },
+  );
+  const text = await res.text().catch(() => "");
+  const parsed = tryParseJson(text);
+  const data = asRecord(parsed?.data);
+  const otpData = asRecord(data?.otp) ?? data;
+  const rawCode = String(
+    otpData?.code ??
+      otpData?.otp ??
+      otpData?.otpCode ??
+      otpData?.pin ??
+      otpData?.password ??
+      "",
+  ).trim();
+  const code = rawCode || text.match(/\b\d{6}\b/)?.[0] || "";
+  const success = parsed?.success === true && data?.success !== false && Boolean(code);
+
+  if (!res.ok || !success) {
+    const serverText = getReadableServerText(text);
+    return {
+      type: "error",
+      message:
+        String(data?.message ?? data?.error ?? parsed?.message ?? parsed?.error ?? "").trim() ||
+        serverText ||
+        "Không lấy được OTP Ades. Vui lòng thử lại sau.",
+    };
+  }
+
+  return {
+    type: "info",
+    message: `Đã lấy OTP Ades cho ${email} thành công.`,
+    otp: {
+      code,
+      service: String(otpData?.service ?? "ades"),
+      timeStr: String(otpData?.timeStr ?? otpData?.time_str ?? "").trim() || null,
+      timestampMs:
+        Number.parseInt(String(otpData?.timestampMs ?? otpData?.timestamp_ms ?? ""), 10) ||
+        null,
+    },
+  };
+}
+
 /**
  * Lấy status Renew Adobe của email — đã có sẵn ở admin_orderlist
  * (`/api/renew-adobe/public/status`) và proxy qua Website server.
@@ -295,7 +458,7 @@ export async function getRenewAdobeStatusApi(
     const url = `${getApiBase()}/api/renew-adobe/public/status?email=${encodeURIComponent(email)}`;
     const res = await fetch(url, { method: "GET" });
     const text = await res.clone().text().catch(() => "");
-    const parsed = tryParseJson(text);
+    let parsed = tryParseJson(text);
 
     if (!res.ok) {
       return {
@@ -341,78 +504,241 @@ export async function checkFixAdesPublicApi(
   email: string,
 ): Promise<CheckProfileApiResult> {
   try {
-    const res = await fetch(
-      `${getApiBase()}/api/renew-adobe/public/fix-ades/check`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      },
-    );
-    const text = await res.clone().text().catch(() => "");
-    const parsed = tryParseJson(text);
+    let parsed = await fetchFixAdesTransferStatusDirect(email);
 
-    if (!res.ok) {
+    if (!parsed) {
+      const res = await fetch(
+        `${getApiBase()}/api/renew-adobe/public/fix-ades/check-transfer-status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      );
+      const text = await res.clone().text().catch(() => "");
+      parsed = tryParseJson(text);
+
+      if (!res.ok) {
+        const errorMessage =
+          (parsed?.error as string) ||
+          (parsed?.message as string) ||
+          "Không kiểm tra được tài khoản Fix Ades.";
+        return {
+          type: "error",
+          message: errorMessage,
+          profileName: null,
+          transferInfo: null,
+        };
+      }
+    }
+
+    if (!parsed) {
       return {
         type: "error",
-        message:
-          (parsed?.error as string) ||
-          "Không kiểm tra được tài khoản Fix Ades.",
+        message: "Không kiểm tra được tài khoản Fix Ades.",
         profileName: null,
+        transferInfo: null,
       };
     }
 
-    // /account/check trả FLAT user object (status, email, productName, teamName, …)
-    // — không phải { success: true, user: {...} } như renew.
-    const data = (parsed?.data as Record<string, unknown> | null) || null;
-    const status = String(data?.status ?? "").toLowerCase();
-    const teamName = String(data?.teamName || "").trim();
+    const data = asRecord(parsed?.data);
+    const transferData = asRecord(data?.data);
+    const transfer = getFixAdesTransferResponse(parsed);
+    const legacyCheckText = [
+      data?.productName,
+      data?.groupName,
+      asRecord(data?.product)?.name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const isLegacyCheckPayload = !transfer && !transferData && Boolean(data?.teamName);
+    const isLegacySyncRequired =
+      isLegacyCheckPayload &&
+      (legacyCheckText.includes("renewable account") ||
+        legacyCheckText.includes("available account") ||
+        legacyCheckText.includes("renew, available"));
+    const isLegacyTransferRequired =
+      isLegacyCheckPayload && legacyCheckText.includes("direct email upgrade");
+    const isSyncRequired =
+      (Boolean(transferData?.existedInSystem) && !transfer) || isLegacySyncRequired;
+    const status = String(
+      isSyncRequired ? "sync-required" : transfer?.status ?? data?.status ?? "",
+    ).toLowerCase();
+    const teamName = String(transfer?.teamName ?? data?.teamName ?? "").trim();
+    const targetTeamName = String(transfer?.switchTargetTeamName ?? "").trim();
+    const targetTeam = isSyncRequired
+      ? null
+      : targetTeamName || (isLegacyTransferRequired ? "Personal Profile" : null);
+    const hasTeamMismatch = Boolean(
+      teamName && targetTeam && teamName.toLowerCase() !== targetTeam.toLowerCase(),
+    );
     const rawMessage = String(
-      data?.message ?? data?.error ?? parsed?.error ?? parsed?.message ?? "",
+      isSyncRequired
+        ? "Chưa đồng bộ dữ liệu"
+        : data?.message ?? data?.error ?? parsed?.error ?? parsed?.message ?? "",
     ).trim();
 
-    // "active" / "processing" / "Đang Xử Lý" → đang hoạt động.
-    const isActive =
-      status === "active" ||
-      status === "processing" ||
-      status === "đang xử lý" ||
-      status === "đang hoạt động";
-    const isExpired =
-      status === "expired" ||
+    const needsTransfer =
+      hasTeamMismatch ||
+      status === "sync-required" ||
       status === "inactive" ||
-      status === "hết hạn" ||
+      status === "expired" ||
       status === "not active" ||
-      status === "not_active";
+      status === "not_active" ||
+      status === "het han";
+    const isActive =
+      !needsTransfer &&
+      (status === "active" ||
+        status === "processing" ||
+        status === "dang xu ly" ||
+        status === "dang hoat dong");
     const isError =
       status === "error" ||
       status === "failed" ||
       status === "fail" ||
       status === "not_found";
 
+    const message =
+      rawMessage ||
+      (isActive
+        ? "T\u00e0i kho\u1ea3n Fix Ades \u0111ang ho\u1ea1t \u0111\u1ed9ng."
+        : isSyncRequired
+          ? "Hãy đồng bộ lại với hệ thống."
+          : needsTransfer
+            ? `C\u1ea7n chuy\u1ec3n Profile${targetTeam ? ` sang ${targetTeam}` : ""}.`
+          : isError
+            ? "T\u00e0i kho\u1ea3n Fix Ades \u0111ang l\u1ed7i, vui l\u00f2ng ki\u1ec3m tra l\u1ea1i."
+            : "\u0110\u00e3 ki\u1ec3m tra tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n Fix Ades.");
+
     return {
       type: isActive
         ? "check-success"
-        : isExpired
+        : needsTransfer
           ? "expired"
           : isError
             ? "error"
             : "info",
-      message:
-        rawMessage ||
-        teamName ||
-        (isActive
-          ? "Tài khoản Fix Ades đang hoạt động."
-          : isExpired
-            ? "Tài khoản Fix Ades chưa active hoặc đã hết gói."
-            : isError
-              ? "Tài khoản Fix Ades đang lỗi, vui lòng kiểm tra lại."
-              : "Đã kiểm tra trạng thái tài khoản Fix Ades."),
+      message,
       profileName: teamName || null,
+      transferInfo: isActive
+        ? null
+        : createFixAdesTransferInfo(
+            status,
+            teamName || null,
+            targetTeam,
+            isSyncRequired ? "Chưa đồng bộ dữ liệu" : message,
+            isSyncRequired ? { action: "sync", showTeams: false } : undefined,
+          ),
     };
   } catch {
     return {
       type: "error",
       message: "Không kết nối được dịch vụ Fix Ades. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
+}
+
+
+export async function switchFixAdesOrganizationApi(
+  email: string,
+): Promise<ActivateProfileApiResult> {
+  try {
+    const { token } = await fetchFixAdesDirectToken();
+    if (!token) {
+      return {
+        type: "error",
+        message: "Không lấy được phiên xác thực chuyển profile.",
+        profileName: null,
+      };
+    }
+
+    const res = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/switch-organization`, {
+      method: "POST",
+      headers: buildFixAdesDirectAuthHeaders(token),
+      body: JSON.stringify({ email }),
+    });
+    const text = await res.text().catch(() => "");
+    const parsed = tryParseJson(text);
+    const data = asRecord(parsed?.data);
+    const success = data?.success === true || parsed?.success === true;
+    const profileName = String(data?.newOrganizationName ?? "").trim() || null;
+
+    if (!res.ok || !success) {
+      return {
+        type: "error",
+        message:
+          String(data?.message ?? parsed?.message ?? parsed?.error ?? "").trim() ||
+          "Không chuyển profile được.",
+        profileName,
+      };
+    }
+
+    return {
+      type: "activate-success",
+      message:
+        String(data?.message ?? parsed?.message ?? "").trim() ||
+        "Chuyển profile thành công. Hãy đăng xuất Adobe và đăng nhập lại.",
+      profileName,
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ chuyển profile. Vui lòng thử lại sau.",
+      profileName: null,
+    };
+  }
+}
+
+
+export async function syncFixAdesAccountApi(
+  email: string,
+): Promise<ActivateProfileApiResult> {
+  try {
+    const { token } = await fetchFixAdesDirectToken();
+    if (!token) {
+      return {
+        type: "error",
+        message: "Không lấy được phiên xác thực đồng bộ dữ liệu.",
+        profileName: null,
+      };
+    }
+
+    const res = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/sync-ado-account`, {
+      method: "POST",
+      headers: buildFixAdesDirectAuthHeaders(token),
+      body: JSON.stringify({ email }),
+    });
+    const text = await res.text().catch(() => "");
+    const parsed = tryParseJson(text);
+    const data = asRecord(parsed?.data);
+    const success = data?.success === true || parsed?.success === true;
+    const profileName =
+      String(data?.teamName ?? data?.newOrganizationName ?? data?.profileName ?? "").trim() ||
+      null;
+
+    if (!res.ok || !success) {
+      return {
+        type: "error",
+        message:
+          String(data?.message ?? parsed?.message ?? parsed?.error ?? "").trim() ||
+          "Không đồng bộ dữ liệu được.",
+        profileName,
+      };
+    }
+
+    return {
+      type: "activate-success",
+      message:
+        String(data?.message ?? parsed?.message ?? "").trim() ||
+        "Đồng bộ dữ liệu thành công. Hãy kiểm tra lại tài khoản.",
+      profileName,
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ đồng bộ dữ liệu. Vui lòng thử lại sau.",
       profileName: null,
     };
   }
@@ -431,7 +757,7 @@ export async function renewFixAdesPublicApi(
       },
     );
     const text = await res.clone().text().catch(() => "");
-    const parsed = tryParseJson(text);
+    let parsed = tryParseJson(text);
 
     if (!res.ok) {
       return {
@@ -488,7 +814,7 @@ export async function activateRenewAdobeApi(
       },
     );
     const text = await res.clone().text().catch(() => "");
-    const parsed = tryParseJson(text);
+    let parsed = tryParseJson(text);
 
     if (!res.ok) {
       return {

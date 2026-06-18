@@ -52,9 +52,6 @@ function ActivatingSpinner({
           </p>
         )}
       </div>
-      <p className="mt-3 text-xs italic text-slate-500">
-        Đang mở trình duyệt và đăng nhập...
-      </p>
     </div>
   );
 }

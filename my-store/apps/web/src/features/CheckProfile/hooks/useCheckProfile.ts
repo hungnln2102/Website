@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CheckResultType, OtpResultType } from "../checkprofile.types";
+import type { CheckResultType, FixAdesTransferInfo, OtpResultType } from "../checkprofile.types";
 import {
   activateProfileApi,
   activateRenewAdobeApi,
@@ -7,7 +7,10 @@ import {
   checkProfileApi,
   getRenewAdobeStatusApi,
   renewFixAdesPublicApi,
+  switchFixAdesOrganizationApi,
+  syncFixAdesAccountApi,
   resolveAdobeSystemApi,
+  sendFixAdesOtpApi,
   sendOtpApi,
   verifyOtpApi,
   type AdobeSystemNote,
@@ -19,6 +22,24 @@ type DispatcherDecision =
 
 const FIX_ADES_NO_OTP_MSG =
   "Hệ thống Fix Ades không cấp OTP profile — chỉ cần bấm Kiểm tra hoặc Renew ở khung bên trái.";
+
+const FIX_ADES_REFRESH_RETRY_DELAYS_MS = [0, 1000, 2000];
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function refreshFixAdesStatusAfterAction(email: string) {
+  let latest = await checkFixAdesPublicApi(email);
+
+  for (const delay of FIX_ADES_REFRESH_RETRY_DELAYS_MS.slice(1)) {
+    if (latest.type === "check-success" && !latest.transferInfo) break;
+    await wait(delay);
+    latest = await checkFixAdesPublicApi(email);
+  }
+
+  return latest;
+}
 
 export function useCheckProfile() {
   const [email, setEmail] = useState("");
@@ -36,6 +57,7 @@ export function useCheckProfile() {
   const [resultType, setResultType] = useState<CheckResultType>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [transferInfo, setTransferInfo] = useState<FixAdesTransferInfo | null>(null);
   const [canRenewOnError, setCanRenewOnError] = useState(false);
 
   /* ── OTP state ── */
@@ -50,6 +72,7 @@ export function useCheckProfile() {
     setResultType(null);
     setMessage(null);
     setProfileName(null);
+    setTransferInfo(null);
     setCanRenewOnError(false);
   };
 
@@ -90,16 +113,31 @@ export function useCheckProfile() {
     setLoading(true);
     resetResult();
     try {
+      const fixAdesFirst = await checkFixAdesPublicApi(trimmed);
+      if (fixAdesFirst.type !== "error") {
+        setMessage(fixAdesFirst.message);
+        setResultType(fixAdesFirst.type);
+        setProfileName(fixAdesFirst.profileName);
+        setTransferInfo(fixAdesFirst.transferInfo ?? null);
+        setCanRenewOnError(false);
+        setResolvedSystem("fix_ades");
+        setResolvedEmail(trimmed);
+        return;
+      }
+
       const decision = await resolveDispatcher(trimmed);
       if (decision.kind === "blocked") {
         setMessage(decision.message);
         setResultType("error");
+        setProfileName(null);
+        setTransferInfo(null);
+        setCanRenewOnError(false);
         return;
       }
 
       const result =
         decision.system === "fix_ades"
-          ? await checkFixAdesPublicApi(trimmed)
+          ? fixAdesFirst
           : decision.system === "renew_adobe"
             ? await getRenewAdobeStatusApi(trimmed)
             : await checkProfileApi(trimmed);
@@ -107,6 +145,7 @@ export function useCheckProfile() {
       setMessage(result.message);
       setResultType(result.type);
       setProfileName(result.profileName);
+      setTransferInfo(result.transferInfo ?? null);
       setCanRenewOnError(
         result.type === "error" &&
           (decision.system === "renew_adobe" || decision.system === "fix_ades"),
@@ -128,6 +167,29 @@ export function useCheckProfile() {
     setActivating(true);
     resetResult();
     try {
+      if (transferInfo?.action === "renew" || transferInfo?.action === "sync") {
+        const result =
+          transferInfo.action === "renew"
+            ? await switchFixAdesOrganizationApi(trimmed)
+            : await syncFixAdesAccountApi(trimmed);
+
+        if (result.type === "activate-success") {
+          const refreshed = await refreshFixAdesStatusAfterAction(trimmed);
+          setMessage(refreshed.message);
+          setResultType(refreshed.type);
+          setProfileName(refreshed.profileName ?? result.profileName);
+          setTransferInfo(refreshed.transferInfo ?? null);
+          setCanRenewOnError(false);
+          return;
+        }
+
+        setMessage(result.message);
+        setResultType(result.type);
+        setProfileName(result.profileName);
+        setTransferInfo(null);
+        return;
+      }
+
       const decision = await resolveDispatcher(trimmed);
       if (decision.kind === "blocked") {
         setMessage(decision.message);
@@ -179,7 +241,10 @@ export function useCheckProfile() {
         return;
       }
 
-      const result = await sendOtpApi(trimmed);
+      const result =
+        decision.system === "fix_ades"
+          ? await sendFixAdesOtpApi(trimmed)
+          : await sendOtpApi(trimmed);
       if (result.type === "error") {
         setOtpResultType("error");
         setOtpMessage(result.message);
@@ -243,6 +308,7 @@ export function useCheckProfile() {
     resultType,
     message,
     profileName,
+    transferInfo,
     canRenewOnError,
     handleCheckSubmit,
     handleActivate,
