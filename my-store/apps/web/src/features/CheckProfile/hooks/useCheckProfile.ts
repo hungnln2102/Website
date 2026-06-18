@@ -113,18 +113,6 @@ export function useCheckProfile() {
     setLoading(true);
     resetResult();
     try {
-      const fixAdesFirst = await checkFixAdesPublicApi(trimmed);
-      if (fixAdesFirst.type !== "error") {
-        setMessage(fixAdesFirst.message);
-        setResultType(fixAdesFirst.type);
-        setProfileName(fixAdesFirst.profileName);
-        setTransferInfo(fixAdesFirst.transferInfo ?? null);
-        setCanRenewOnError(false);
-        setResolvedSystem("fix_ades");
-        setResolvedEmail(trimmed);
-        return;
-      }
-
       const decision = await resolveDispatcher(trimmed);
       if (decision.kind === "blocked") {
         setMessage(decision.message);
@@ -137,7 +125,7 @@ export function useCheckProfile() {
 
       const result =
         decision.system === "fix_ades"
-          ? fixAdesFirst
+          ? await checkFixAdesPublicApi(trimmed)
           : decision.system === "renew_adobe"
             ? await getRenewAdobeStatusApi(trimmed)
             : await checkProfileApi(trimmed);

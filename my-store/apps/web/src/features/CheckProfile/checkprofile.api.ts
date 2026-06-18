@@ -48,9 +48,7 @@ export async function resolveAdobeSystemApi(
     return {
       ok: false,
       status: res.status,
-      error:
-        (parsed?.error as string) ||
-        "Email không có trong hệ thống. Vui lòng kiểm tra lại hoặc đặt gói trước.",
+      error: "Email không có trong hệ thống.",
     };
   } catch {
     return {
