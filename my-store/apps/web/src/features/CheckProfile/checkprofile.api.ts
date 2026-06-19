@@ -3,7 +3,7 @@ import type {
   CheckProfileApiResult,
   ActivateProfileApiResult,
   OtpApiResult,
-  type FixAdesTransferInfo,
+  FixAdesTransferInfo,
 } from "./checkprofile.types";
 
 /** Đồng bộ với backend `adobeSystemConstants.js`. */
@@ -543,72 +543,45 @@ export async function checkFixAdesPublicApi(
     const transferData = asRecord(data?.data);
     const transfer = getFixAdesTransferResponse(parsed);
     const isSyncRequired = Boolean(transferData?.existedInSystem) && !transfer;
-    const status = String(
-      isSyncRequired ? "sync-required" : transfer?.status ?? data?.status ?? "",
-    ).toLowerCase();
+    if (isSyncRequired) {
+      return {
+        type: "info",
+        message: "Tài khoản chưa có dữ liệu profile. Vui lòng liên hệ admin để được hỗ trợ.",
+        profileName: null,
+        transferInfo: null,
+      };
+    }
+
+    const status = String(transfer?.status ?? data?.status ?? "").toLowerCase();
     const teamName = String(transfer?.teamName ?? data?.teamName ?? "").trim();
     const targetTeamName = String(transfer?.switchTargetTeamName ?? "").trim();
-    const targetTeam = isSyncRequired ? null : targetTeamName || null;
-    const hasTeamMismatch = Boolean(
-      teamName && targetTeam && teamName.toLowerCase() !== targetTeam.toLowerCase(),
-    );
-    const rawMessage = String(
-      isSyncRequired
-        ? "Chưa đồng bộ dữ liệu"
-        : data?.message ?? data?.error ?? parsed?.error ?? parsed?.message ?? "",
-    ).trim();
-
-    const needsTransfer =
-      hasTeamMismatch ||
-      status === "sync-required" ||
-      status === "inactive" ||
-      status === "expired" ||
-      status === "not active" ||
-      status === "not_active" ||
-      status === "het han";
-    const isActive =
-      !needsTransfer &&
-      (status === "active" ||
-        status === "processing" ||
-        status === "dang xu ly" ||
-        status === "dang hoat dong");
+    const targetTeam = targetTeamName || null;
+    const isTransferRequired = Boolean(targetTeam);
     const isError =
       status === "error" ||
       status === "failed" ||
       status === "fail" ||
       status === "not_found";
 
-    const message =
-      rawMessage ||
-      (isActive
-        ? "T\u00e0i kho\u1ea3n Fix Ades \u0111ang ho\u1ea1t \u0111\u1ed9ng."
-        : isSyncRequired
-          ? "Hãy đồng bộ lại với hệ thống."
-          : needsTransfer
-            ? `C\u1ea7n chuy\u1ec3n Profile${targetTeam ? ` sang ${targetTeam}` : ""}.`
-          : isError
-            ? "T\u00e0i kho\u1ea3n Fix Ades \u0111ang l\u1ed7i, vui l\u00f2ng ki\u1ec3m tra l\u1ea1i."
-            : "\u0110\u00e3 ki\u1ec3m tra tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n Fix Ades.");
+    const rawMessage = String(
+      data?.message ?? data?.error ?? parsed?.error ?? parsed?.message ?? "",
+    ).trim();
+
+    const message = rawMessage || (isTransferRequired
+      ? `C?n chuy?n Profile sang ${targetTeam}.`
+      : isError
+        ? "T?i kho?n Fix Ades ?ang l?i, vui l?ng ki?m tra l?i."
+        : "T?i kho?n Fix Ades ?ang ho?t ??ng.");
 
     return {
-      type: isActive
-        ? "check-success"
-        : needsTransfer
-          ? "expired"
-          : isError
-            ? "error"
-            : "info",
+      type: isTransferRequired ? "expired" : isError ? "error" : "check-success",
       message,
       profileName: teamName || null,
-      transferInfo: isActive
-        ? null
-        : createFixAdesTransferInfo(
-            status,
-            teamName || null,
-            targetTeam,
-            isSyncRequired ? "Chưa đồng bộ dữ liệu" : message,
-            isSyncRequired ? { action: "sync", showTeams: false } : undefined,
-          ),
+      transferInfo: isTransferRequired
+        ? createFixAdesTransferInfo(status || "inactive", teamName || null, targetTeam, message, {
+            action: "renew",
+          })
+        : null,
     };
   } catch {
     return {

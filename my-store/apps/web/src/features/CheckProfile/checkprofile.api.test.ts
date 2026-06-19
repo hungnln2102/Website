@@ -46,8 +46,9 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("inactive@example.com");
 
-    expect(result.type).toBe("expired");
+    expect(result.type).toBe("check-success");
     expect(result.profileName).toBe("Team Alpha");
+    expect(result.transferInfo).toBeNull();
   });
 
   it("maps transfer active account to success flow", async () => {
@@ -114,10 +115,44 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("hangtt2341994@gmail.com");
 
-    expect(result.type).toBe("expired");
-    expect(result.transferInfo?.action).toBe("renew");
-    expect(result.transferInfo?.currentTeam).toBe("Akrio-VisionSphere");
-    expect(result.transferInfo?.targetTeam).toBeNull();
+    expect(result.type).toBe("check-success");
+    expect(result.profileName).toBe("Akrio-VisionSphere");
+    expect(result.transferInfo).toBeNull();
+  });
+
+  it("maps transfer inactive without switch target to active flow", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            data: {
+              status: 201,
+              success: true,
+              data: {
+                existedInSystem: true,
+                transferTeamResponse: {
+                  found: true,
+                  email: "sanders.pope.614848@maelstrom.academy",
+                  teamName: "DEL-DataVista Group",
+                  status: "inactive",
+                  switchAvailable: false,
+                  switchTargetTeamName: null,
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const result = await checkFixAdesPublicApi("sanders.pope.614848@maelstrom.academy");
+
+    expect(result.type).toBe("check-success");
+    expect(result.profileName).toBe("DEL-DataVista Group");
+    expect(result.transferInfo).toBeNull();
   });
 
 
@@ -218,7 +253,7 @@ describe("checkFixAdesPublicApi", () => {
     expect(result.transferInfo?.targetTeam).toBe("Personal Profile");
   });
 
-  it("maps transfer null response to sync flow", async () => {
+  it("maps transfer null response to contact admin message only", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -241,9 +276,10 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("sanders.pope.614848@maelstrom.academy");
 
-    expect(result.type).toBe("expired");
-    expect(result.transferInfo?.action).toBe("sync");
-    expect(result.transferInfo?.showTeams).toBe(false);
+    expect(result.type).toBe("info");
+    expect(result.message).toContain("liên hệ admin");
+    expect(result.profileName).toBeNull();
+    expect(result.transferInfo).toBeNull();
   });
 
 });

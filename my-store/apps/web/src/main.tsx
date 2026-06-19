@@ -70,7 +70,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     });
 
     navigator.serviceWorker
-      .register('/sw.js')
+      .register('/sw.js', { updateViaCache: 'none' })
       .then((registration) => {
         console.log('[SW] Service Worker registered:', registration.scope);
 

@@ -1,6 +1,6 @@
 // Service Worker for Mavryk Technology
 // Tăng VERSION mỗi lần deploy nếu cần xóa sạch runtime cache cũ (ảnh/API đã put vào RUNTIME).
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE_NAME = `mavryk-store-${VERSION}`;
 const RUNTIME_CACHE = `mavryk-runtime-${VERSION}`;
 
@@ -21,7 +21,8 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clear app caches from previous deploys.
+// VERSION is stamped during build, so every deploy installs a fresh SW and removes stale runtime data.
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
@@ -29,10 +30,10 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE;
+              return cacheName.startsWith('mavryk-store-') || cacheName.startsWith('mavryk-runtime-');
             })
             .map((cacheName) => {
-              console.log('[SW] Deleting old cache:', cacheName);
+              console.log('[SW] Clearing deploy cache:', cacheName);
               return caches.delete(cacheName);
             })
         );

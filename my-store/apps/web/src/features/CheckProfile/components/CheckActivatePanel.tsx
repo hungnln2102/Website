@@ -32,7 +32,7 @@ function TransferTeamCard({ transferInfo }: { transferInfo: FixAdesTransferInfo 
           ? "bg-rose-400 shadow-rose-400/40"
           : "bg-sky-400 shadow-sky-400/40";
   const currentTeam = transferInfo.currentTeam || "Chưa xác định";
-  const targetTeam = transferInfo.targetTeam || "Ch?a x?c ??nh";
+  const targetTeam = transferInfo.targetTeam || "Chưa xác định";
   const showTeams = transferInfo.showTeams !== false;
 
   if (!showTeams) {
@@ -275,8 +275,23 @@ export function CheckActivatePanel({
               )}
 
               {!transferInfo && resultType === "info" && (
-                <div className="rounded-xl bg-slate-800/70 px-4 py-3 text-xs text-slate-300 ring-1 ring-slate-700">
-                  {message}
+                <div className="relative overflow-hidden rounded-2xl border border-cyan-300/45 bg-gradient-to-br from-cyan-950/70 via-slate-900/95 to-indigo-950/70 px-4 py-4 text-sm text-cyan-50 shadow-[0_18px_55px_rgba(6,182,212,0.28)] ring-1 ring-cyan-200/25 before:pointer-events-none before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/12 before:via-transparent before:to-cyan-400/10 before:content-[''] after:pointer-events-none after:absolute after:inset-px after:rounded-[15px] after:border after:border-white/10 after:content-['']">
+                  <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-cyan-300/25 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-12 -left-10 h-32 w-32 rounded-full bg-violet-500/20 blur-3xl" />
+                  <div className="pointer-events-none absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-cyan-300 via-sky-400 to-violet-400" />
+                  <div className="relative flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-200/45 bg-cyan-300/15 text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.32)]">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-300/90">
+                        Cần hỗ trợ
+                      </p>
+                      <p className="text-sm font-semibold leading-relaxed text-slate-50">
+                        {message}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
