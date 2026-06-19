@@ -50,7 +50,7 @@ describe("checkFixAdesPublicApi", () => {
     expect(result.profileName).toBe("Team Alpha");
   });
 
-  it("maps legacy Renewable/Available Processing account to success flow", async () => {
+  it("maps transfer active account to success flow", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -58,11 +58,19 @@ describe("checkFixAdesPublicApi", () => {
           JSON.stringify({
             ok: true,
             data: {
-              email: "sanders.pope.614848@maelstrom.academy",
-              status: "Processing",
-              productName: "Adobe CCPRO, Renewable Account, 1 Month",
-              teamName: "DEL-DataVista Group",
-              groupName: "Adobe CCPRO Renew, Available Account",
+              status: 201,
+              success: true,
+              data: {
+                existedInSystem: true,
+                transferTeamResponse: {
+                  found: true,
+                  email: "sanders.pope.614848@maelstrom.academy",
+                  teamName: "DEL-DataVista Group",
+                  status: "active",
+                  switchAvailable: false,
+                  switchTargetTeamName: null,
+                },
+              },
             },
           }),
           { status: 200 },
@@ -76,7 +84,7 @@ describe("checkFixAdesPublicApi", () => {
     expect(result.transferInfo).toBeNull();
   });
 
-  it("maps legacy Direct Email Upgrade Processing account to success flow", async () => {
+  it("maps transfer inactive without target without Personal Profile fallback", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -84,11 +92,19 @@ describe("checkFixAdesPublicApi", () => {
           JSON.stringify({
             ok: true,
             data: {
-              email: "hangtt2341994@gmail.com",
-              status: "Processing",
-              productName: "Adobe, CCPRO+, Email Activation, 3 Month",
-              teamName: "Akrio-VisionSphere",
-              groupName: "Adobe CCPRO+, Direct Email Upgrade",
+              status: 201,
+              success: true,
+              data: {
+                existedInSystem: true,
+                transferTeamResponse: {
+                  found: true,
+                  email: "hangtt2341994@gmail.com",
+                  teamName: "Akrio-VisionSphere",
+                  status: "inactive",
+                  switchAvailable: false,
+                  switchTargetTeamName: null,
+                },
+              },
             },
           }),
           { status: 200 },
@@ -98,8 +114,10 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("hangtt2341994@gmail.com");
 
-    expect(result.type).toBe("check-success");
-    expect(result.transferInfo).toBeNull();
+    expect(result.type).toBe("expired");
+    expect(result.transferInfo?.action).toBe("renew");
+    expect(result.transferInfo?.currentTeam).toBe("Akrio-VisionSphere");
+    expect(result.transferInfo?.targetTeam).toBeNull();
   });
 
 

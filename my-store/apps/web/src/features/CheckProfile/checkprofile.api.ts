@@ -114,13 +114,13 @@ function buildFixAdesDirectAuthHeaders(token: string) {
   };
 }
 
-async function fetchFixAdesAccountCheckDirect(
+async function fetchFixAdesTransferStatusDirect(
   email: string,
 ): Promise<Record<string, unknown> | null> {
   const { token, fallbackPayload } = await fetchFixAdesDirectToken();
   if (!token) return fallbackPayload;
 
-  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/account/check`, {
+  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/check-transfer-status`, {
     method: "POST",
     headers: buildFixAdesDirectAuthHeaders(token),
     body: JSON.stringify({ email }),
@@ -502,11 +502,11 @@ export async function checkFixAdesPublicApi(
   email: string,
 ): Promise<CheckProfileApiResult> {
   try {
-    let parsed = await fetchFixAdesAccountCheckDirect(email);
+    let parsed = await fetchFixAdesTransferStatusDirect(email);
 
     if (!parsed) {
       const res = await fetch(
-        `${getApiBase()}/api/renew-adobe/public/fix-ades/check`,
+        `${getApiBase()}/api/renew-adobe/public/fix-ades/check-transfer-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
