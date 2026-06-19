@@ -114,13 +114,13 @@ function buildFixAdesDirectAuthHeaders(token: string) {
   };
 }
 
-async function fetchFixAdesTransferStatusDirect(
+async function fetchFixAdesAccountCheckDirect(
   email: string,
 ): Promise<Record<string, unknown> | null> {
   const { token, fallbackPayload } = await fetchFixAdesDirectToken();
   if (!token) return fallbackPayload;
 
-  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/check-transfer-status`, {
+  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/account/check`, {
     method: "POST",
     headers: buildFixAdesDirectAuthHeaders(token),
     body: JSON.stringify({ email }),
@@ -502,11 +502,11 @@ export async function checkFixAdesPublicApi(
   email: string,
 ): Promise<CheckProfileApiResult> {
   try {
-    let parsed = await fetchFixAdesTransferStatusDirect(email);
+    let parsed = await fetchFixAdesAccountCheckDirect(email);
 
     if (!parsed) {
       const res = await fetch(
-        `${getApiBase()}/api/renew-adobe/public/fix-ades/check-transfer-status`,
+        `${getApiBase()}/api/renew-adobe/public/fix-ades/check`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -542,32 +542,13 @@ export async function checkFixAdesPublicApi(
     const data = asRecord(parsed?.data);
     const transferData = asRecord(data?.data);
     const transfer = getFixAdesTransferResponse(parsed);
-    const legacyCheckText = [
-      data?.productName,
-      data?.groupName,
-      asRecord(data?.product)?.name,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    const isLegacyCheckPayload = !transfer && !transferData && Boolean(data?.teamName);
-    const isLegacySyncRequired =
-      isLegacyCheckPayload &&
-      (legacyCheckText.includes("renewable account") ||
-        legacyCheckText.includes("available account") ||
-        legacyCheckText.includes("renew, available"));
-    const isLegacyTransferRequired =
-      isLegacyCheckPayload && legacyCheckText.includes("direct email upgrade");
-    const isSyncRequired =
-      (Boolean(transferData?.existedInSystem) && !transfer) || isLegacySyncRequired;
+    const isSyncRequired = Boolean(transferData?.existedInSystem) && !transfer;
     const status = String(
       isSyncRequired ? "sync-required" : transfer?.status ?? data?.status ?? "",
     ).toLowerCase();
     const teamName = String(transfer?.teamName ?? data?.teamName ?? "").trim();
     const targetTeamName = String(transfer?.switchTargetTeamName ?? "").trim();
-    const targetTeam = isSyncRequired
-      ? null
-      : targetTeamName || (isLegacyTransferRequired ? "Personal Profile" : null);
+    const targetTeam = isSyncRequired ? null : targetTeamName || null;
     const hasTeamMismatch = Boolean(
       teamName && targetTeam && teamName.toLowerCase() !== targetTeam.toLowerCase(),
     );

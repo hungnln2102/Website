@@ -56,44 +56,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests - Network first, then cache
-  if (url.pathname.startsWith('/api/') || url.hostname === 'localhost' && url.port === '4000') {
+  // API requests: always use network and never cache dynamic responses after deploy.
+  if (url.pathname.startsWith('/api/') || (url.hostname === 'localhost' && url.port === '4000')) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone the response
-          const responseToCache = response.clone();
-          
-          // Cache successful responses
-          if (response.status === 200) {
-            caches.open(RUNTIME_CACHE)
-              .then((cache) => {
-                cache.put(request, responseToCache);
-              });
-          }
-          
-          return response;
-        })
-        .catch(() => {
-          // Network failed, try cache
-          return caches.match(request)
-            .then((cachedResponse) => {
-              if (cachedResponse) {
-                return cachedResponse;
-              }
-              // Return offline fallback
-              return new Response(
-                JSON.stringify({ 
-                  error: 'Offline', 
-                  message: 'Không có kết nối mạng. Vui lòng kiểm tra lại kết nối.' 
-                }),
-                {
-                  status: 503,
-                  headers: { 'Content-Type': 'application/json' },
-                }
-              );
-            });
-        })
+      fetch(request).catch(() => {
+        return new Response(
+          JSON.stringify({
+            error: 'Offline',
+            message: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i m\u1ea1ng. Vui l\u00f2ng ki\u1ec3m tra l\u1ea1i k\u1ebft n\u1ed1i.',
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }),
     );
     return;
   }

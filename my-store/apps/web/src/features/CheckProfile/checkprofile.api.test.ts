@@ -50,7 +50,7 @@ describe("checkFixAdesPublicApi", () => {
     expect(result.profileName).toBe("Team Alpha");
   });
 
-  it("maps legacy Renewable/Available Account to sync flow", async () => {
+  it("maps legacy Renewable/Available Processing account to success flow", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -72,13 +72,11 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("sanders.pope.614848@maelstrom.academy");
 
-    expect(result.type).toBe("expired");
-    expect(result.transferInfo?.action).toBe("sync");
-    expect(result.transferInfo?.showTeams).toBe(false);
-    expect(result.transferInfo?.statusText).toBe("Chưa đồng bộ dữ liệu");
+    expect(result.type).toBe("check-success");
+    expect(result.transferInfo).toBeNull();
   });
 
-  it("maps legacy Direct Email Upgrade to transfer flow", async () => {
+  it("maps legacy Direct Email Upgrade Processing account to success flow", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -100,11 +98,8 @@ describe("checkFixAdesPublicApi", () => {
 
     const result = await checkFixAdesPublicApi("hangtt2341994@gmail.com");
 
-    expect(result.type).toBe("expired");
-    expect(result.transferInfo?.action).toBe("renew");
-    expect(result.transferInfo?.showTeams).toBe(true);
-    expect(result.transferInfo?.currentTeam).toBe("Akrio-VisionSphere");
-    expect(result.transferInfo?.targetTeam).toBe("Personal Profile");
+    expect(result.type).toBe("check-success");
+    expect(result.transferInfo).toBeNull();
   });
 
 

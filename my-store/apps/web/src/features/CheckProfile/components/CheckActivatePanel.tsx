@@ -32,7 +32,7 @@ function TransferTeamCard({ transferInfo }: { transferInfo: FixAdesTransferInfo 
           ? "bg-rose-400 shadow-rose-400/40"
           : "bg-sky-400 shadow-sky-400/40";
   const currentTeam = transferInfo.currentTeam || "Chưa xác định";
-  const targetTeam = transferInfo.targetTeam || "Personal Profile";
+  const targetTeam = transferInfo.targetTeam || "Ch?a x?c ??nh";
   const showTeams = transferInfo.showTeams !== false;
 
   if (!showTeams) {

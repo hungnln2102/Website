@@ -7,7 +7,7 @@
     "prebuild": "node scripts/copy-branding.cjs",
     "predev": "node scripts/copy-branding.cjs",
     "dev": "vite",
-    "build": "npx vite build",
+    "build": "npx vite build && node scripts/stamp-sw-version.cjs",
     "check-types": "tsc --noEmit",
     "analyze": "cross-env ANALYZE=true vite build",
     "preview": "vite preview",
