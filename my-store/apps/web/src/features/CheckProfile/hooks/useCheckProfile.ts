@@ -94,7 +94,7 @@ export function useCheckProfile() {
       return { kind: "ok", system: resolvedSystem };
     }
     const result = await resolveAdobeSystemApi(targetEmail);
-    if (!result.ok) {
+    if (result.ok === false) {
       return { kind: "blocked", message: result.error };
     }
     setResolvedSystem(result.system_note);
@@ -274,9 +274,12 @@ export function useCheckProfile() {
   };
 
   const handleEmailChange = (next: string) => {
+    const previous = email;
     setEmail(next);
-    if (resolvedEmail && next.trim().toLowerCase() !== resolvedEmail.toLowerCase()) {
-      // Email mới → reset cache resolve để lần sau gọi lại API.
+
+    if (next !== previous) {
+      resetResult();
+      resetOtp();
       setResolvedSystem(null);
       setResolvedEmail("");
     }
