@@ -44,6 +44,10 @@ function normalizeOtpMessage(message: string) {
 
   if (!text) return "";
 
+  if (/no recent email found from this address/i.test(text)) {
+    return "Không tìm thấy email gần đây từ địa chỉ này.";
+  }
+
   if (/this email is not assigned to you/i.test(text)) {
     return "Email này không được gán cho mã truy cập hiện tại.";
   }
@@ -288,6 +292,81 @@ router.post("/send-otp", async (req, res) => {
   } catch (err) {
     console.error("[netflix] send-otp proxy error:", err);
     res.status(500).json({ ok: false, error: "Không thể kết nối đến server OTP." });
+  }
+});
+
+// POST /api/netflix/six-digit-login
+router.post("/six-digit-login", async (req, res) => {
+  const email = (req.body?.email as string | undefined)?.trim();
+
+  if (!email) {
+    res.status(400).json({ ok: false, error: "Missing email" });
+    return;
+  }
+
+  try {
+    const upstreamRes = await postUpstreamForm(
+      "https://vivarocky.in/six_digit_login.php",
+      { user_email: email },
+    );
+
+    const html = await upstreamRes.text();
+
+    console.log("[netflix] six-digit-login status:", upstreamRes.status);
+    console.log("[netflix] six-digit-login headers:", Object.fromEntries(upstreamRes.headers.entries()));
+    console.log("[netflix] six-digit-login HTML:", html.substring(0, 3000));
+
+    const warningMatch = html.match(
+      /<div[^>]*class=["'][^"']*access-warning[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    );
+    const errorMatch = html.match(
+      /<div[^>]*class=["'][^"']*error[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    );
+    const codeMatch =
+      html.match(/class=["'][^"']*(?:lrg-number|otp|code)[^"']*["'][^>]*>\s*([0-9]{6})\s*</i) ||
+      html.match(/Verify\s+with\s+this\s+code:[\s\S]{0,800}?\b([0-9]{6})\b/i);
+    const subjectMatch = html.match(/<h3>\s*Subject:\s*([\s\S]*?)<\/h3>/i);
+    const fromMatch = html.match(/<p>\s*<strong>\s*From:\s*<\/strong>\s*([\s\S]*?)<\/p>/i);
+    const dateMatch = html.match(/<p>\s*<strong>\s*Date:\s*<\/strong>\s*([\s\S]*?)<\/p>/i);
+
+    if (codeMatch?.[1]) {
+      res.json({
+        ok: true,
+        code: codeMatch[1].trim(),
+        subject: stripHtml(subjectMatch?.[1]),
+        from: stripHtml(fromMatch?.[1]),
+        date: stripHtml(dateMatch?.[1]),
+        message: `Đã lấy mã OTP 6 số mới nhất cho ${email}.`,
+      });
+      return;
+    }
+
+    if (warningMatch) {
+      res.json({ ok: false, message: normalizeOtpMessage(warningMatch[1] ?? "") });
+      return;
+    }
+
+    if (errorMatch) {
+      res.json({ ok: false, message: normalizeOtpMessage(errorMatch[1] ?? "") });
+      return;
+    }
+
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) {
+      const bodyText = stripHtml(bodyMatch[1]);
+      if (/no recent email found from this address/i.test(bodyText)) {
+        res.json({ ok: false, message: "Không tìm thấy email gần đây từ địa chỉ này." });
+        return;
+      }
+    }
+
+    res.json({
+      ok: false,
+      message: "Không thể lấy mã OTP 6 số từ phản hồi của server.",
+    });
+  } catch (err) {
+    console.error("[netflix] six-digit-login proxy error:", err);
+    res.status(500).json({ ok: false, error: "Không thể kết nối đến server OTP 6 số." });
   }
 });
 

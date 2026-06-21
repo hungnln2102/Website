@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6‑Digit Login Code – VIVA</title>
+    <link rel="stylesheet" href="style.css?v=1782019786">
+</head>
+<body>
+    <header class="main-header">
+        <h1><a href="index.php">VIVA</a></h1>
+        <nav><a href="index.php">Go Back</a></nav>
+    </header>
+    <main class="content-wrapper">
+        <div class="content-box">
+            <h2>6‑Digit Login Code</h2>
+            <p>Enter your email address to fetch the latest 6‑digit login code from our system.</p>
+            
+                        
+                        
+                            <div class="error-box">
+                    <strong>Error:</strong> No recent email found from this address.                </div>
+                        
+                    </div>
+    </main>
+    <footer>
+        <p>&copy; 2026 VIVA. All rights reserved.</p>
+    </footer>
+    <script>
+        (function() {
+            let countdown = 25;
+            const cd = document.getElementById('countdown');
+            const fset = document.getElementById('form-fieldset');
+            const timer = setInterval(function() {
+                countdown--;
+                cd.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    document.querySelector('.countdown-box').style.display = 'none';
+                    fset.disabled = false;
+                }
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>

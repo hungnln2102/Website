@@ -10,6 +10,42 @@ describe("checkFixAdesPublicApi", () => {
     vi.unstubAllGlobals();
   });
 
+  it("falls back to backend proxy when direct Fix Ades request fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            data: {
+              status: 201,
+              success: true,
+              data: {
+                existedInSystem: true,
+                transferTeamResponse: {
+                  found: true,
+                  email: "cliddz1995@gmail.com",
+                  teamName: "BOYUKSA CO,LTD",
+                  status: "inactive",
+                  switchAvailable: false,
+                  switchTargetTeamName: null,
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await checkFixAdesPublicApi("cliddz1995@gmail.com");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.type).toBe("check-success");
+    expect(result.profileName).toBe("BOYUKSA CO,LTD");
+  });
+
   it("trả type=error khi status từ Fix Ades là error", async () => {
     vi.stubGlobal(
       "fetch",

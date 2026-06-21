@@ -502,7 +502,7 @@ export async function checkFixAdesPublicApi(
   email: string,
 ): Promise<CheckProfileApiResult> {
   try {
-    let parsed = await fetchFixAdesTransferStatusDirect(email);
+    let parsed = await fetchFixAdesTransferStatusDirect(email).catch(() => null);
 
     if (!parsed) {
       const res = await fetch(
@@ -544,11 +544,15 @@ export async function checkFixAdesPublicApi(
     const transfer = getFixAdesTransferResponse(parsed);
     const isSyncRequired = Boolean(transferData?.existedInSystem) && !transfer;
     if (isSyncRequired) {
+      const message = "Tài khoản chưa có dữ liệu profile. Vui lòng bấm Đồng bộ dữ liệu để cập nhật.";
       return {
         type: "info",
-        message: "Tài khoản chưa có dữ liệu profile. Vui lòng liên hệ admin để được hỗ trợ.",
+        message,
         profileName: null,
-        transferInfo: null,
+        transferInfo: createFixAdesTransferInfo("sync-required", null, null, message, {
+          action: "sync",
+          showTeams: false,
+        }),
       };
     }
 
@@ -648,33 +652,35 @@ export async function syncFixAdesAccountApi(
   email: string,
 ): Promise<ActivateProfileApiResult> {
   try {
-    const { token } = await fetchFixAdesDirectToken();
-    if (!token) {
-      return {
-        type: "error",
-        message: "Không lấy được phiên xác thực đồng bộ dữ liệu.",
-        profileName: null,
-      };
-    }
-
-    const res = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/sync-ado-account`, {
-      method: "POST",
-      headers: buildFixAdesDirectAuthHeaders(token),
-      body: JSON.stringify({ email }),
-    });
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/fix-ades/sync`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
     const text = await res.text().catch(() => "");
     const parsed = tryParseJson(text);
     const data = asRecord(parsed?.data);
-    const success = data?.success === true || parsed?.success === true;
+    const innerData = asRecord(data?.data);
+    const success = data?.success === true || innerData?.success === true || parsed?.ok === true;
     const profileName =
-      String(data?.teamName ?? data?.newOrganizationName ?? data?.profileName ?? "").trim() ||
-      null;
+      String(
+        data?.teamName ??
+          innerData?.teamName ??
+          data?.newOrganizationName ??
+          innerData?.newOrganizationName ??
+          data?.profileName ??
+          innerData?.profileName ??
+          "",
+      ).trim() || null;
 
     if (!res.ok || !success) {
       return {
         type: "error",
         message:
-          String(data?.message ?? parsed?.message ?? parsed?.error ?? "").trim() ||
+          String(data?.message ?? innerData?.message ?? parsed?.message ?? parsed?.error ?? "").trim() ||
           "Không đồng bộ dữ liệu được.",
         profileName,
       };
@@ -683,7 +689,7 @@ export async function syncFixAdesAccountApi(
     return {
       type: "activate-success",
       message:
-        String(data?.message ?? parsed?.message ?? "").trim() ||
+        String(data?.message ?? innerData?.message ?? parsed?.message ?? "").trim() ||
         "Đồng bộ dữ liệu thành công. Hãy kiểm tra lại tài khoản.",
       profileName,
     };
