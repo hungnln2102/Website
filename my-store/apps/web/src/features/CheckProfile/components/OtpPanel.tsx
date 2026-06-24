@@ -54,10 +54,10 @@ export function OtpPanel({
 
   return (
     <div
-      className={`relative p-6 sm:p-8 transition-opacity duration-500 ${
+      className={`relative p-4 sm:p-8 transition-opacity duration-500 ${
         !isCheckMode
           ? "opacity-100 cp-panel-right-active"
-          : "lg:opacity-0 lg:pointer-events-none cp-panel-hidden"
+          : "xl:opacity-0 xl:pointer-events-none cp-panel-hidden"
       }`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_42%),radial-gradient(circle_at_85%_0%,_rgba(168,85,247,0.12),_transparent_44%)]" />

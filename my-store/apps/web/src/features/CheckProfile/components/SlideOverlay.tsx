@@ -8,7 +8,7 @@ type SlideOverlayProps = {
 export function SlideOverlay({ isCheckMode, onToggle }: SlideOverlayProps) {
   return (
     <div
-      className="hidden lg:flex absolute inset-y-0 right-0 w-1/2 flex-col items-center justify-center bg-gradient-to-br from-purple-700 via-indigo-700 to-blue-800 p-12 z-20"
+      className="absolute inset-y-0 right-0 z-20 hidden w-1/2 flex-col items-center justify-center bg-gradient-to-br from-purple-700 via-indigo-700 to-blue-800 p-12 xl:flex"
       style={{
         transform: isCheckMode ? "translateX(0%)" : "translateX(-100%)",
         transition: "transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)",

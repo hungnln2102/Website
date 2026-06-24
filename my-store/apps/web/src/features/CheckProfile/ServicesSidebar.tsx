@@ -38,8 +38,8 @@ export function ServicesSidebar() {
   };
 
   return (
-    <aside className="flex w-56 flex-shrink-0 flex-col justify-center">
-      <nav className="rounded-xl border border-slate-700/80 bg-slate-900/90 p-2">
+    <aside className="w-full flex-shrink-0 lg:w-56">
+      <nav className="flex gap-2 overflow-x-auto rounded-xl border border-slate-700/80 bg-slate-900/90 p-2 lg:block lg:overflow-visible">
         {MENU_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -48,7 +48,7 @@ export function ServicesSidebar() {
               key={item.id}
               type="button"
               onClick={() => handleNavigate(item.href)}
-              className={`flex w-full items-center justify-center gap-3 rounded-lg px-4 py-3 text-center text-sm font-medium transition-colors ${
+              className={`flex min-w-[9rem] flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-center text-sm font-medium transition-colors lg:w-full lg:min-w-0 lg:flex-none lg:gap-3 lg:px-4 lg:py-3 ${
                 active
                   ? "bg-blue-600/30 text-blue-300 ring-1 ring-blue-500/50"
                   : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"

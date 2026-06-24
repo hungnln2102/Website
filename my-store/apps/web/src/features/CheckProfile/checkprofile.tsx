@@ -73,13 +73,13 @@ export default function CheckProfilePage() {
         />
       </div>
 
-      <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl gap-6 px-4 py-10">
+      <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6 lg:py-10">
         <ServicesSidebar />
-        <div className="flex flex-1 min-w-0 items-center justify-center">
+        <div className="flex min-w-0 flex-1 items-center justify-center">
           <div className="w-full max-w-4xl">
             {/* Title */}
-            <div className="mb-5 px-1">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-50">
+            <div className="mb-4 px-1 sm:mb-5">
+              <h1 className="text-xl font-bold tracking-tight text-slate-50 sm:text-2xl">
                 Fix lỗi Adobe
               </h1>
               <p className="mt-0.5 text-xs text-slate-500">
@@ -88,10 +88,10 @@ export default function CheckProfilePage() {
             </div>
 
             {/* Main Card */}
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900 shadow-2xl shadow-purple-900/30 min-h-[540px]">
+            <div className="relative min-h-[430px] overflow-hidden rounded-3xl bg-slate-900 shadow-2xl shadow-purple-900/30 sm:min-h-[540px]">
               <div className="pointer-events-none absolute -top-20 left-1/2 h-40 w-96 -translate-x-1/2 rounded-full bg-purple-600/15 blur-3xl" />
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[540px]">
+              <div className="grid min-h-[430px] grid-cols-1 sm:min-h-[540px] xl:grid-cols-2">
                 <CheckActivatePanel
                   isCheckMode={cp.isCheckMode}
                   email={cp.email}
@@ -163,7 +163,7 @@ export default function CheckProfilePage() {
           from { opacity: 0; transform: translateX(30px); }
           to   { opacity: 1; transform: translateX(0); }
         }
-        @media (max-width: 1023px) {
+        @media (max-width: 1279px) {
           .cp-panel-left-active  { animation: cp-slide-in-left  0.4s ease-out forwards; }
           .cp-panel-right-active { animation: cp-slide-in-right 0.4s ease-out forwards; }
           .cp-panel-hidden       { display: none !important; }
