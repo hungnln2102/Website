@@ -1,22 +1,22 @@
-import { useState } from "react";
-import SiteHeader from "@/components/SiteHeader";
-import Footer from "@/components/Footer";
-import { ServicesSidebar } from "./ServicesSidebar";
-import { useScroll } from "@/hooks/useScroll";
-import { useAuth } from "@/features/auth/hooks";
-import { useQuery } from "@tanstack/react-query";
-import { fetchProducts, fetchCategories, productsQueryKey } from "@/lib/api";
-import { APP_CONFIG, ROUTES } from "@/lib/constants";
-import { ShieldCheck } from "lucide-react";
-import { useCheckProfile } from "./hooks/useCheckProfile";
-import { SlideOverlay } from "./components/SlideOverlay";
-import { CheckActivatePanel } from "./components/CheckActivatePanel";
-import { OtpPanel } from "./components/OtpPanel";
+import { useState } from 'react';
+import SiteHeader from '@/components/SiteHeader';
+import Footer from '@/components/Footer';
+import { ServicesSidebar } from './ServicesSidebar';
+import { useScroll } from '@/hooks/useScroll';
+import { useAuth } from '@/features/auth/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { fetchProducts, fetchCategories, productsQueryKey } from '@/lib/api';
+import { APP_CONFIG, ROUTES } from '@/lib/constants';
+import { ShieldCheck } from 'lucide-react';
+import { useCheckProfile } from './hooks/useCheckProfile';
+import { SlideOverlay } from './components/SlideOverlay';
+import { CheckActivatePanel } from './components/CheckActivatePanel';
+import { OtpPanel } from './components/OtpPanel';
 
 export default function CheckProfilePage() {
   const isScrolled = useScroll();
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   const cp = useCheckProfile();
 
@@ -25,20 +25,20 @@ export default function CheckProfilePage() {
     queryFn: fetchProducts,
   });
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ['categories'],
     queryFn: fetchCategories,
   });
 
   const handleLogoClick = () => {
-    window.history.pushState({}, "", ROUTES.home);
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.history.pushState({}, '', ROUTES.home);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <div
         className={`sticky top-0 z-40 transition-all duration-500 ${
-          isScrolled ? "shadow-xl shadow-blue-900/20 backdrop-blur-xl" : ""
+          isScrolled ? 'shadow-xl shadow-blue-900/20 backdrop-blur-xl' : ''
         }`}
       >
         <SiteHeader
@@ -58,40 +58,43 @@ export default function CheckProfilePage() {
           categories={categories.map((c) => ({
             id: String(c.id),
             name: c.name,
-            slug: c.name.toLowerCase().replace(/\s+/g, "-"),
+            slug: c.name.toLowerCase().replace(/\s+/g, '-'),
           }))}
           onProductClick={(slug) => {
-            window.history.pushState({}, "", `/${encodeURIComponent(slug)}`);
-            window.dispatchEvent(new PopStateEvent("popstate"));
+            window.history.pushState({}, '', `/${encodeURIComponent(slug)}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
           }}
           onCategoryClick={(slug) => {
-            window.history.pushState({}, "", ROUTES.category(slug));
-            window.dispatchEvent(new PopStateEvent("popstate"));
+            window.history.pushState({}, '', ROUTES.category(slug));
+            window.dispatchEvent(new PopStateEvent('popstate'));
           }}
           user={user}
           onLogout={logout}
         />
       </div>
 
-      <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6 lg:py-10">
+      <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl flex-col gap-4 px-3 py-5 sm:px-4 sm:py-8 lg:flex-row lg:gap-6 lg:py-10">
         <ServicesSidebar />
         <div className="flex min-w-0 flex-1 items-center justify-center">
           <div className="w-full max-w-4xl">
             {/* Title */}
-            <div className="mb-4 px-1 sm:mb-5">
-              <h1 className="text-xl font-bold tracking-tight text-slate-50 sm:text-2xl">
+            <div className="lg:backdrop-blur-0 mb-4 rounded-3xl border border-white/10 bg-slate-900/60 px-4 py-4 shadow-xl shadow-purple-950/20 backdrop-blur sm:mb-5 sm:px-5 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+              <p className="mb-1 text-[11px] font-semibold tracking-[0.24em] text-purple-300/80 uppercase lg:hidden">
+                Adobe profile center
+              </p>
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-50 sm:text-3xl lg:text-2xl">
                 Fix lỗi Adobe
               </h1>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-1 text-sm leading-relaxed text-slate-400 lg:mt-0.5 lg:text-xs lg:text-slate-500">
                 Kiểm tra, kích hoạt và nhận OTP Adobe profile
               </p>
             </div>
 
             {/* Main Card */}
-            <div className="relative min-h-[430px] overflow-hidden rounded-3xl bg-slate-900 shadow-2xl shadow-purple-900/30 sm:min-h-[540px]">
+            <div className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 shadow-2xl shadow-purple-900/25 backdrop-blur lg:min-h-[540px] lg:border-0 lg:bg-slate-900">
               <div className="pointer-events-none absolute -top-20 left-1/2 h-40 w-96 -translate-x-1/2 rounded-full bg-purple-600/15 blur-3xl" />
 
-              <div className="grid min-h-[430px] grid-cols-1 sm:min-h-[540px] xl:grid-cols-2">
+              <div className="grid min-h-0 grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-h-[540px] lg:grid-cols-2 lg:gap-0 lg:p-0">
                 <CheckActivatePanel
                   isCheckMode={cp.isCheckMode}
                   email={cp.email}
@@ -129,7 +132,7 @@ export default function CheckProfilePage() {
               />
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-600">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 text-center text-[11px] text-slate-600">
               <span>© 2026 Trung tâm gói — {APP_CONFIG.name}</span>
               <span className="text-slate-700">·</span>
               <span className="flex items-center gap-1">
