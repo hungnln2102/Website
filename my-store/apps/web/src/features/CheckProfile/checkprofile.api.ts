@@ -73,12 +73,21 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function getFixAdesTransferResponse(
+function getFixAdesData(
   parsed: Record<string, unknown> | null,
 ): Record<string, unknown> | null {
   const outerData = asRecord(parsed?.data);
-  const transferData = asRecord(outerData?.data);
-  return asRecord(transferData?.transferTeamResponse);
+  return asRecord(outerData?.data) ?? outerData ?? parsed;
+}
+
+function getFixAdesTransferResponse(
+  parsed: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const data = getFixAdesData(parsed);
+  return (
+    asRecord(data?.transferTeamResponse) ??
+    asRecord(asRecord(data?.adesSource)?.transferTeamResponse)
+  );
 }
 
 
@@ -111,28 +120,6 @@ function buildFixAdesDirectAuthHeaders(token: string) {
     ...FIX_ADES_DIRECT_HEADERS,
     Authorization: `Bearer ${token}`,
     "x-access-token": token,
-  };
-}
-
-async function fetchFixAdesTransferStatusDirect(
-  email: string,
-): Promise<Record<string, unknown> | null> {
-  const { token, fallbackPayload } = await fetchFixAdesDirectToken();
-  if (!token) return fallbackPayload;
-
-  const statusRes = await fetch(`${FIX_ADES_DIRECT_BASE_URL}/check-transfer-status`, {
-    method: "POST",
-    headers: buildFixAdesDirectAuthHeaders(token),
-    body: JSON.stringify({ email }),
-  });
-  const statusText = await statusRes.text().catch(() => "");
-  const statusJson = tryParseJson(statusText);
-  if (!statusRes.ok || !statusJson) return null;
-
-  return {
-    ok: true,
-    status: statusRes.status,
-    data: statusJson,
   };
 }
 
@@ -502,32 +489,28 @@ export async function checkFixAdesPublicApi(
   email: string,
 ): Promise<CheckProfileApiResult> {
   try {
-    let parsed = await fetchFixAdesTransferStatusDirect(email).catch(() => null);
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/fix-ades/check-transfer-status`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
 
-    if (!parsed) {
-      const res = await fetch(
-        `${getApiBase()}/api/renew-adobe/public/fix-ades/check-transfer-status`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        },
-      );
-      const text = await res.clone().text().catch(() => "");
-      parsed = tryParseJson(text);
-
-      if (!res.ok) {
-        const errorMessage =
-          (parsed?.error as string) ||
-          (parsed?.message as string) ||
-          "Không kiểm tra được tài khoản Fix Ades.";
-        return {
-          type: "error",
-          message: errorMessage,
-          profileName: null,
-          transferInfo: null,
-        };
-      }
+    if (!res.ok) {
+      const errorMessage =
+        (parsed?.error as string) ||
+        (parsed?.message as string) ||
+        "Không kiểm tra được tài khoản Fix Ades.";
+      return {
+        type: "error",
+        message: errorMessage,
+        profileName: null,
+        transferInfo: null,
+      };
     }
 
     if (!parsed) {
@@ -539,10 +522,16 @@ export async function checkFixAdesPublicApi(
       };
     }
 
-    const data = asRecord(parsed?.data);
-    const transferData = asRecord(data?.data);
+    const data = getFixAdesData(parsed);
+    const adesSource = asRecord(data?.adesSource);
     const transfer = getFixAdesTransferResponse(parsed);
-    const isSyncRequired = Boolean(transferData?.existedInSystem) && !transfer;
+    const hasTransferTeamResponseField =
+      Object.prototype.hasOwnProperty.call(data ?? {}, "transferTeamResponse") ||
+      Object.prototype.hasOwnProperty.call(adesSource ?? {}, "transferTeamResponse");
+    const isSyncRequired =
+      Boolean(data?.existedInSystem || adesSource?.existedInSystem) &&
+      hasTransferTeamResponseField &&
+      !transfer;
     if (isSyncRequired) {
       const message = "Tài khoản chưa có dữ liệu profile. Vui lòng bấm Đồng bộ dữ liệu để cập nhật.";
       return {
