@@ -5,6 +5,8 @@ const root = path.join(__dirname, "..");
 const swPath = process.argv[2]
   ? path.resolve(root, process.argv[2])
   : path.join(root, "dist", "sw.js");
+const distDir = path.dirname(swPath);
+const versionPath = path.join(distDir, "version.json");
 const packageJson = require(path.join(root, "package.json"));
 
 const buildId =
@@ -31,4 +33,18 @@ if (next === source) {
 }
 
 fs.writeFileSync(swPath, next, "utf8");
+fs.writeFileSync(
+  versionPath,
+  `${JSON.stringify(
+    {
+      buildId: `build-${safeBuildId}`,
+      version: packageJson.version || "0.0.0",
+      builtAt: new Date().toISOString(),
+    },
+    null,
+    2,
+  )}\n`,
+  "utf8",
+);
 console.log(`[stamp-sw-version] ${path.relative(root, swPath)} -> build-${safeBuildId}`);
+console.log(`[stamp-sw-version] ${path.relative(root, versionPath)} -> build-${safeBuildId}`);

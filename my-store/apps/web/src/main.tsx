@@ -56,6 +56,59 @@ function scheduleErrorTrackerInit() {
 
 scheduleErrorTrackerInit();
 
+const APP_BUILD_ID_KEY = 'mavryk-store-build-id';
+const APP_CACHE_RELOAD_KEY = 'mavryk-store-cache-reload-for';
+
+async function clearBrowserAppCache() {
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter(
+          (cacheName) =>
+            cacheName.startsWith('mavryk-store-') ||
+            cacheName.startsWith('mavryk-runtime-'),
+        )
+        .map((cacheName) => caches.delete(cacheName)),
+    );
+  }
+
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  }
+}
+
+async function refreshOnNewBuild() {
+  if (!import.meta.env.PROD) return;
+
+  try {
+    const response = await fetch(`/version.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return;
+
+    const data = (await response.json()) as { buildId?: unknown };
+    const buildId = String(data.buildId || '').trim();
+    if (!buildId) return;
+
+    const previousBuildId = localStorage.getItem(APP_BUILD_ID_KEY);
+    localStorage.setItem(APP_BUILD_ID_KEY, buildId);
+
+    if (!previousBuildId || previousBuildId === buildId) return;
+    if (sessionStorage.getItem(APP_CACHE_RELOAD_KEY) === buildId) return;
+
+    sessionStorage.setItem(APP_CACHE_RELOAD_KEY, buildId);
+    await clearBrowserAppCache();
+    window.location.reload();
+  } catch (error) {
+    console.warn('[cache] Build version check failed:', error);
+  }
+}
+
+void refreshOnNewBuild();
+
 // Register Service Worker — kiểm tra bản mới mỗi lần vào và reload một lần khi SW mới đã cài xong (tránh khách phải xóa cache).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
