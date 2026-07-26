@@ -33,7 +33,7 @@ import cartRouter from "./modules/cart/cart.routes";
 import topupRouter from "./modules/wallet/wallet.routes";
 import formRouter from "./modules/form/form.routes";
 import fixAdobeRouter from "./modules/fix-adobe/fix-adobe.routes";
-import netflixRouter from "./modules/netflix/netflix.routes";
+import { netflixPublicProxyRouter } from "./modules/netflix/netflix-public-proxy";
 import { renewAdobePublicProxyRouter } from "./modules/renew-adobe/renew-adobe-public-proxy";
 import {
   articleImagesProxyRouter,
@@ -240,7 +240,7 @@ app.use(maintenanceGuard);
 
 // Fix Adobe / profile-check proxy (chỉ gọi dịch vụ ngoài)
 app.use("/api/fix-adobe", fixAdobeRouter);
-app.use("/api/netflix", netflixRouter);
+app.use("/api/netflix", netflixPublicProxyRouter);
 /** Renew Adobe Website — forward tới admin_orderlist (xem ADMIN_ORDERLIST_API_URL) */
 app.use("/api/renew-adobe/public", renewAdobePublicProxyRouter);
 /** Tin tức công khai + JSON — cùng backend admin_orderlist */
