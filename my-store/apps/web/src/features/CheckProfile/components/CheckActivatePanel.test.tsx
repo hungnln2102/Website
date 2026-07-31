@@ -14,7 +14,6 @@ const baseProps = {
   canRenewOnError: false,
   onCheckSubmit: vi.fn((e: React.FormEvent) => e.preventDefault()),
   onActivate: vi.fn(),
-  onSwitchToOtp: vi.fn(),
 };
 
 describe("CheckActivatePanel", () => {

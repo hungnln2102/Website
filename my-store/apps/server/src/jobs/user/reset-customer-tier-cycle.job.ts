@@ -29,8 +29,9 @@ async function resolveTierCyclesTableSql(): Promise<string | null> {
      ORDER BY CASE table_schema WHEN 'customer_web' THEN 0 WHEN 'public' THEN 1 END
      LIMIT 1`
   );
-  if (r.rows.length === 0) return null;
-  const schema = String(r.rows[0].ts).replace(/"/g, '""');
+  const firstRow = r.rows[0];
+  if (!firstRow) return null;
+  const schema = String(firstRow.ts).replace(/"/g, '""');
   return `"${schema}"."tier_cycles"`;
 }
 

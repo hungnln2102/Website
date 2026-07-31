@@ -825,3 +825,163 @@ export async function verifyOtpApi(
       "Xác nhận OTP thành công! Profile đã được cập nhật.",
   };
 }
+
+export type OrderKeyItem = {
+  name: string;
+  code: string | null;
+  group: string;
+};
+
+export type OrderKeyResult = {
+  success: boolean;
+  items?: OrderKeyItem[];
+  time_left?: number;
+  error?: string;
+};
+
+export async function lookupOrderKeyApi(
+  orderCode: string,
+): Promise<OrderKeyResult> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/order-key/lookup/${encodeURIComponent(orderCode)}`,
+      { method: "GET" },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+    if (!res.ok) {
+      return {
+        success: false,
+        error: (parsed?.error as string) || "Không tìm thấy thông tin đơn hàng hoặc mã không đúng.",
+      };
+    }
+    return {
+      success: true,
+      items: (parsed?.items as OrderKeyItem[]) || [],
+      time_left: (parsed?.time_left as number) || 30,
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Không kết nối được dịch vụ tra cứu đơn hàng. Vui lòng thử lại sau.",
+    };
+  }
+}
+
+export async function reportOrderKeyErrorApi(
+  orderCode: string,
+  group: string,
+  name: string,
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/order-key/report-error`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderCode, group, name }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+    if (!res.ok) {
+      return {
+        success: false,
+        error: (parsed?.error as string) || "Gửi báo cáo lỗi thất bại.",
+      };
+    }
+    return {
+      success: true,
+      message: (parsed?.message as string) || "Báo cáo lỗi thành công.",
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Không kết nối được dịch vụ báo lỗi. Vui lòng thử lại sau.",
+    };
+  }
+}
+
+export async function fetchSingleAccountOtpApi(
+  orderCode: string,
+  email: string,
+): Promise<{ success: boolean; code?: string | null; error?: string }> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/order-key/get-otp`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderCode, email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+    if (!res.ok) {
+      return {
+        success: false,
+        error: (parsed?.error as string) || "Lấy OTP thất bại.",
+      };
+    }
+    return {
+      success: true,
+      code: (parsed?.code as string | null) ?? null,
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Không kết nối được dịch vụ lấy OTP. Vui lòng thử lại sau.",
+    };
+  }
+}
+
+export async function getRenewAdobeOtpApi(email: string): Promise<OtpApiResult> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/renew-adobe/public/get-otp`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
+    const text = await res.clone().text().catch(() => "");
+    const parsed = tryParseJson(text);
+    const data = asRecord(parsed?.data);
+    const otpData = asRecord(data?.otp) ?? data;
+    const rawCode = String(
+      otpData?.code ??
+        otpData?.otp ??
+        otpData?.otpCode ??
+        otpData?.pin ??
+        otpData?.password ??
+        "",
+    ).trim();
+    const code = rawCode || text.match(/\b\d{6}\b/)?.[0] || "";
+    const success = parsed?.ok === true && Boolean(code);
+
+    if (!res.ok || !success) {
+      return {
+        type: "error",
+        message:
+          String(parsed?.error ?? "").trim() ||
+          "Không lấy được OTP Adobe. Vui lòng thử lại sau.",
+      };
+    }
+
+    return {
+      type: "info",
+      message: `Đã lấy OTP Adobe cho ${email} thành công.`,
+      otp: {
+        code,
+        service: String(otpData?.service ?? "yuna"),
+      },
+    };
+  } catch {
+    return {
+      type: "error",
+      message: "Không kết nối được dịch vụ lấy OTP. Vui lòng thử lại sau.",
+    };
+  }
+}
+

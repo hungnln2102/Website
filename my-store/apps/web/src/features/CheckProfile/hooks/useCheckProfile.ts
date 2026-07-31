@@ -9,6 +9,7 @@ import {
   syncFixAdesAccountApi,
   resolveAdobeSystemApi,
   sendFixAdesOtpApi,
+  getRenewAdobeOtpApi,
   verifyOtpApi,
   type AdobeSystemNote,
 } from "../checkprofile.api";
@@ -215,14 +216,13 @@ export function useCheckProfile() {
         return;
       }
       
-      // Chỉ fix_ades mới cần lấy OTP.
+      let result;
       if (decision.system === "renew_adobe") {
-        setOtpResultType("info");
-        setOtpMessage("Hệ thống Renew Adobe không dùng OTP profile. Bấm Kiểm tra hoặc Kích hoạt ở khung bên trái.");
-        return;
+        result = await getRenewAdobeOtpApi(trimmed);
+      } else {
+        result = await sendFixAdesOtpApi(trimmed);
       }
 
-      const result = await sendFixAdesOtpApi(trimmed);
       if (result.type === "error") {
         setOtpResultType("error");
         setOtpMessage(result.message);

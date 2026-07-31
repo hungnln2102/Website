@@ -46,13 +46,7 @@ export function OtpPanel({
   }, [otpCode]);
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-3xl border border-sky-400/15 bg-slate-950/55 p-4 shadow-xl shadow-sky-950/15 transition-opacity duration-500 sm:p-6 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-8 lg:shadow-none ${
-        !isCheckMode
-          ? 'cp-panel-right-active opacity-100'
-          : 'cp-panel-hidden lg:pointer-events-none lg:opacity-0'
-      }`}
-    >
+    <div className="relative overflow-hidden rounded-3xl border border-sky-400/15 bg-slate-950/55 p-4 shadow-xl shadow-sky-950/15 sm:p-6 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-8 lg:shadow-none w-full">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_42%),radial-gradient(circle_at_85%_0%,_rgba(168,85,247,0.12),_transparent_44%)]" />
       <div className="relative flex h-full flex-col justify-center">
         <div className="space-y-4 rounded-3xl border border-white/10 bg-slate-800/65 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-5 lg:space-y-3 lg:rounded-2xl lg:p-4">
