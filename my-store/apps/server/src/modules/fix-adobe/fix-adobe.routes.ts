@@ -1,4 +1,5 @@
 import express from "express";
+import { getAdminOrderlistBase } from "../admin-orderlist/create-admin-orderlist-proxy";
 
 const router = express.Router();
 const otpCache = new Map<string, { code: string; expiresAt: number }>();
@@ -9,51 +10,6 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function extractOtpCode(raw: unknown): string | null {
-  if (raw == null) return null;
-  const text = String(raw);
-  const direct = text.match(/\b(\d{4,8})\b/);
-  if (direct?.[1]) return direct[1];
-  return null;
-}
-
-function collectOtpCandidates(
-  input: unknown,
-  out: unknown[] = [],
-  parentKey = "",
-): unknown[] {
-  if (input == null) return out;
-  if (typeof input === "string") {
-    out.push(input);
-    return out;
-  }
-  if (typeof input === "number") {
-    if (/otp|code|token|verification|value/i.test(parentKey)) {
-      out.push(String(input));
-    }
-    return out;
-  }
-  if (Array.isArray(input)) {
-    for (const item of input) collectOtpCandidates(item, out, parentKey);
-    return out;
-  }
-  if (typeof input === "object") {
-    for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
-      if (/otp|code|token|verification/i.test(key)) {
-        out.push(value);
-      }
-      collectOtpCandidates(value, out, key);
-    }
-  }
-  return out;
-}
-
-function sanitizeForLog(raw: string, maxLen = 500): string {
-  return raw
-    .replace(/\b\d{4,8}\b/g, "[otp]")
-    .slice(0, maxLen);
-}
-
 function maskEmail(email: string): string {
   const [local = "", domain = ""] = email.split("@");
   if (!domain) return "***";
@@ -61,213 +17,37 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***@${domain}`;
 }
 
-function maskOtp(code: string): string {
-  if (code.length <= 2) return "***";
-  return `${code.slice(0, 1)}***${code.slice(-1)}`;
-}
-
-function resolveRowsFromPayload(data: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(data)) return data as Array<Record<string, unknown>>;
-  if (data && typeof data === "object") {
-    const directRows = (data as { data?: unknown }).data;
-    if (Array.isArray(directRows)) return directRows as Array<Record<string, unknown>>;
-    const nestedRows = (data as { data?: { rows?: unknown } }).data?.rows;
-    if (Array.isArray(nestedRows)) return nestedRows as Array<Record<string, unknown>>;
-    const mails = (data as { mails?: unknown }).mails;
-    if (Array.isArray(mails)) return mails as Array<Record<string, unknown>>;
-  }
-  return [];
-}
-
-type HdsdOtpResult = {
-  code: string;
-  service: string;
-  timeStr: string | null;
-  timestampMs: number | null;
-};
-
-function normalizeOtpResult(
-  code: string,
-  row?: Record<string, unknown>,
-): HdsdOtpResult {
-  const service = String(row?.service || row?.provider || "unknown").toLowerCase();
-  const timestampRaw = row?.timestamp_ms ?? row?.timestamp;
-  const parsedTimestamp =
-    timestampRaw == null ? Number.NaN : Number.parseInt(String(timestampRaw), 10);
-  return {
-    code,
-    service: service || "unknown",
-    timeStr:
-      typeof row?.time_str === "string" && row.time_str.trim()
-        ? row.time_str.trim()
-        : null,
-    timestampMs: Number.isFinite(parsedTimestamp) ? parsedTimestamp : null,
-  };
-}
-
-async function fetchOtpFromHdsd(email: string): Promise<HdsdOtpResult | null> {
-  const baseUrl =
-    process.env.FIX_ADOBE_OTP_HDSD_BASE_URL ||
-    process.env.OTP_HDSD_BASE_URL ||
-    "https://otp.hdsd.net";
-  const endpoint =
-    process.env.FIX_ADOBE_OTP_HDSD_ENDPOINT ||
-    "/get_otp_api";
-  const token =
-    process.env.FIX_ADOBE_OTP_HDSD_TOKEN || process.env.OTP_HDSD_TOKEN || "";
-
-  const url = new URL(endpoint, baseUrl);
-
-  const headers: Record<string, string> = {
-    Accept: "application/json, text/plain;q=0.9, */*;q=0.8",
-    "Content-Type": "application/json",
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const timeoutMs = Number.parseInt(
-    process.env.FIX_ADOBE_OTP_HDSD_TIMEOUT_MS || "10000",
-    10,
-  );
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
+async function fetchOtpFromAdminOrderlist(email: string) {
   try {
-    const response = await fetch(url.toString(), {
+    const adminBase = getAdminOrderlistBase();
+    const url = `${adminBase}/api/renew-adobe/public/get-otp`;
+    const upstreamRes = await fetch(url, {
       method: "POST",
-      headers,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
-      signal: controller.signal,
     });
-    const rawText = await response.text();
-    if (!response.ok) {
+    if (!upstreamRes.ok) {
       if (OTP_DEBUG_ENABLED) {
-        console.warn("[fix-adobe] hdsd non-OK response", {
-          status: response.status,
+        console.warn("[fix-adobe] admin_orderlist non-OK response", {
+          status: upstreamRes.status,
           email: maskEmail(email),
-          body: sanitizeForLog(rawText),
         });
       }
       return null;
     }
 
-    let data: Record<string, unknown> | null = null;
-    if (rawText) {
-      try {
-        data = JSON.parse(rawText) as Record<string, unknown>;
-      } catch {
-        data = null;
-      }
+    const resJson = (await upstreamRes.json()) as any;
+    if (resJson && resJson.ok && resJson.data?.otp?.code) {
+      return {
+        code: resJson.data.otp.code,
+        service: resJson.data.otp.service || "unknown",
+        timeStr: resJson.data.otp.timeStr || null,
+        timestampMs: resJson.data.otp.timestampMs || null,
+      };
     }
-
-    const rows = resolveRowsFromPayload(data);
-    if (rows.length > 0) {
-      // Ưu tiên OTP từ Adobe.
-      for (const row of rows) {
-        const service = String(row?.service || row?.provider || "").toLowerCase();
-        const type = String(row?.type || row?.kind || "").toLowerCase();
-        if (service.includes("adobe") && type !== "warning" && type !== "link") {
-          const code = extractOtpCode(row?.value ?? row?.otp ?? row?.code);
-          if (code) return normalizeOtpResult(code, row);
-        }
-      }
-      // Fallback: dòng hợp lệ bất kỳ có mã số.
-      for (const row of rows) {
-        const type = String(row?.type || row?.kind || "").toLowerCase();
-        if (type === "warning" || type === "link") continue;
-        const code = extractOtpCode(row?.value ?? row?.otp ?? row?.code);
-        if (code) return normalizeOtpResult(code, row);
-      }
-    }
-
-    const candidates = collectOtpCandidates(data ?? rawText);
-    for (const candidate of candidates) {
-      const code = extractOtpCode(candidate);
-      if (code) {
-        return {
-          code,
-          service: "unknown",
-          timeStr: null,
-          timestampMs: null,
-        };
-      }
-    }
-
-    if (OTP_DEBUG_ENABLED) {
-      console.info("[fix-adobe] hdsd no otp in payload", {
-        email: maskEmail(email),
-        body: sanitizeForLog(rawText),
-      });
-    }
-    return null;
   } catch (error) {
-    console.error("[fix-adobe] fetchOtpFromHdsd error:", error);
-    return null;
-  } finally {
-    clearTimeout(timer);
+    console.error("[fix-adobe] fetchOtpFromAdminOrderlist error:", error);
   }
-}
-
-type FetchOtpOptions = {
-  attempts?: number;
-  intervalMs?: number;
-};
-
-async function fetchOtpFromHdsdWithRetry(
-  email: string,
-  options?: FetchOtpOptions,
-): Promise<HdsdOtpResult | null> {
-  const attempts = Math.max(
-    1,
-    Number.parseInt(
-      String(
-        options?.attempts ??
-          process.env.FIX_ADOBE_OTP_HDSD_POLL_ATTEMPTS ??
-          "4",
-      ),
-      10,
-    ) || 1,
-  );
-  const intervalMs = Math.max(
-    0,
-    Number.parseInt(
-      String(
-        options?.intervalMs ??
-          process.env.FIX_ADOBE_OTP_HDSD_POLL_INTERVAL_MS ??
-          "2500",
-      ),
-      10,
-    ) || 0,
-  );
-
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const otpResult = await fetchOtpFromHdsd(email);
-    if (otpResult) {
-      if (OTP_DEBUG_ENABLED) {
-        console.info("[fix-adobe] hdsd otp resolved", {
-          email: maskEmail(email),
-          attempt,
-          attempts,
-          code: maskOtp(otpResult.code),
-          service: otpResult.service,
-        });
-      }
-      return otpResult;
-    }
-    if (OTP_DEBUG_ENABLED) {
-      console.info("[fix-adobe] hdsd retry waiting", {
-        email: maskEmail(email),
-        attempt,
-        attempts,
-        intervalMs,
-      });
-    }
-    if (attempt < attempts && intervalMs > 0) {
-      await sleep(intervalMs);
-    }
-  }
-
   return null;
 }
 
@@ -395,7 +175,7 @@ router.post("/switch", async (req, res) => {
 });
 
 // POST /api/fix-adobe/send-otp
-// Lấy OTP mới nhất từ otp.hdsd.net (POST /get_otp_api) và poll ngắn nếu OTP về chậm.
+// Lấy OTP mới nhất bằng cách ủy thác hoàn toàn sang admin_orderlist backend
 router.post("/send-otp", async (req, res) => {
   const email = (req.body?.email as string | undefined)?.trim();
 
@@ -405,12 +185,16 @@ router.post("/send-otp", async (req, res) => {
   }
 
   try {
-    const otpResult = await fetchOtpFromHdsdWithRetry(email);
+    if (OTP_DEBUG_ENABLED) {
+      console.info(`[fix-adobe] send-otp delegating to admin_orderlist for: ${maskEmail(email)}`);
+    }
+
+    const otpResult = await fetchOtpFromAdminOrderlist(email);
+
     if (!otpResult) {
       res.status(404).json({
         success: false,
-        message:
-          "Chưa lấy được OTP từ otp.hdsd.net. Vui lòng thử lại sau vài giây.",
+        message: "Chưa lấy được OTP từ hệ thống. Vui lòng thử lại sau vài giây.",
       });
       return;
     }
@@ -422,7 +206,7 @@ router.post("/send-otp", async (req, res) => {
 
     res.json({
       success: true,
-      message: `Đã lấy OTP từ otp.hdsd.net cho ${email}.`,
+      message: `Đã lấy OTP thành công cho ${email}.`,
       otp: {
         code: otpResult.code,
         service: otpResult.service,
@@ -431,7 +215,7 @@ router.post("/send-otp", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("[fix-adobe] send-otp proxy error:", err);
+    console.error("[fix-adobe] send-otp error:", err);
     res.status(500).json({ error: "Failed to contact OTP service" });
   }
 });
@@ -455,7 +239,10 @@ router.post("/verify-otp", async (req, res) => {
       cached && cached.expiresAt > now ? cached.code : null;
 
     if (!latestOtp) {
-      const freshOtp = await fetchOtpFromHdsdWithRetry(email, { attempts: 1 });
+      if (OTP_DEBUG_ENABLED) {
+        console.info(`[fix-adobe] verify-otp delegating to admin_orderlist for: ${maskEmail(email)}`);
+      }
+      const freshOtp = await fetchOtpFromAdminOrderlist(email);
       latestOtp = freshOtp?.code ?? null;
       if (latestOtp) {
         otpCache.set(key, {
@@ -468,8 +255,7 @@ router.post("/verify-otp", async (req, res) => {
     if (!latestOtp) {
       res.status(404).json({
         success: false,
-        message:
-          "Không tìm thấy OTP trên otp.hdsd.net để đối chiếu.",
+        message: "Không tìm thấy OTP trên hệ thống để đối chiếu.",
       });
       return;
     }
@@ -489,7 +275,7 @@ router.post("/verify-otp", async (req, res) => {
       message: "Xác nhận OTP thành công!",
     });
   } catch (err) {
-    console.error("[fix-adobe] verify-otp proxy error:", err);
+    console.error("[fix-adobe] verify-otp error:", err);
     res.status(500).json({ error: "Failed to contact OTP verification service" });
   }
 });
