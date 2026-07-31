@@ -7,7 +7,7 @@ import type {
 } from "./checkprofile.types";
 
 /** Đồng bộ với backend `adobeSystemConstants.js`. */
-export type AdobeSystemNote = "renew_adobe" | "fix_adobe_edu" | "fix_ades";
+export type AdobeSystemNote = "renew_adobe" | "fix_ades";
 
 export type ResolveSystemResult =
   | { ok: true; email: string; system_note: AdobeSystemNote; order_id: string | null }
@@ -31,12 +31,11 @@ export async function resolveAdobeSystemApi(
       const code = String(parsed.system_note ?? "").toLowerCase();
       const allowed: AdobeSystemNote[] = [
         "renew_adobe",
-        "fix_adobe_edu",
         "fix_ades",
       ];
       const normalized = (allowed.includes(code as AdobeSystemNote)
         ? code
-        : "fix_adobe_edu") as AdobeSystemNote;
+        : "renew_adobe") as AdobeSystemNote;
       return {
         ok: true,
         email: String(parsed.email ?? email),

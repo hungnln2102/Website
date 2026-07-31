@@ -1,17 +1,14 @@
 import { useState } from "react";
 import type { CheckResultType, FixAdesTransferInfo, OtpResultType } from "../checkprofile.types";
 import {
-  activateProfileApi,
   activateRenewAdobeApi,
   checkFixAdesPublicApi,
-  checkProfileApi,
   getRenewAdobeStatusApi,
   renewFixAdesPublicApi,
   switchFixAdesOrganizationApi,
   syncFixAdesAccountApi,
   resolveAdobeSystemApi,
   sendFixAdesOtpApi,
-  sendOtpApi,
   verifyOtpApi,
   type AdobeSystemNote,
 } from "../checkprofile.api";
@@ -126,9 +123,7 @@ export function useCheckProfile() {
       const result =
         decision.system === "fix_ades"
           ? await checkFixAdesPublicApi(trimmed)
-          : decision.system === "renew_adobe"
-            ? await getRenewAdobeStatusApi(trimmed)
-            : await checkProfileApi(trimmed);
+          : await getRenewAdobeStatusApi(trimmed);
 
       setMessage(result.message);
       setResultType(result.type);
@@ -188,9 +183,7 @@ export function useCheckProfile() {
       const result =
         decision.system === "fix_ades"
           ? await renewFixAdesPublicApi(trimmed)
-          : decision.system === "renew_adobe"
-            ? await activateRenewAdobeApi(trimmed)
-            : await activateProfileApi(trimmed, profileName);
+          : await activateRenewAdobeApi(trimmed);
 
       setMessage(result.message);
       setResultType(result.type);
@@ -222,17 +215,14 @@ export function useCheckProfile() {
         return;
       }
       
-      // Cho phép cả fix_adobe_edu và fix_ades lấy OTP.
+      // Chỉ fix_ades mới cần lấy OTP.
       if (decision.system === "renew_adobe") {
         setOtpResultType("info");
         setOtpMessage("Hệ thống Renew Adobe không dùng OTP profile. Bấm Kiểm tra hoặc Kích hoạt ở khung bên trái.");
         return;
       }
 
-      const result =
-        decision.system === "fix_ades"
-          ? await sendFixAdesOtpApi(trimmed)
-          : await sendOtpApi(trimmed);
+      const result = await sendFixAdesOtpApi(trimmed);
       if (result.type === "error") {
         setOtpResultType("error");
         setOtpMessage(result.message);
