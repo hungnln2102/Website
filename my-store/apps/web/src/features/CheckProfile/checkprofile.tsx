@@ -15,6 +15,7 @@ import {
   Sparkles,
   Shield,
   Zap,
+  ExternalLink,
 } from 'lucide-react';
 import { useCheckProfile } from './hooks/useCheckProfile';
 import {
@@ -54,72 +55,7 @@ const ADOBE_PANELS: AdobePanelConfig[] = [
   },
 ];
 
-const accentClasses = {
-  purple: {
-    panel: 'from-purple-700 via-violet-700 to-fuchsia-800 shadow-purple-900/40',
-    icon: 'bg-white/10 text-white ring-white/20',
-    button: 'border-white/55 text-white hover:bg-white hover:text-purple-700',
-    pill: 'bg-purple-500/15 text-purple-100 ring-purple-300/20',
-  },
-  indigo: {
-    panel: 'from-indigo-700 via-blue-700 to-violet-800 shadow-indigo-900/40',
-    icon: 'bg-white/10 text-white ring-white/20',
-    button: 'border-white/55 text-white hover:bg-white hover:text-indigo-700',
-    pill: 'bg-indigo-500/15 text-indigo-100 ring-indigo-300/20',
-  },
-} as const;
-
-function BookSidePanel({
-  panel,
-  side,
-  onSelect,
-}: {
-  panel: AdobePanelConfig;
-  side: 'left' | 'right';
-  onSelect: (mode: AdobeFormMode) => void;
-}) {
-  const { Icon } = panel;
-  const classes = accentClasses[panel.accent];
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(panel.mode)}
-      className={`group relative hidden min-h-[540px] overflow-hidden bg-gradient-to-br ${classes.panel} p-6 text-left shadow-2xl transition-all duration-500 hover:brightness-110 lg:flex lg:flex-col lg:items-center lg:justify-center ${
-        side === 'left' ? 'rounded-l-3xl' : 'rounded-r-3xl'
-      }`}
-      aria-label={`Chuyển sang ${panel.title}`}
-    >
-      <div className="animate-cp-float absolute top-8 left-8 h-4 w-4 rounded-full bg-white/20" />
-      <div className="animate-cp-float-d absolute top-16 right-12 h-3 w-3 rotate-45 bg-white/15" />
-      <div className="animate-cp-float absolute bottom-20 left-12 h-3 w-3 rotate-45 bg-white/15" />
-      <div className="animate-cp-float-d absolute right-10 bottom-12 h-4 w-4 rounded-full bg-white/10" />
-      <Sparkles className="absolute top-1/3 left-8 h-6 w-6 text-white/20" />
-      <Shield className="absolute right-8 bottom-1/3 h-6 w-6 text-white/20" />
-      <Zap className="absolute top-1/2 left-12 h-5 w-5 text-white/15" />
-
-      <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/10 shadow-2xl ring-1 ring-white/20 transition-transform duration-500 group-hover:scale-110">
-        <Icon className="h-10 w-10 text-white" />
-      </div>
-      <div className="relative mt-7 text-center">
-        <div
-          className={`mx-auto mb-4 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ${classes.pill}`}
-        >
-          Bấm để mở trang
-        </div>
-        <h2 className="text-2xl font-bold text-white">{panel.title}</h2>
-        <p className="mt-3 max-w-[220px] text-sm leading-relaxed text-white/75">{panel.subtitle}</p>
-        <span
-          className={`mt-6 inline-flex rounded-full border-2 px-7 py-2.5 text-sm font-bold transition-all duration-300 ${classes.button}`}
-        >
-          {side === 'left' ? '← ' : ''}
-          {panel.actionLabel}
-          {side === 'right' ? ' →' : ''}
-        </span>
-      </div>
-    </button>
-  );
-}
+// Unified modern layout helpers
 
 
 export default function CheckProfilePage() {
@@ -269,137 +205,183 @@ export default function CheckProfilePage() {
               </p>
             </div>
 
-            {/* Main Card */}
-            <div className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 shadow-2xl shadow-purple-900/25 backdrop-blur lg:min-h-[540px] lg:border-0 lg:bg-slate-900">
-              <div className="pointer-events-none absolute -top-20 left-1/2 h-40 w-96 -translate-x-1/2 rounded-full bg-purple-600/15 blur-3xl" />
+            {/* Redesigned Layout: Split Panel */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr] w-full items-stretch">
+              
+              {/* Left Info/Hero Card */}
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-purple-900/40 via-indigo-950/60 to-slate-950 p-6 flex flex-col justify-between shadow-xl shadow-purple-950/10">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.15),transparent_60%)]" />
+                <div className="relative space-y-6">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 px-3 py-1 text-[11px] font-bold text-purple-300 ring-1 ring-purple-300/20">
+                      <ShieldCheck className="h-3 w-3 animate-pulse" />
+                      Hệ thống Tự động hóa
+                    </div>
+                    <h3 className="mt-3 text-xl font-black tracking-tight text-white sm:text-2xl">
+                      Adobe Tool
+                    </h3>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                      Giải pháp tự sửa lỗi tài khoản, chuyển đổi profile và nhận mã xác minh OTP tức thì trong vài giây.
+                    </p>
+                  </div>
 
-              <div className={`grid min-h-0 grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-h-[540px] lg:gap-0 lg:p-0 ${
-                activeMode === 'checkEmail'
-                  ? 'lg:grid-cols-[minmax(0,1fr)_180px] xl:grid-cols-[minmax(0,1fr)_220px]'
-                  : 'lg:grid-cols-[180px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)]'
-              }`}>
-                {activeMode === 'orderLookup' && (
-                  <BookSidePanel
-                    panel={ADOBE_PANELS[0]}
-                    side="left"
-                    onSelect={handleActiveModeChange}
-                  />
-                )}
-
-                <div className="relative min-h-0 overflow-hidden rounded-3xl border border-purple-400/15 bg-gradient-to-br from-slate-900 via-slate-905 to-slate-950 px-4 py-5 shadow-xl shadow-purple-950/15 sm:px-6 sm:py-7 lg:min-h-[540px] lg:rounded-none lg:border-0 lg:px-10 lg:py-8 lg:shadow-[inset_22px_0_45px_rgba(2,6,23,0.45),inset_-22px_0_45px_rgba(2,6,23,0.45)]">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-8 bg-gradient-to-r from-black/35 to-transparent lg:block" />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-8 bg-gradient-to-l from-black/35 to-transparent lg:block" />
-
-                  <div className="relative mx-auto flex h-full max-w-md flex-col justify-center">
-                    {/* Mobile tabs grid */}
-                    <div className="mb-5 grid grid-cols-2 gap-2 lg:hidden">
-                      {ADOBE_PANELS.map((panel) => {
-                        const { Icon } = panel;
-                        const isActive = activeMode === panel.mode;
-                        return (
-                          <button
-                            key={panel.mode}
-                            type="button"
-                            onClick={() => handleActiveModeChange(panel.mode)}
-                            className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl px-2 py-2 text-center text-[11px] font-semibold ring-1 transition-all sm:gap-2 sm:px-3 sm:text-xs ${
-                              isActive
-                                ? 'bg-purple-600 text-white ring-purple-300/40'
-                                : 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10'
-                            }`}
-                          >
-                            <Icon className="h-3.5 w-3.5" />
-                            {panel.actionLabel}
-                          </button>
-                        );
-                      })}
+                  <div className="space-y-4 pt-2">
+                    <div className="flex gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        <Search className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">Kiểm tra & Sửa lỗi</h4>
+                        <p className="mt-0.5 text-[11px] text-slate-400 leading-normal">Quét trạng thái tài khoản và đưa ra giải pháp sửa lỗi nhanh.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                        <Zap className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">Kích hoạt Siêu tốc</h4>
+                        <p className="mt-0.5 text-[11px] text-slate-400 leading-normal">Chuyển đổi profile cũ sang profile mới mà không lo mất dữ liệu.</p>
+                      </div>
                     </div>
 
-                    {activeMode === 'checkEmail' && (
-                      <div className="animate-in fade-in duration-300">
-                        <CheckActivatePanel
-                          isCheckMode={true}
-                          email={cp.email}
-                          onEmailChange={cp.setEmail}
-                          loading={cp.loading}
-                          activating={cp.activating}
-                          resultType={cp.resultType}
-                          message={cp.message}
-                          profileName={cp.profileName}
-                          transferInfo={cp.transferInfo}
-                          canRenewOnError={cp.canRenewOnError}
-                          onCheckSubmit={cp.handleCheckSubmit}
-                          onActivate={cp.handleActivate}
-                          checkType="email"
-                          onCheckTypeChange={setCheckType}
-                          orderCode={orderCode}
-                          onOrderCodeChange={setOrderCode}
-                          orderKeyLoading={orderKeyLoading}
-                          orderKeyResult={orderKeyResult}
-                          orderKeyError={orderKeyError}
-                          onOrderKeyLookup={handleOrderKeyLookup}
-                          onOrderKeyReset={() => {}}
-                          reportingItem={reportingItem}
-                          reportSuccess={reportSuccess}
-                          reportError={reportError}
-                          onReportError={handleOrderKeyReportError}
-                          otpSent={cp.otpSent}
-                          otpCode={cp.otpCode}
-                          sendingOtp={cp.sendingOtp}
-                          otpMessage={cp.otpMessage}
-                          otpResultType={cp.otpResultType}
-                          onSendOtp={cp.handleSendOtp}
-                          onResetOtp={cp.resetOtp}
-                        />
+                    <div className="flex gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                        <KeyRound className="h-4 w-4" />
                       </div>
-                    )}
-
-                    {activeMode === 'orderLookup' && (
-                      <div className="animate-in fade-in duration-300">
-                        <CheckActivatePanel
-                          isCheckMode={true}
-                          email={cp.email}
-                          onEmailChange={cp.setEmail}
-                          loading={cp.loading}
-                          activating={cp.activating}
-                          resultType={cp.resultType}
-                          message={cp.message}
-                          profileName={cp.profileName}
-                          transferInfo={cp.transferInfo}
-                          canRenewOnError={cp.canRenewOnError}
-                          onCheckSubmit={cp.handleCheckSubmit}
-                          onActivate={cp.handleActivate}
-                          checkType="order-key"
-                          onCheckTypeChange={setCheckType}
-                          orderCode={orderCode}
-                          onOrderCodeChange={setOrderCode}
-                          orderKeyLoading={orderKeyLoading}
-                          orderKeyResult={orderKeyResult}
-                          orderKeyError={orderKeyError}
-                          onOrderKeyLookup={handleOrderKeyLookup}
-                          onOrderKeyReset={() => {
-                            setOrderKeyResult(null);
-                            setOrderKeyError(null);
-                            setReportSuccess(null);
-                            setReportError(null);
-                          }}
-                          reportingItem={reportingItem}
-                          reportSuccess={reportSuccess}
-                          reportError={reportError}
-                          onReportError={handleOrderKeyReportError}
-                        />
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">Lấy OTP An toàn</h4>
+                        <p className="mt-0.5 text-[11px] text-slate-400 leading-normal">Hệ thống nhận mã xác nhận tự động, bảo mật và cực kỳ nhanh chóng.</p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
 
-                {activeMode === 'checkEmail' && (
-                  <BookSidePanel
-                    panel={ADOBE_PANELS[1]}
-                    side="right"
-                    onSelect={handleActiveModeChange}
-                  />
-                )}
+                <div className="relative mt-8 border-t border-white/5 pt-4">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Phiên bản v2.4</span>
+                    <a
+                      href={ROUTES.adobeGuide}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-bold text-purple-400 hover:text-purple-300 transition"
+                    >
+                      Xem HDSD
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
               </div>
+
+              {/* Right Form Card */}
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/60 p-5 shadow-2xl shadow-purple-900/10 backdrop-blur-xl flex flex-col">
+                {/* Background glow */}
+                <div className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-purple-600/10 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-indigo-600/10 blur-3xl" />
+
+                {/* Tab Selector (Universal for desktop & mobile) */}
+                <div className="relative z-10 mb-6 flex rounded-2xl bg-slate-950/80 p-1.5 ring-1 ring-white/5">
+                  {ADOBE_PANELS.map((panel) => {
+                    const { Icon } = panel;
+                    const isActive = activeMode === panel.mode;
+                    return (
+                      <button
+                        key={panel.mode}
+                        type="button"
+                        onClick={() => handleActiveModeChange(panel.mode)}
+                        className={`flex-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl text-center text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {panel.actionLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="relative z-10 flex-1 flex flex-col justify-center">
+                  {activeMode === 'checkEmail' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <CheckActivatePanel
+                        isCheckMode={true}
+                        email={cp.email}
+                        onEmailChange={cp.setEmail}
+                        loading={cp.loading}
+                        activating={cp.activating}
+                        resultType={cp.resultType}
+                        message={cp.message}
+                        profileName={cp.profileName}
+                        transferInfo={cp.transferInfo}
+                        canRenewOnError={cp.canRenewOnError}
+                        onCheckSubmit={cp.handleCheckSubmit}
+                        onActivate={cp.handleActivate}
+                        checkType="email"
+                        onCheckTypeChange={setCheckType}
+                        orderCode={orderCode}
+                        onOrderCodeChange={setOrderCode}
+                        orderKeyLoading={orderKeyLoading}
+                        orderKeyResult={orderKeyResult}
+                        orderKeyError={orderKeyError}
+                        onOrderKeyLookup={handleOrderKeyLookup}
+                        onOrderKeyReset={() => {}}
+                        reportingItem={reportingItem}
+                        reportSuccess={reportSuccess}
+                        reportError={reportError}
+                        onReportError={handleOrderKeyReportError}
+                        otpSent={cp.otpSent}
+                        otpCode={cp.otpCode}
+                        sendingOtp={cp.sendingOtp}
+                        otpMessage={cp.otpMessage}
+                        otpResultType={cp.otpResultType}
+                        onSendOtp={cp.handleSendOtp}
+                        onResetOtp={cp.resetOtp}
+                      />
+                    </div>
+                  )}
+
+                  {activeMode === 'orderLookup' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <CheckActivatePanel
+                        isCheckMode={true}
+                        email={cp.email}
+                        onEmailChange={cp.setEmail}
+                        loading={cp.loading}
+                        activating={cp.activating}
+                        resultType={cp.resultType}
+                        message={cp.message}
+                        profileName={cp.profileName}
+                        transferInfo={cp.transferInfo}
+                        canRenewOnError={cp.canRenewOnError}
+                        onCheckSubmit={cp.handleCheckSubmit}
+                        onActivate={cp.handleActivate}
+                        checkType="order-key"
+                        onCheckTypeChange={setCheckType}
+                        orderCode={orderCode}
+                        onOrderCodeChange={setOrderCode}
+                        orderKeyLoading={orderKeyLoading}
+                        orderKeyResult={orderKeyResult}
+                        orderKeyError={orderKeyError}
+                        onOrderKeyLookup={handleOrderKeyLookup}
+                        onOrderKeyReset={() => {
+                          setOrderKeyResult(null);
+                          setOrderKeyError(null);
+                          setReportSuccess(null);
+                          setReportError(null);
+                        }}
+                        reportingItem={reportingItem}
+                        reportSuccess={reportSuccess}
+                        reportError={reportError}
+                        onReportError={handleOrderKeyReportError}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 text-center text-[11px] text-slate-600">
