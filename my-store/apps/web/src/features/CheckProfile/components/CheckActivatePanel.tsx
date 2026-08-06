@@ -171,80 +171,80 @@ function OrderAccountCard({
       ) : (
       <div className="space-y-3">
         {/* Email Row */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tài khoản</span>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-xs font-bold text-slate-200 select-all truncate">{email}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-slate-200 select-all truncate flex-1 min-w-0">{email}</span>
             <button
               type="button"
               onClick={() => copyToClipboard(email, setCopiedUser)}
-              className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+              className="shrink-0 p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
               title="Copy tài khoản"
             >
-              {copiedUser ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+              {copiedUser ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
           </div>
         </div>
 
         {/* Password Row */}
         {password && (
-          <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-2">
+          <div className="space-y-1 border-t border-white/5 pt-2">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-mono font-bold text-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-slate-200 flex-1 min-w-0 truncate">
                 {showPass ? password : '••••••••'}
               </span>
               <button
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+                className="shrink-0 p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
               >
-                {showPass ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {showPass ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>
               <button
                 type="button"
                 onClick={() => copyToClipboard(password, setCopiedPass)}
-                className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+                className="shrink-0 p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
                 title="Copy mật khẩu"
               >
-                {copiedPass ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                {copiedPass ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
             </div>
           </div>
         )}
 
         {/* OTP Code Area */}
-        <div className="border-t border-white/5 pt-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mã OTP</span>
+        <div className="border-t border-white/5 pt-3 space-y-2">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mã OTP</span>
+          <div className="flex flex-wrap items-center gap-2">
             {otp ? (
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-purple-500/10 px-3 py-1 font-mono text-sm font-extrabold tracking-wider text-purple-300 border border-purple-500/20">
+              <>
+                <span className="rounded-lg bg-purple-500/10 px-3 py-1.5 font-mono text-sm font-extrabold tracking-wider text-purple-300 border border-purple-500/20">
                   {otp}
                 </span>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(otp, setCopiedOtp)}
-                  className="p-1.5 rounded-lg bg-purple-500/10 text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/20 transition"
+                  className="shrink-0 p-2 rounded-lg bg-purple-500/10 text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/20 transition"
                   title="Copy mã OTP"
                 >
                   {copiedOtp ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 {otpError && (
-                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{otpError}</span>
+                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">{otpError}</span>
                 )}
                 <button
                   type="button"
                   disabled={countdown > 0 || loadingOtp}
                   onClick={handleGetOtp}
-                  className="inline-flex h-8 items-center justify-center rounded-xl bg-purple-600 px-4 text-xs font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 disabled:opacity-50 disabled:bg-slate-800 disabled:shadow-none transition-all duration-300"
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-purple-600 px-4 text-xs font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 disabled:opacity-50 disabled:bg-slate-800 disabled:shadow-none transition-all duration-300 min-w-[100px]"
                 >
                   {loadingOtp ? (
                     <>
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                       Đang lấy...
                     </>
                   ) : countdown > 0 ? (
@@ -253,12 +253,12 @@ function OrderAccountCard({
                     "Lấy OTP"
                   )}
                 </button>
-              </div>
+              </>
             )}
           </div>
           {/* Visual countdown progress bar */}
           {!otp && countdown > 0 && (
-            <div className="mt-2 h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+            <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000 ease-linear"
                 style={{ width: `${(countdown / 30) * 100}%` }}
@@ -718,11 +718,11 @@ export function CheckActivatePanel({
 
                 {/* Report Error / Refresh */}
                 {items && items.length > 0 && (
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-white/5 pt-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-3">
                     <div>
                       {showReportConfirm ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-rose-400 font-bold">Báo lỗi đơn hàng này?</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-rose-400 font-bold">Báo lỗi đơn hàng này?</span>
                           <button
                             type="button"
                             disabled={isReporting}
@@ -733,14 +733,14 @@ export function CheckActivatePanel({
                               }
                               setShowReportConfirm(false);
                             }}
-                            className="rounded bg-rose-600/20 border border-rose-500/30 px-2.5 py-1 text-[10px] font-bold text-rose-200 hover:bg-rose-600/40 hover:text-white transition-colors"
+                            className="rounded-lg bg-rose-600/20 border border-rose-500/30 px-4 py-2 text-xs font-bold text-rose-200 hover:bg-rose-600/40 hover:text-white transition-colors min-w-[60px]"
                           >
                             Đồng ý
                           </button>
                           <button
                             type="button"
                             onClick={() => setShowReportConfirm(false)}
-                            className="rounded bg-slate-800 border border-white/5 px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            className="rounded-lg bg-slate-800 border border-white/5 px-4 py-2 text-xs font-bold text-slate-400 hover:bg-slate-700 hover:text-white transition-colors min-w-[50px]"
                           >
                             Hủy
                           </button>
@@ -750,11 +750,11 @@ export function CheckActivatePanel({
                           type="button"
                           disabled={isReporting}
                           onClick={() => setShowReportConfirm(true)}
-                          className="inline-flex items-center gap-1 font-bold text-rose-400 hover:text-rose-350 disabled:opacity-50 transition"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:text-rose-350 disabled:opacity-50 transition py-1"
                         >
                           {isReporting ? (
                             <>
-                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              <Loader2 className="h-3 w-3 animate-spin" />
                               <span>Đang gửi...</span>
                             </>
                           ) : (
@@ -768,9 +768,9 @@ export function CheckActivatePanel({
                       type="button"
                       disabled={orderKeyLoading}
                       onClick={onOrderKeyLookup}
-                      className="inline-flex items-center gap-1 font-bold text-purple-400 hover:text-purple-300 disabled:opacity-50 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-400 hover:text-purple-300 disabled:opacity-50 transition py-1"
                     >
-                      <RefreshCw className={`h-3 w-3 ${orderKeyLoading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-3.5 w-3.5 ${orderKeyLoading ? 'animate-spin' : ''}`} />
                       Làm mới
                     </button>
                   </div>
