@@ -830,6 +830,7 @@ export type OrderKeyItem = {
   name: string;
   code: string | null;
   group: string;
+  report_status?: string;
 };
 
 export type OrderKeyResult = {

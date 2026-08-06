@@ -102,7 +102,9 @@ function OrderAccountCard({
   const [showPass, setShowPass] = useState(false);
 
   const nameStr = item.name || '';
-  const [emailPart, passPart] = nameStr.split(/[#|]/);
+  const sepIdx = nameStr.search(/[#|]/);
+  const emailPart = sepIdx >= 0 ? nameStr.slice(0, sepIdx) : nameStr;
+  const passPart = sepIdx >= 0 ? nameStr.slice(sepIdx + 1) : '';
   const email = emailPart?.trim() || '';
   const password = passPart?.trim() || '';
 
@@ -155,8 +157,18 @@ function OrderAccountCard({
     }
   };
 
+  const isPendingReport = item.report_status === 'pending';
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 p-4 shadow-lg backdrop-blur-md hover:border-purple-500/30 transition-all duration-300">
+      {isPendingReport ? (
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-rose-500/25 bg-rose-500/10">
+          <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+          <span className="text-xs font-semibold text-rose-300">
+            Tài khoản này đã được báo lỗi, vui lòng chờ đến khi tài khoản hiển thị lại là đã được xử lý.
+          </span>
+        </div>
+      ) : (
       <div className="space-y-3">
         {/* Email Row */}
         <div className="flex items-center justify-between gap-3">
@@ -255,6 +267,7 @@ function OrderAccountCard({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
