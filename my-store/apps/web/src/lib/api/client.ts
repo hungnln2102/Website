@@ -86,6 +86,10 @@ export async function syncMaintenanceStatusFromServer(): Promise<boolean> {
     const res = await fetch(getMaintenanceStatusUrl(), {
       credentials: "include",
     });
+    if (res.status === 503) {
+      setMaintenanceMode(true);
+      return true;
+    }
     if (!res.ok) return _maintenanceMode;
 
     const body = (await res.json()) as {
@@ -132,18 +136,12 @@ export async function apiFetch(
 
     // Detect maintenance mode from 503 response
     if (res.status === 503) {
-      try {
-        const cloned = res.clone();
-        const body = await cloned.json();
-        if (body?.maintenance === true) {
-          const onSystemHub =
-            typeof window !== "undefined" &&
-            isSystemHubPath(window.location.pathname);
-          if (!onSystemHub) {
-            setMaintenanceMode(true);
-          }
-        }
-      } catch { /* ignore parse errors */ }
+      const onSystemHub =
+        typeof window !== "undefined" &&
+        isSystemHubPath(window.location.pathname);
+      if (!onSystemHub) {
+        setMaintenanceMode(true);
+      }
     }
     // Không tự tắt maintenance khi API khác trả 200 — /categories, /products bypass guard
     // và vẫn 200 trong lúc bảo trì. syncMaintenanceStatusFromServer() là nguồn tắt/bật chính xác.
