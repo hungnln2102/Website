@@ -23,22 +23,22 @@ type TableConfig = {
 const pickSchema = (...candidates: Array<string | undefined | null>) =>
   candidates.find((value) => value && value.trim()) ?? "";
 
-export const SCHEMA_PRODUCT       = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "product");
-const        SCHEMA_PARTNER       = pickSchema(process.env.DB_SCHEMA_PARTNER,       process.env.SCHEMA_PARTNER,       "partner");
+export const SCHEMA_PRODUCT       = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "business");
+const        SCHEMA_PARTNER       = pickSchema(process.env.DB_SCHEMA_PARTNER,       process.env.SCHEMA_PARTNER,       "business");
 export const SCHEMA_SUPPLIER      = pickSchema(process.env.DB_SCHEMA_SUPPLIER,      process.env.SCHEMA_SUPPLIER,      SCHEMA_PARTNER, SCHEMA_PRODUCT);
 export const SCHEMA_SUPPLIER_COST =
   pickSchema(process.env.DB_SCHEMA_SUPPLIER_COST, process.env.SCHEMA_SUPPLIER_COST) || SCHEMA_PRODUCT;
 export const SCHEMA_ORDERS        = pickSchema(process.env.DB_SCHEMA_ORDERS,        process.env.SCHEMA_ORDERS,        "orders");
-export const SCHEMA_RECEIPT       = pickSchema(process.env.DB_SCHEMA_RECEIPT,       process.env.SCHEMA_RECEIPT,       "receipt");
+export const SCHEMA_RECEIPT       = pickSchema(process.env.DB_SCHEMA_RECEIPT,       process.env.SCHEMA_RECEIPT,       "billing");
 export const SCHEMA_IDENTITY      = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
 export const SCHEMA_CUSTOMER      = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
 export const SCHEMA_CART          = pickSchema(process.env.DB_SCHEMA_CART,           process.env.SCHEMA_CART,           "cart");
 export const SCHEMA_WALLET        = pickSchema(process.env.DB_SCHEMA_WALLET,        process.env.SCHEMA_WALLET,        "wallet");
-export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "product");
+export const SCHEMA_REVIEW        = pickSchema(process.env.DB_SCHEMA_PRODUCT,       process.env.SCHEMA_PRODUCT,       "business");
 export const SCHEMA_FORM_DESC     = pickSchema(process.env.DB_SCHEMA_FORM_DESC,     process.env.SCHEMA_FORM_DESC,     "form_desc");
 export const SCHEMA_CYCLES       = pickSchema(process.env.DB_SCHEMA_CUSTOMER_WEB, process.env.SCHEMA_CUSTOMER_WEB, "customer_web");
-export const SCHEMA_ADMIN       = pickSchema(process.env.DB_SCHEMA_ADMIN,        process.env.SCHEMA_ADMIN,        "admin");
-export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      process.env.DB_SCHEMA_DASHBOARD, process.env.SCHEMA_DASHBOARD, "dashboard");
+export const SCHEMA_ADMIN       = pickSchema(process.env.DB_SCHEMA_ADMIN,        process.env.SCHEMA_ADMIN,        "finance");
+export const SCHEMA_FINANCE     = pickSchema(process.env.DB_SCHEMA_FINANCE,      process.env.SCHEMA_FINANCE,      process.env.DB_SCHEMA_DASHBOARD, process.env.SCHEMA_DASHBOARD, "finance");
 export const SCHEMA_PROMOTION   = pickSchema(process.env.DB_SCHEMA_PROMOTION,    process.env.SCHEMA_PROMOTION,    "promotion");
 // ─────────────────────────────────────────────────────────────────────────────
 // Table & Column Definitions
