@@ -155,6 +155,8 @@ function OrderAccountCard({
     }
   };
 
+  const isPendingReport = item.report_status === 'pending';
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 p-4 shadow-lg backdrop-blur-md hover:border-purple-500/30 transition-all duration-300">
       <div className="space-y-3">
@@ -163,97 +165,110 @@ function OrderAccountCard({
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tài khoản</span>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-slate-200 select-all truncate">{email}</span>
-            <button
-              type="button"
-              onClick={() => copyToClipboard(email, setCopiedUser)}
-              className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
-              title="Copy tài khoản"
-            >
-              {copiedUser ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Password Row */}
-        {password && (
-          <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-2">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-mono font-bold text-slate-200">
-                {showPass ? password : '••••••••'}
-              </span>
+            {!isPendingReport && (
               <button
                 type="button"
-                onClick={() => setShowPass(!showPass)}
+                onClick={() => copyToClipboard(email, setCopiedUser)}
                 className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+                title="Copy tài khoản"
               >
-                {showPass ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {copiedUser ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
               </button>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(password, setCopiedPass)}
-                className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
-                title="Copy mật khẩu"
-              >
-                {copiedPass ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* OTP Code Area */}
-        <div className="border-t border-white/5 pt-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mã OTP</span>
-            {otp ? (
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-purple-500/10 px-3 py-1 font-mono text-sm font-extrabold tracking-wider text-purple-300 border border-purple-500/20">
-                  {otp}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(otp, setCopiedOtp)}
-                  className="p-1.5 rounded-lg bg-purple-500/10 text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/20 transition"
-                  title="Copy mã OTP"
-                >
-                  {copiedOtp ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                {otpError && (
-                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{otpError}</span>
-                )}
-                <button
-                  type="button"
-                  disabled={countdown > 0 || loadingOtp}
-                  onClick={handleGetOtp}
-                  className="inline-flex h-8 items-center justify-center rounded-xl bg-purple-600 px-4 text-xs font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 disabled:opacity-50 disabled:bg-slate-800 disabled:shadow-none transition-all duration-300"
-                >
-                  {loadingOtp ? (
-                    <>
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                      Đang lấy...
-                    </>
-                  ) : countdown > 0 ? (
-                    `Lấy lại sau ${countdown}s`
-                  ) : (
-                    "Lấy OTP"
-                  )}
-                </button>
-              </div>
             )}
           </div>
-          {/* Visual countdown progress bar */}
-          {!otp && countdown > 0 && (
-            <div className="mt-2 h-1 w-full bg-slate-900 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000 ease-linear"
-                style={{ width: `${(countdown / 30) * 100}%` }}
-              />
-            </div>
-          )}
         </div>
+
+        {isPendingReport ? (
+          <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-rose-350 mt-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-450 mt-0.5 animate-pulse" />
+            <span className="text-xs leading-relaxed font-semibold">
+              Tài khoản này đã được báo lỗi, vui lòng chờ đến khi tài khoản hiển thị lại là đã được xử lý.
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Password Row */}
+            {password && (
+              <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-mono font-bold text-slate-200">
+                    {showPass ? password : '••••••••'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+                  >
+                    {showPass ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(password, setCopiedPass)}
+                    className="p-1 rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition"
+                    title="Copy mật khẩu"
+                  >
+                    {copiedPass ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* OTP Code Area */}
+            <div className="border-t border-white/5 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mã OTP</span>
+                {otp ? (
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-lg bg-purple-500/10 px-3 py-1 font-mono text-sm font-extrabold tracking-wider text-purple-300 border border-purple-500/20">
+                      {otp}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(otp, setCopiedOtp)}
+                      className="p-1.5 rounded-lg bg-purple-500/10 text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/20 transition"
+                      title="Copy mã OTP"
+                    >
+                      {copiedOtp ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {otpError && (
+                      <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{otpError}</span>
+                    )}
+                    <button
+                      type="button"
+                      disabled={countdown > 0 || loadingOtp}
+                      onClick={handleGetOtp}
+                      className="inline-flex h-8 items-center justify-center rounded-xl bg-purple-600 px-4 text-xs font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 disabled:opacity-50 disabled:bg-slate-800 disabled:shadow-none transition-all duration-300"
+                    >
+                      {loadingOtp ? (
+                        <>
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          Đang lấy...
+                        </>
+                      ) : countdown > 0 ? (
+                        `Lấy lại sau ${countdown}s`
+                      ) : (
+                        "Lấy OTP"
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Visual countdown progress bar */}
+              {!otp && countdown > 0 && (
+                <div className="mt-2 h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000 ease-linear"
+                    style={{ width: `${(countdown / 30) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -707,7 +722,11 @@ export function CheckActivatePanel({
                 {items && items.length > 0 && (
                   <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-white/5 pt-3">
                     <div>
-                      {showReportConfirm ? (
+                      {items.some((item) => item.report_status === 'pending') ? (
+                        <span className="text-[10px] font-bold text-rose-400/90 bg-rose-500/10 border border-rose-500/20 rounded px-2.5 py-1">
+                          Đơn hàng đang xử lý báo lỗi tài khoản
+                        </span>
+                      ) : showReportConfirm ? (
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-rose-400 font-bold">Báo lỗi đơn hàng này?</span>
                           <button
