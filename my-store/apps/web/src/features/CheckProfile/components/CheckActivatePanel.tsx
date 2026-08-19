@@ -311,6 +311,9 @@ type CheckActivatePanelProps = {
   otpResultType?: 'success' | 'error' | 'info' | null;
   onSendOtp?: (e: React.FormEvent) => void;
   onResetOtp?: () => void;
+  otpServiceName?: string | null;
+  otpDescription?: string | null;
+  hasOtp?: boolean;
 };
 
 export function CheckActivatePanel({
@@ -348,6 +351,9 @@ export function CheckActivatePanel({
   otpResultType = null,
   onSendOtp = () => {},
   onResetOtp = () => {},
+  otpServiceName = null,
+  otpDescription = null,
+  hasOtp = true,
 }: CheckActivatePanelProps) {
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [emailCountdown, setEmailCountdown] = useState(30);
@@ -571,6 +577,13 @@ export function CheckActivatePanel({
               </button>
             ) : (
               <div className="space-y-3">
+                {otpServiceName && (
+                  <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3 text-xs leading-relaxed animate-in fade-in duration-300">
+                    <span className="block font-bold text-sky-400 mb-1">Dịch vụ: {otpServiceName}</span>
+                    {otpDescription && <span className="block text-slate-400 font-medium">{otpDescription}</span>}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="submit"
@@ -587,7 +600,7 @@ export function CheckActivatePanel({
 
                   <button
                     type="button"
-                    disabled={loading || activating || sendingOtp || emailCountdown > 0}
+                    disabled={loading || activating || sendingOtp || emailCountdown > 0 || !hasOtp}
                     onClick={(e) => {
                       onSendOtp(e);
                       setEmailCountdown(30);
@@ -603,7 +616,9 @@ export function CheckActivatePanel({
                       ? 'Đang lấy...'
                       : emailCountdown > 0
                         ? `Chờ ${emailCountdown}s`
-                        : 'Lấy OTP'}
+                        : !hasOtp
+                          ? 'Không hỗ trợ OTP'
+                          : 'Lấy OTP'}
                   </button>
                 </div>
 

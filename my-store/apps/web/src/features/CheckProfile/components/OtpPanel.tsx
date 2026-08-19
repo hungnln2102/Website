@@ -16,6 +16,9 @@ type OtpPanelProps = {
   onSendOtp: (e: React.FormEvent) => void;
   onResetOtp: () => void;
   onSwitchToCheck: () => void;
+  otpServiceName?: string | null;
+  otpDescription?: string | null;
+  hasOtp?: boolean;
 };
 
 export function OtpPanel({
@@ -30,6 +33,9 @@ export function OtpPanel({
   onSendOtp,
   onResetOtp,
   onSwitchToCheck,
+  otpServiceName = null,
+  otpDescription = null,
+  hasOtp = true,
 }: OtpPanelProps) {
   const [otpCopied, setOtpCopied] = useState(false);
 
@@ -55,14 +61,18 @@ export function OtpPanel({
               <div className="flex items-center gap-2">
                 <KeyRound className="h-4 w-4 shrink-0 text-sky-300" />
                 <h2 className="text-xl font-extrabold text-slate-50 lg:text-lg lg:font-bold">
-                  Nhận mã OTP
+                  {otpServiceName ? `OTP - ${otpServiceName}` : 'Nhận mã OTP'}
                 </h2>
               </div>
               <span className="rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-300 uppercase">
                 Live
               </span>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-400"></p>
+            {otpDescription && (
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+                {otpDescription}
+              </p>
+            )}
           </div>
           <form onSubmit={onSendOtp} className="space-y-3">
             <EmailField
@@ -74,7 +84,7 @@ export function OtpPanel({
             />
             <button
               type="submit"
-              disabled={sendingOtp || otpSent}
+              disabled={sendingOtp || otpSent || !hasOtp}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-700 text-sm font-bold text-white shadow-lg transition-all hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-70 lg:h-10 lg:rounded-xl lg:text-xs"
             >
               {sendingOtp ? (
@@ -90,7 +100,7 @@ export function OtpPanel({
               ) : (
                 <>
                   <SendHorizonal className="h-4 w-4" />
-                  Lấy mã OTP
+                  {!hasOtp ? 'Không hỗ trợ OTP' : 'Lấy mã OTP'}
                 </>
               )}
             </button>

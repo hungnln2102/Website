@@ -10,7 +10,16 @@ import type {
 export type AdobeSystemNote = "renew_adobe" | "fix_ades";
 
 export type ResolveSystemResult =
-  | { ok: true; email: string; system_note: AdobeSystemNote; order_id: string | null }
+  | {
+      ok: true;
+      email: string;
+      system_note: AdobeSystemNote;
+      order_id: string | null;
+      otp_source?: string | null;
+      otp_service_name?: string | null;
+      otp_description?: string | null;
+      has_otp?: boolean;
+    }
   | { ok: false; status: number; error: string };
 
 export async function resolveAdobeSystemApi(
@@ -41,6 +50,10 @@ export async function resolveAdobeSystemApi(
         email: String(parsed.email ?? email),
         system_note: normalized,
         order_id: (parsed.order_id as string | null) ?? null,
+        otp_source: (parsed.otp_source as string | null) ?? null,
+        otp_service_name: (parsed.otp_service_name as string | null) ?? null,
+        otp_description: (parsed.otp_description as string | null) ?? null,
+        has_otp: typeof parsed.has_otp === "boolean" ? parsed.has_otp : true,
       };
     }
 

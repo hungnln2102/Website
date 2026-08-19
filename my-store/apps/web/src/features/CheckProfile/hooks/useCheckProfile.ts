@@ -66,6 +66,12 @@ export function useCheckProfile() {
   const [otpMessage, setOtpMessage] = useState<string | null>(null);
   const [otpResultType, setOtpResultType] = useState<OtpResultType>(null);
 
+  // Dynamic OTP metadata from backend API configuration
+  const [otpSource, setOtpSource] = useState<string | null>(null);
+  const [otpServiceName, setOtpServiceName] = useState<string | null>(null);
+  const [otpDescription, setOtpDescription] = useState<string | null>(null);
+  const [hasOtp, setHasOtp] = useState<boolean>(true);
+
   const resetResult = () => {
     setResultType(null);
     setMessage(null);
@@ -79,6 +85,10 @@ export function useCheckProfile() {
     setOtpCode("");
     setOtpMessage(null);
     setOtpResultType(null);
+    setOtpSource(null);
+    setOtpServiceName(null);
+    setOtpDescription(null);
+    setHasOtp(true);
   };
 
   /**
@@ -97,6 +107,13 @@ export function useCheckProfile() {
     }
     setResolvedSystem(result.system_note);
     setResolvedEmail(targetEmail);
+
+    // Save dynamic OTP configuration metadata
+    setOtpSource(result.otp_source ?? null);
+    setOtpServiceName(result.otp_service_name ?? null);
+    setOtpDescription(result.otp_description ?? null);
+    setHasOtp(result.has_otp ?? true);
+
     return { kind: "ok", system: result.system_note };
   };
 
@@ -216,12 +233,8 @@ export function useCheckProfile() {
         return;
       }
       
-      let result;
-      if (decision.system === "renew_adobe") {
-        result = await getRenewAdobeOtpApi(trimmed);
-      } else {
-        result = await sendFixAdesOtpApi(trimmed);
-      }
+      // All OTP retrieval requests are proxied unifiedly through backend
+      const result = await getRenewAdobeOtpApi(trimmed);
 
       if (result.type === "error") {
         setOtpResultType("error");
@@ -304,5 +317,10 @@ export function useCheckProfile() {
     handleSendOtp,
     handleVerifyOtp,
     resetOtp,
+
+    otpSource,
+    otpServiceName,
+    otpDescription,
+    hasOtp,
   };
 }

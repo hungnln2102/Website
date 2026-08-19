@@ -1,7 +1,3 @@
-/**
- * Chạy tất cả migrations từ all_migrations.sql
- * Dùng sau khi đã có PostgreSQL chuẩn admin_orderlist (000_consolidated_schema + knex migrations).
- */
 import pg from 'pg';
 import dotenv from 'dotenv';
 import { readFileSync } from 'fs';
@@ -78,7 +74,7 @@ function splitSql(sql) {
 async function run() {
   const client = await pool.connect();
   try {
-    const sqlPath = join(__dirname, '../prisma/migrations/all_migrations.sql');
+    const sqlPath = 'E:/Project/admin_store/admin_orderlist/database/migrations/000_consolidated_schema.sql';
     console.log('Reading schema from:', sqlPath);
     const sql = readFileSync(sqlPath, 'utf-8');
     
@@ -95,7 +91,8 @@ async function run() {
         await client.query(stmt);
         executedCount++;
       } catch (err) {
-        const isIgnorable = 
+        // Ignore "already exists" errors (duplicate_table, duplicate_object, etc.)
+        const isAlreadyExists = 
           err.code === '42P07' || 
           err.code === '42710' || 
           err.code === '42723' || 
@@ -103,10 +100,9 @@ async function run() {
           err.code === '42P16' || // invalid_table_definition (multiple primary keys)
           err.message.includes('already exists') ||
           err.message.includes('multiple primary keys') ||
-          err.message.includes('cannot alter type of a column used by a view or rule') ||
           err.message.includes('already a member');
           
-        if (isIgnorable) {
+        if (isAlreadyExists) {
           skippedCount++;
         } else {
           console.error(`❌ Statement failed:\n${stmt}\nError: ${err.message}`);
@@ -115,9 +111,9 @@ async function run() {
       }
     }
     
-    console.log(`✅ All migrations applied successfully. Executed: ${executedCount}, Skipped: ${skippedCount}`);
+    console.log(`✅ Restore completed. Executed: ${executedCount}, Skipped (already exists): ${skippedCount}`);
   } catch (err) {
-    console.error('❌ Migration failed:', err.message);
+    console.error('❌ Restore failed:', err.message);
     process.exit(1);
   } finally {
     client.release();

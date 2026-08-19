@@ -339,6 +339,9 @@ export default function CheckProfilePage() {
                         otpResultType={cp.otpResultType}
                         onSendOtp={cp.handleSendOtp}
                         onResetOtp={cp.resetOtp}
+                        otpServiceName={cp.otpServiceName}
+                        otpDescription={cp.otpDescription}
+                        hasOtp={cp.hasOtp}
                       />
                     </div>
                   )}
