@@ -10,20 +10,173 @@ import { APP_CONFIG, ROUTES } from '@/lib/constants';
 import {
   ShieldCheck,
   Loader2,
-  Search,
-  KeyRound,
   Copy,
   CheckCircle2,
-  SendHorizonal,
-  Sparkles,
-  Shield,
-  Zap,
-  Tv,
   XCircle,
+  ExternalLink,
+  Tv,
+  KeyRound,
   Hash,
+  Sparkles,
 } from 'lucide-react';
 
-/* ─── Animated Checkmark ─────────────────────────────────────────────────── */
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type TabResultType = 'link' | 'code' | 'text';
+
+interface NetflixTabConfig {
+  id: string;
+  label: string;
+  description: string;
+  color: 'rose' | 'amber' | 'emerald' | 'sky' | 'purple' | 'blue';
+  apiEndpoint: string;
+  inputLabel: string;
+  inputPlaceholder: string;
+  submitLabel: string;
+  resultType: TabResultType;
+}
+
+// ─── Fallback hardcode khi API /tabs lỗi ──────────────────────────────────────
+
+const FALLBACK_TABS: NetflixTabConfig[] = [
+  {
+    id: 'household',
+    label: 'Xác minh Hộ gia đình',
+    description: 'Lấy link xác minh Household Netflix',
+    color: 'rose',
+    apiEndpoint: '/api/netflix/public/household',
+    inputLabel: 'Email Netflix',
+    inputPlaceholder: 'example@email.com',
+    submitLabel: 'Lấy link xác minh',
+    resultType: 'link',
+  },
+  {
+    id: 'otp',
+    label: 'Mã OTP đăng nhập',
+    description: 'Lấy mã OTP 4–8 số từ email Netflix',
+    color: 'amber',
+    apiEndpoint: '/api/netflix/public/send-otp',
+    inputLabel: 'Email Netflix',
+    inputPlaceholder: 'example@email.com',
+    submitLabel: 'Lấy mã OTP',
+    resultType: 'code',
+  },
+  {
+    id: 'six-digit',
+    label: 'Mã 6 số đăng nhập',
+    description: 'Lấy mã xác minh 6 số (TV login)',
+    color: 'emerald',
+    apiEndpoint: '/api/netflix/public/six-digit-login',
+    inputLabel: 'Email Netflix',
+    inputPlaceholder: 'example@email.com',
+    submitLabel: 'Lấy mã 6 số',
+    resultType: 'code',
+  },
+];
+
+// ─── Accent color maps ─────────────────────────────────────────────────────────
+
+const ACCENT = {
+  rose: {
+    gradient: 'from-rose-600 to-pink-600',
+    gradientHover: 'hover:from-rose-500 hover:to-pink-500',
+    shadow: 'shadow-rose-500/25',
+    ring: 'ring-rose-400/30',
+    border: 'border-rose-500/40',
+    bg: 'bg-rose-500/10',
+    text: 'text-rose-100',
+    tab: 'bg-rose-500 text-white ring-rose-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-rose-500 focus:ring-rose-500/40',
+    icon: 'text-rose-400',
+    glow: 'bg-rose-600/15',
+  },
+  amber: {
+    gradient: 'from-amber-500 to-orange-500',
+    gradientHover: 'hover:from-amber-400 hover:to-orange-400',
+    shadow: 'shadow-amber-500/25',
+    ring: 'ring-amber-400/30',
+    border: 'border-amber-500/40',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-100',
+    tab: 'bg-amber-500 text-white ring-amber-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-amber-500 focus:ring-amber-500/40',
+    icon: 'text-amber-400',
+    glow: 'bg-amber-600/15',
+  },
+  emerald: {
+    gradient: 'from-emerald-500 to-teal-500',
+    gradientHover: 'hover:from-emerald-400 hover:to-teal-400',
+    shadow: 'shadow-emerald-500/25',
+    ring: 'ring-emerald-400/30',
+    border: 'border-emerald-500/40',
+    bg: 'bg-emerald-500/10',
+    text: 'text-emerald-100',
+    tab: 'bg-emerald-500 text-white ring-emerald-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-emerald-500 focus:ring-emerald-500/40',
+    icon: 'text-emerald-400',
+    glow: 'bg-emerald-600/15',
+  },
+  sky: {
+    gradient: 'from-sky-500 to-cyan-500',
+    gradientHover: 'hover:from-sky-400 hover:to-cyan-400',
+    shadow: 'shadow-sky-500/25',
+    ring: 'ring-sky-400/30',
+    border: 'border-sky-500/40',
+    bg: 'bg-sky-500/10',
+    text: 'text-sky-100',
+    tab: 'bg-sky-500 text-white ring-sky-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-sky-500 focus:ring-sky-500/40',
+    icon: 'text-sky-400',
+    glow: 'bg-sky-600/15',
+  },
+  purple: {
+    gradient: 'from-purple-600 to-violet-600',
+    gradientHover: 'hover:from-purple-500 hover:to-violet-500',
+    shadow: 'shadow-purple-500/25',
+    ring: 'ring-purple-400/30',
+    border: 'border-purple-500/40',
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-100',
+    tab: 'bg-purple-500 text-white ring-purple-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-purple-500 focus:ring-purple-500/40',
+    icon: 'text-purple-400',
+    glow: 'bg-purple-600/15',
+  },
+  blue: {
+    gradient: 'from-blue-600 to-indigo-600',
+    gradientHover: 'hover:from-blue-500 hover:to-indigo-500',
+    shadow: 'shadow-blue-500/25',
+    ring: 'ring-blue-400/30',
+    border: 'border-blue-500/40',
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-100',
+    tab: 'bg-blue-500 text-white ring-blue-400/30',
+    tabInactive: 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10',
+    input: 'focus:border-blue-500 focus:ring-blue-500/40',
+    icon: 'text-blue-400',
+    glow: 'bg-blue-600/15',
+  },
+} as const;
+
+function getAccent(color: NetflixTabConfig['color']) {
+  return ACCENT[color] ?? ACCENT.rose;
+}
+
+// Icon map theo tab id
+function TabIcon({ id, className }: { id: string; className?: string }) {
+  if (id === 'household') return <Tv className={className} />;
+  if (id === 'otp') return <KeyRound className={className} />;
+  if (id === 'six-digit') return <Hash className={className} />;
+  return <Sparkles className={className} />;
+}
+
+// ─── Animated Checkmark ───────────────────────────────────────────────────────
+
 function AnimatedCheckmark() {
   return (
     <div className="relative flex h-16 w-16 items-center justify-center">
@@ -44,172 +197,157 @@ function AnimatedCheckmark() {
   );
 }
 
-type NetflixFormMode = 'household' | 'signinOtp' | 'sixDigit';
+// ─── Shared Result Display ────────────────────────────────────────────────────
 
-type NetflixPanelConfig = {
-  mode: NetflixFormMode;
-  title: string;
-  subtitle: string;
-  actionLabel: string;
-  Icon: typeof Tv;
-  accent: 'rose' | 'sky' | 'emerald';
-};
-
-const NETFLIX_PANELS: NetflixPanelConfig[] = [
-  {
-    mode: 'household',
-    title: 'Hộ gia đình',
-    subtitle: 'Xác minh hộ gia đình Netflix của bạn',
-    actionLabel: 'Hộ gia đình',
-    Icon: Tv,
-    accent: 'rose',
-  },
-  {
-    mode: 'signinOtp',
-    title: 'Nhận mã OTP',
-    subtitle: 'Nhận mã OTP đăng nhập Netflix nhanh chóng',
-    actionLabel: 'Nhận OTP',
-    Icon: KeyRound,
-    accent: 'sky',
-  },
-  {
-    mode: 'sixDigit',
-    title: 'OTP 6 số',
-    subtitle: 'Lấy mã đăng nhập 6 số từ email Netflix',
-    actionLabel: 'OTP 6 số',
-    Icon: Hash,
-    accent: 'emerald',
-  },
-];
-
-const accentClasses = {
-  rose: {
-    panel: 'from-rose-700 via-red-700 to-pink-800 shadow-rose-900/40',
-    icon: 'bg-white/10 text-white ring-white/20',
-    button: 'border-white/55 text-white hover:bg-white hover:text-rose-700',
-    pill: 'bg-rose-500/15 text-rose-100 ring-rose-300/20',
-  },
-  sky: {
-    panel: 'from-sky-700 via-cyan-700 to-teal-800 shadow-sky-900/40',
-    icon: 'bg-white/10 text-white ring-white/20',
-    button: 'border-white/55 text-white hover:bg-white hover:text-sky-700',
-    pill: 'bg-sky-500/15 text-sky-100 ring-sky-300/20',
-  },
-  emerald: {
-    panel: 'from-emerald-700 via-teal-700 to-cyan-800 shadow-emerald-900/40',
-    icon: 'bg-white/10 text-white ring-white/20',
-    button: 'border-white/55 text-white hover:bg-white hover:text-emerald-700',
-    pill: 'bg-emerald-500/15 text-emerald-100 ring-emerald-300/20',
-  },
-} as const;
-
-function BookSidePanel({
-  panel,
-  side,
-  onSelect,
-}: {
-  panel: NetflixPanelConfig;
-  side: 'left' | 'right';
-  onSelect: (mode: NetflixFormMode) => void;
-}) {
-  const { Icon } = panel;
-  const classes = accentClasses[panel.accent];
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(panel.mode)}
-      className={`group relative hidden min-h-[540px] overflow-hidden bg-gradient-to-br ${classes.panel} p-6 text-left shadow-2xl transition-all duration-500 hover:brightness-110 lg:flex lg:flex-col lg:items-center lg:justify-center ${
-        side === 'left' ? 'rounded-l-3xl' : 'rounded-r-3xl'
-      }`}
-      aria-label={`Chuyển sang ${panel.title}`}
-    >
-      <div className="animate-nf-float absolute top-8 left-8 h-4 w-4 rounded-full bg-white/20" />
-      <div className="animate-nf-float-d absolute top-16 right-12 h-3 w-3 rotate-45 bg-white/15" />
-      <div className="animate-nf-float absolute bottom-20 left-12 h-3 w-3 rotate-45 bg-white/15" />
-      <div className="animate-nf-float-d absolute right-10 bottom-12 h-4 w-4 rounded-full bg-white/10" />
-      <Sparkles className="absolute top-1/3 left-8 h-6 w-6 text-white/20" />
-      <Shield className="absolute right-8 bottom-1/3 h-6 w-6 text-white/20" />
-      <Zap className="absolute top-1/2 left-12 h-5 w-5 text-white/15" />
-
-      <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/10 shadow-2xl ring-1 ring-white/20 transition-transform duration-500 group-hover:scale-110">
-        <Icon className="h-10 w-10 text-white" />
-      </div>
-      <div className="relative mt-7 text-center">
-        <div
-          className={`mx-auto mb-4 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ${classes.pill}`}
-        >
-          Bấm để mở trang
-        </div>
-        <h2 className="text-2xl font-bold text-white">{panel.title}</h2>
-        <p className="mt-3 max-w-[220px] text-sm leading-relaxed text-white/75">{panel.subtitle}</p>
-        <span
-          className={`mt-6 inline-flex rounded-full border-2 px-7 py-2.5 text-sm font-bold transition-all duration-300 ${classes.button}`}
-        >
-          {side === 'left' ? '← ' : ''}
-          {panel.actionLabel}
-          {side === 'right' ? ' →' : ''}
-        </span>
-      </div>
-    </button>
-  );
+interface ResultDisplayProps {
+  resultType: TabResultType;
+  status: 'success' | 'error' | 'info' | null;
+  message: string | null;
+  code: string | null;
+  link: string | null;
+  color: NetflixTabConfig['color'];
+  onReset: () => void;
+  onCopy: () => Promise<void>;
+  copied: boolean;
+  copying: boolean;
 }
 
-function EmailField({
-  accent,
-  cooldown,
-  email,
-  onChange,
-}: {
-  accent: 'rose' | 'sky' | 'emerald';
-  cooldown: number;
-  email: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
-        Email Netflix
-      </label>
-      <div className="relative">
-        <input
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={cooldown > 0}
-          placeholder={cooldown > 0 ? `Chờ ${cooldown}s để nhập email` : 'your-email@example.com'}
-          className={`h-11 w-full rounded-xl border border-slate-700 bg-slate-800/70 px-3 text-sm text-slate-100 placeholder-slate-500 ring-1 ring-transparent transition-all outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
-            accent === 'rose'
-              ? 'focus:border-rose-500 focus:ring-rose-500/40'
-              : accent === 'emerald'
-                ? 'focus:border-emerald-500 focus:ring-emerald-500/40'
-                : 'focus:border-sky-500 focus:ring-sky-500/40'
-          }`}
-        />
+function ResultDisplay({
+  resultType,
+  status,
+  message,
+  code,
+  link,
+  color,
+  onReset,
+  onCopy,
+  copied,
+  copying,
+}: ResultDisplayProps) {
+  const ac = getAccent(color);
+
+  if (!status || !message) return null;
+
+  if (status === 'error') {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-center text-sm text-rose-50">
+        <XCircle className="mb-2 h-7 w-7 text-rose-400" />
+        <p className="font-medium text-rose-100">{message}</p>
       </div>
+    );
+  }
+
+  if (status === 'info') {
+    return (
+      <div className="rounded-xl bg-slate-800/70 px-4 py-3 text-xs text-slate-300 ring-1 ring-slate-700">
+        {message}
+      </div>
+    );
+  }
+
+  // success
+  if (resultType === 'link' && link) {
+    return (
+      <div className={`rounded-2xl border ${ac.border} ${ac.bg} px-4 py-5 text-center text-sm`}>
+        <div className="mb-3 flex flex-col items-center gap-3">
+          <AnimatedCheckmark />
+          <p className={`font-semibold ${ac.text}`}>{message}</p>
+        </div>
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${ac.gradient} px-4 py-2 text-sm font-semibold text-white shadow-lg ${ac.shadow} ${ac.gradientHover} transition-all`}
+        >
+          <ExternalLink className="h-4 w-4" />
+          Mở link xác minh
+        </a>
+      </div>
+    );
+  }
+
+  if (resultType === 'code' && code) {
+    return (
+      <div className={`rounded-2xl border ${ac.border} ${ac.bg} p-4`}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <span className={`inline-flex items-center gap-2 text-sm font-semibold ${ac.text}`}>
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            Mã hiện tại
+          </span>
+          <button
+            type="button"
+            onClick={onReset}
+            className={`text-xs font-medium ${ac.text} opacity-70 transition-opacity hover:opacity-100`}
+          >
+            Lấy lại
+          </button>
+        </div>
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={code}
+            readOnly
+            onFocus={(e) => e.currentTarget.select()}
+            className={`h-14 w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 pr-14 text-center text-2xl font-bold tracking-[0.45em] text-slate-50 placeholder-slate-600 ring-1 ring-transparent outline-none ${ac.input}`}
+          />
+          <button
+            type="button"
+            onClick={onCopy}
+            disabled={copying}
+            aria-label="Sao chép mã"
+            title="Sao chép mã"
+            className={`absolute top-1/2 right-3 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg border ${ac.border} ${ac.bg} ${ac.icon} hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50 transition-all`}
+          >
+            {copying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : copied ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+        {message && (
+          <p className={`mt-2 text-center text-xs ${ac.text} opacity-70`}>{message}</p>
+        )}
+      </div>
+    );
+  }
+
+  // text fallback
+  return (
+    <div className={`rounded-2xl border ${ac.border} ${ac.bg} px-4 py-4 text-center text-sm`}>
+      <p className={`font-medium ${ac.text}`}>{message}</p>
     </div>
   );
 }
 
-/* ─── Main Page ──────────────────────────────────────────────────────────── */
+// ─── Main Component ────────────────────────────────────────────────────────────
+
 export default function NetflixPage() {
   const isScrolled = useScroll();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [activeMode, setActiveMode] = useState<NetflixFormMode>('household');
+  // ── Tabs state ──
+  const [tabs, setTabs] = useState<NetflixTabConfig[]>([]);
+  const [tabsLoading, setTabsLoading] = useState(true);
+  const [activeTabId, setActiveTabId] = useState<string>('household');
 
-  /* shared email */
+  // ── Shared form state ──
   const [email, setEmail] = useState('');
-
-  /* ── Check state ── */
   const [loading, setLoading] = useState(false);
-  const [resultType, setResultType] = useState<'check-success' | 'error' | 'info' | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [householdLink, setHouseholdLink] = useState<string | null>(null);
 
-  /* ── Countdown state ── */
+  // ── Result state (dùng chung cho mọi tab) ──
+  const [status, setStatus] = useState<'success' | 'error' | 'info' | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
+
+  // ── Cooldown ──
   const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -220,6 +358,7 @@ export default function NetflixPage() {
   }, []);
 
   const startCooldown = useCallback((seconds: number) => {
+    if (!seconds) return;
     if (cooldownRef.current) clearInterval(cooldownRef.current);
     setCooldown(seconds);
     cooldownRef.current = setInterval(() => {
@@ -234,25 +373,105 @@ export default function NetflixPage() {
     }, 1000);
   }, []);
 
-  /* ── OTP state ── */
+  // ── Fetch tabs config from API ──
   useEffect(() => {
-    startCooldown(30);
-  }, [startCooldown]);
+    const API_BASE = getApiBase();
+    fetch(`${API_BASE}/api/netflix/public/tabs`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.tabs) && data.tabs.length > 0) {
+          setTabs(data.tabs);
+          setActiveTabId(data.tabs[0].id);
+        } else {
+          setTabs(FALLBACK_TABS);
+          setActiveTabId(FALLBACK_TABS[0].id);
+        }
+      })
+      .catch(() => {
+        // Fallback khi mạng lỗi hoặc backend chưa có route
+        setTabs(FALLBACK_TABS);
+        setActiveTabId(FALLBACK_TABS[0].id);
+      })
+      .finally(() => setTabsLoading(false));
+  }, []);
 
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [otpMessage, setOtpMessage] = useState<string | null>(null);
-  const [otpResultType, setOtpResultType] = useState<'success' | 'error' | 'info' | null>(null);
+  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
-  const [sixOtpSent, setSixOtpSent] = useState(false);
-  const [sixOtpCode, setSixOtpCode] = useState('');
-  const [sendingSixOtp, setSendingSixOtp] = useState(false);
-  const [sixOtpMessage, setSixOtpMessage] = useState<string | null>(null);
-  const [sixOtpResultType, setSixOtpResultType] = useState<'success' | 'error' | 'info' | null>(
-    null
-  );
+  const resetResult = useCallback(() => {
+    setStatus(null);
+    setMessage(null);
+    setCode(null);
+    setLink(null);
+    setCopied(false);
+  }, []);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTabId(tabId);
+    resetResult();
+    setEmail('');
+  };
+
+  // ── Submit handler ──
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTab) return;
+    if (!email.trim()) {
+      setMessage('Vui lòng nhập email để tiếp tục.');
+      setStatus('info');
+      return;
+    }
+    if (cooldown > 0) return;
+    if (loading) return;
+
+    setLoading(true);
+    resetResult();
+
+    try {
+      const API_BASE = getApiBase();
+      const res = await fetch(`${API_BASE}${activeTab.apiEndpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (data.cooldown) startCooldown(data.cooldown);
+
+      if (data.ok) {
+        setStatus('success');
+        setMessage(data.message || 'Thành công!');
+        setCode(data.code ? String(data.code).trim() : null);
+        setLink(data.link ?? null);
+      } else {
+        setStatus('error');
+        setMessage(data.message || data.error || 'Không lấy được kết quả. Vui lòng thử lại.');
+      }
+    } catch {
+      setStatus('error');
+      setMessage('Không thể kết nối đến server. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Copy handler ──
+  const handleCopy = async () => {
+    if (!code) return;
+    setCopying(true);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      }
+      setCopied(true);
+      setMessage(`Đã sao chép mã ${code}.`);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setMessage(`Mã hiện tại: ${code}`);
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const { data: products = [] } = useQuery({
     queryKey: productsQueryKey(user?.roleCode),
@@ -268,178 +487,7 @@ export default function NetflixPage() {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  const resetResult = () => {
-    setResultType(null);
-    setMessage(null);
-    setHouseholdLink(null);
-  };
-
-  /* ── Hộ gia đình: gọi proxy → vivarocky.in/household.php ── */
-  const handleCheckSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setMessage('Vui lòng nhập email để kiểm tra.');
-      setResultType('info');
-      return;
-    }
-    if (cooldown > 0) return;
-
-    setLoading(true);
-    resetResult();
-
-    try {
-      const API_BASE = getApiBase();
-      const res = await fetch(`${API_BASE}/api/netflix/household`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-
-      const data = await res.json();
-      console.log('[netflix] API response:', data);
-
-      if (data.cooldown) startCooldown(data.cooldown);
-
-      if (data.ok) {
-        setResultType('check-success');
-        setMessage(data.message || 'Thành công!');
-        setHouseholdLink(data.link || null);
-      } else {
-        setResultType('error');
-        setMessage(data.message || data.error || 'Không tìm thấy email gần đây từ địa chỉ này.');
-      }
-    } catch {
-      setResultType('error');
-      setMessage('Không thể kết nối đến server. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ── Lấy OTP Netflix ── */
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || sendingOtp) return;
-
-    setSendingOtp(true);
-    setOtpMessage(null);
-    setOtpResultType(null);
-    setOtpSent(false);
-
-    try {
-      const API_BASE = getApiBase();
-      const res = await fetch(`${API_BASE}/api/netflix/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.ok) {
-        setOtpCode('');
-        setOtpResultType('error');
-        setOtpMessage(data?.message || data?.error || 'Không lấy được mã OTP. Vui lòng thử lại.');
-        return;
-      }
-
-      const nextCode = String(data?.code || '').trim();
-      setOtpSent(true);
-      setOtpCode(nextCode);
-      setOtpResultType('success');
-      setOtpMessage(data?.message || `Đã lấy mã OTP mới nhất cho ${email.trim()}.`);
-    } catch (err) {
-      console.error('Send Netflix OTP error:', err);
-      setOtpCode('');
-      setOtpResultType('error');
-      setOtpMessage('Có lỗi kết nối. Vui lòng thử lại sau.');
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  /* ── Lấy OTP 6 số Netflix ── */
-  const handleSendSixDigitOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || sendingSixOtp) return;
-
-    setSendingSixOtp(true);
-    setSixOtpMessage(null);
-    setSixOtpResultType(null);
-    setSixOtpSent(false);
-
-    try {
-      const API_BASE = getApiBase();
-      const res = await fetch(`${API_BASE}/api/netflix/six-digit-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.ok) {
-        setSixOtpCode('');
-        setSixOtpResultType('error');
-        setSixOtpMessage(
-          data?.message || data?.error || 'Không lấy được OTP 6 số. Vui lòng thử lại.'
-        );
-        return;
-      }
-
-      const nextCode = String(data?.code || '').trim();
-      setSixOtpSent(true);
-      setSixOtpCode(nextCode);
-      setSixOtpResultType('success');
-      setSixOtpMessage(data?.message || `Đã lấy OTP 6 số mới nhất cho ${email.trim()}.`);
-    } catch (err) {
-      console.error('Send Netflix six digit OTP error:', err);
-      setSixOtpCode('');
-      setSixOtpResultType('error');
-      setSixOtpMessage('Có lỗi kết nối. Vui lòng thử lại sau.');
-    } finally {
-      setSendingSixOtp(false);
-    }
-  };
-
-  const handleCopySixDigitOtp = async () => {
-    if (!email.trim() || !sixOtpCode.trim()) return;
-
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(sixOtpCode.trim());
-      }
-      setSixOtpResultType('info');
-      setSixOtpMessage(`Đã sao chép OTP 6 số ${sixOtpCode.trim()}.`);
-    } catch {
-      setSixOtpResultType('info');
-      setSixOtpMessage(`OTP 6 số hiện tại: ${sixOtpCode.trim()}`);
-    }
-  };
-
-  /* ── Sao chép OTP ── */
-  const handleCopyOtp = async () => {
-    if (!email.trim() || !otpCode.trim() || verifyingOtp) return;
-
-    setVerifyingOtp(true);
-
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(otpCode.trim());
-        setOtpResultType('success');
-        setOtpMessage(`Đã sao chép mã OTP ${otpCode.trim()}.`);
-      } else {
-        setOtpResultType('info');
-        setOtpMessage(`Mã OTP hiện tại: ${otpCode.trim()}`);
-      }
-    } catch (err) {
-      console.error('Copy Netflix OTP error:', err);
-      setOtpResultType('info');
-      setOtpMessage(`Mã OTP hiện tại: ${otpCode.trim()}`);
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
+  const ac = activeTab ? getAccent(activeTab.color) : getAccent('rose');
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
@@ -483,347 +531,140 @@ export default function NetflixPage() {
       <main className="mx-auto flex min-h-[calc(100vh-160px)] max-w-7xl flex-col gap-4 px-3 py-5 sm:px-4 sm:py-8 lg:flex-row lg:gap-6 lg:py-10">
         <ServicesSidebar />
         <div className="flex min-w-0 flex-1 items-center justify-center">
-          <div className="w-full max-w-4xl">
+          <div className="w-full max-w-2xl">
+
             {/* Title */}
-            <div className="lg:backdrop-blur-0 mb-4 rounded-3xl border border-white/10 bg-slate-900/60 px-4 py-4 shadow-xl shadow-rose-950/20 backdrop-blur sm:mb-5 sm:px-5 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-              <p className="mb-1 text-[11px] font-semibold tracking-[0.24em] text-rose-300/80 uppercase lg:hidden">
+            <div className="mb-4 rounded-3xl border border-white/10 bg-slate-900/60 px-4 py-4 shadow-xl shadow-rose-950/20 backdrop-blur sm:mb-5 sm:px-5 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+              <p className="mb-1 text-[11px] font-semibold tracking-[0.24em] text-rose-300/80 uppercase">
                 Netflix OTP center
               </p>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-50 sm:text-3xl lg:text-2xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-50 sm:text-3xl">
                 OTP Netflix
               </h1>
-              <p className="mt-1 text-sm leading-relaxed text-slate-400 lg:mt-0.5 lg:text-xs lg:text-slate-500">
-                Hộ gia đình và nhận OTP Netflix
+              <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                Công cụ hỗ trợ xác minh và lấy mã OTP Netflix nhanh chóng
               </p>
             </div>
 
-            {/* ── Main Card ── */}
-            <div className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 shadow-2xl shadow-rose-900/25 backdrop-blur lg:border-0 lg:bg-slate-900">
-              <div className="pointer-events-none absolute -top-20 left-1/2 h-40 w-96 -translate-x-1/2 rounded-full bg-rose-600/15 blur-3xl" />
+            {/* Main Card */}
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 shadow-2xl shadow-rose-900/25 backdrop-blur">
+              {/* Glow */}
+              <div className={`pointer-events-none absolute -top-20 left-1/2 h-40 w-96 -translate-x-1/2 rounded-full ${ac.glow} blur-3xl transition-all duration-500`} />
 
-              <div className="grid min-h-0 grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-h-[540px] lg:grid-cols-[180px_minmax(0,1fr)_180px] lg:gap-0 lg:p-0 xl:grid-cols-[220px_minmax(0,1fr)_220px]">
-                <BookSidePanel
-                  panel={
-                    NETFLIX_PANELS[
-                      (NETFLIX_PANELS.findIndex((panel) => panel.mode === activeMode) + 2) %
-                        NETFLIX_PANELS.length
-                    ]
-                  }
-                  side="left"
-                  onSelect={setActiveMode}
-                />
+              <div className="relative p-4 sm:p-6">
 
-                <div className="relative min-h-0 overflow-hidden rounded-3xl border border-rose-400/15 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 px-4 py-5 shadow-xl shadow-rose-950/15 sm:px-6 sm:py-7 lg:min-h-[540px] lg:rounded-none lg:border-0 lg:px-10 lg:py-8 lg:shadow-[inset_22px_0_45px_rgba(2,6,23,0.45),inset_-22px_0_45px_rgba(2,6,23,0.45)]">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-8 bg-gradient-to-r from-black/35 to-transparent lg:block" />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-8 bg-gradient-to-l from-black/35 to-transparent lg:block" />
+                {/* ── Tab Menu Động ── */}
+                {tabsLoading ? (
+                  <div className="mb-5 flex items-center justify-center gap-2 py-4 text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Đang tải...</span>
+                  </div>
+                ) : (
+                  <div className="mb-5 flex flex-wrap gap-2">
+                    {tabs.map((tab) => {
+                      const tabAc = getAccent(tab.color);
+                      const isActive = activeTabId === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => handleTabChange(tab.id)}
+                          className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ring-1 transition-all sm:text-sm ${
+                            isActive
+                              ? `${tabAc.tab} shadow-md`
+                              : 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10'
+                          }`}
+                        >
+                          <TabIcon id={tab.id} className="h-3.5 w-3.5" />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                  <div className="relative mx-auto flex h-full max-w-md flex-col justify-center">
-                    <div className="mb-5 grid grid-cols-3 gap-2 lg:hidden">
-                      {NETFLIX_PANELS.map((panel) => {
-                        const { Icon } = panel;
-                        const isActive = activeMode === panel.mode;
-                        return (
-                          <button
-                            key={panel.mode}
-                            type="button"
-                            onClick={() => setActiveMode(panel.mode)}
-                            className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl px-2 py-2 text-center text-[11px] font-semibold ring-1 transition-all sm:gap-2 sm:px-3 sm:text-xs ${
-                              isActive
-                                ? 'bg-rose-500 text-white ring-rose-300/40'
-                                : 'bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10'
-                            }`}
-                          >
-                            <Icon className="h-3.5 w-3.5" />
-                            {panel.actionLabel}
-                          </button>
-                        );
-                      })}
+                {/* ── Form Động ── */}
+                {activeTab && (
+                  <section className="animate-in fade-in duration-300">
+                    {/* Tab header */}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-2">
+                        <TabIcon id={activeTab.id} className={`h-5 w-5 ${ac.icon}`} />
+                        <h2 className="text-lg font-bold text-slate-50 sm:text-xl">
+                          {activeTab.label}
+                        </h2>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-400">{activeTab.description}</p>
                     </div>
 
-                    {activeMode === 'household' && (
-                      <section className="animate-in fade-in duration-300">
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2">
-                            <Tv className="h-5 w-5 text-rose-400" />
-                            <h2 className="text-xl font-bold text-slate-50">Hộ gia đình</h2>
-                          </div>
-                          <p className="mt-1 text-sm text-slate-400">
-                            Xác minh hộ gia đình Netflix của bạn
-                          </p>
-                        </div>
-
-                        <form onSubmit={handleCheckSubmit} className="space-y-4">
-                          <EmailField
-                            accent="rose"
-                            cooldown={cooldown}
-                            email={email}
-                            onChange={setEmail}
-                          />
-
-                          {!loading && message && resultType && (
-                            <div>
-                              {resultType === 'check-success' && (
-                                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-5 text-center text-sm text-emerald-50">
-                                  <div className="mb-3 flex flex-col items-center gap-3">
-                                    <AnimatedCheckmark />
-                                    <p className="font-semibold text-emerald-100">{message}</p>
-                                  </div>
-                                  {householdLink && (
-                                    <a
-                                      href={householdLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-2 inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-400"
-                                    >
-                                      Mở link xác minh
-                                    </a>
-                                  )}
-                                </div>
-                              )}
-                              {resultType === 'error' && (
-                                <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-center text-sm text-rose-50">
-                                  <XCircle className="mb-2 h-7 w-7 text-rose-400" />
-                                  <p className="font-medium text-rose-100">{message}</p>
-                                </div>
-                              )}
-                              {resultType === 'info' && (
-                                <div className="rounded-xl bg-slate-800/70 px-4 py-3 text-xs text-slate-300 ring-1 ring-slate-700">
-                                  {message}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <button
-                            type="submit"
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      {/* Email input */}
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="netflix-email-input"
+                          className="block text-xs font-semibold tracking-wide text-slate-400 uppercase"
+                        >
+                          {activeTab.inputLabel || 'Email'}
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="netflix-email-input"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder={activeTab.inputPlaceholder}
+                            autoComplete="email"
                             disabled={loading || cooldown > 0}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 px-4 text-sm font-bold text-white shadow-lg shadow-rose-500/25 transition-all hover:from-rose-500 hover:to-pink-500 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {loading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Search className="h-4 w-4" />
-                            )}
-                            {cooldown > 0 ? `Chờ ${cooldown}s` : 'Hộ gia đình'}
-                          </button>
-                        </form>
-                      </section>
-                    )}
-
-                    {activeMode === 'signinOtp' && (
-                      <section className="animate-in fade-in duration-300">
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2">
-                            <KeyRound className="h-5 w-5 text-sky-400" />
-                            <h2 className="text-xl font-bold text-slate-50">Nhận mã OTP</h2>
-                          </div>
-                          <p className="mt-1 text-sm text-slate-400">
-                            Nhận mã OTP đăng nhập Netflix
-                          </p>
-                        </div>
-
-                        <form onSubmit={handleSendOtp} className="space-y-4">
-                          <EmailField accent="sky" cooldown={0} email={email} onChange={setEmail} />
-
-                          <button
-                            type="submit"
-                            disabled={sendingOtp || otpSent}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 px-4 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition-all hover:from-sky-400 hover:to-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {sendingOtp ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <SendHorizonal className="h-4 w-4" />
-                            )}
-                            {sendingOtp ? 'Đang lấy mã...' : otpSent ? 'Đã lấy mã' : 'Lấy mã OTP'}
-                          </button>
-
-                          {otpSent && (
-                            <div className="rounded-2xl border border-sky-500/35 bg-sky-500/10 p-4">
-                              <div className="mb-3 flex items-center justify-between gap-3">
-                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-sky-100">
-                                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                  Mã OTP hiện tại
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOtpSent(false);
-                                    setOtpCode('');
-                                    setOtpMessage(null);
-                                    setOtpResultType(null);
-                                  }}
-                                  className="text-xs font-medium text-sky-300 transition-colors hover:text-sky-100"
-                                >
-                                  Lấy lại
-                                </button>
-                              </div>
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  maxLength={8}
-                                  value={otpCode}
-                                  readOnly
-                                  onFocus={(e) => e.currentTarget.select()}
-                                  placeholder="Đang lấy mã OTP..."
-                                  className="h-14 w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 pr-14 text-center text-2xl font-bold tracking-[0.45em] text-slate-50 placeholder-slate-600 ring-1 ring-transparent outline-none focus:border-sky-500 focus:ring-sky-500/40"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleCopyOtp}
-                                  disabled={verifyingOtp || otpCode.length < 4}
-                                  aria-label="Sao chép mã OTP"
-                                  title="Sao chép mã OTP"
-                                  className="absolute top-1/2 right-3 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-300 hover:text-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {verifyingOtp ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Copy className="h-4 w-4" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {otpMessage && otpResultType && (
-                            <div>
-                              {otpResultType === 'error' && (
-                                <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-center text-sm text-rose-50">
-                                  <XCircle className="mb-2 h-7 w-7 text-rose-400" />
-                                  <p className="text-sm font-medium text-rose-100">{otpMessage}</p>
-                                </div>
-                              )}
-                              {otpResultType === 'info' && !otpSent && (
-                                <div className="rounded-xl bg-slate-800/70 px-4 py-3 text-xs text-slate-300 ring-1 ring-slate-700">
-                                  {otpMessage}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </form>
-                      </section>
-                    )}
-
-                    {activeMode === 'sixDigit' && (
-                      <section className="animate-in fade-in duration-300">
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2">
-                            <Hash className="h-5 w-5 text-emerald-400" />
-                            <h2 className="text-xl font-bold text-slate-50">OTP 6 số</h2>
-                          </div>
-                          <p className="mt-1 text-sm text-slate-400">
-                            Nhận mã đăng nhập Netflix dạng 6 số
-                          </p>
-                        </div>
-
-                        <form onSubmit={handleSendSixDigitOtp} className="space-y-4">
-                          <EmailField
-                            accent="emerald"
-                            cooldown={0}
-                            email={email}
-                            onChange={setEmail}
+                            className={`h-12 w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 text-sm text-slate-50 placeholder-slate-500 ring-1 ring-transparent outline-none transition-all ${ac.input} disabled:cursor-not-allowed disabled:opacity-60`}
                           />
-
-                          <button
-                            type="submit"
-                            disabled={sendingSixOtp || sixOtpSent}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {sendingSixOtp ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Hash className="h-4 w-4" />
-                            )}
-                            {sendingSixOtp
-                              ? 'Đang lấy OTP 6 số...'
-                              : sixOtpSent
-                                ? 'Đã lấy OTP 6 số'
-                                : 'Lấy OTP 6 số'}
-                          </button>
-
-                          {sixOtpSent && (
-                            <div className="rounded-2xl border border-emerald-500/35 bg-emerald-500/10 p-4">
-                              <div className="mb-3 flex items-center justify-between gap-3">
-                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-100">
-                                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                  OTP 6 số hiện tại
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSixOtpSent(false);
-                                    setSixOtpCode('');
-                                    setSixOtpMessage(null);
-                                    setSixOtpResultType(null);
-                                  }}
-                                  className="text-xs font-medium text-emerald-300 transition-colors hover:text-emerald-100"
-                                >
-                                  Lấy lại
-                                </button>
-                              </div>
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  maxLength={6}
-                                  value={sixOtpCode}
-                                  readOnly
-                                  onFocus={(e) => e.currentTarget.select()}
-                                  placeholder="000000"
-                                  className="h-14 w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 pr-14 text-center text-2xl font-bold tracking-[0.55em] text-slate-50 placeholder-slate-600 ring-1 ring-transparent outline-none focus:border-emerald-500 focus:ring-emerald-500/40"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleCopySixDigitOtp}
-                                  disabled={sixOtpCode.length !== 6}
-                                  aria-label="Sao chép OTP 6 số"
-                                  title="Sao chép OTP 6 số"
-                                  className="absolute top-1/2 right-3 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
+                          {cooldown > 0 && (
+                            <span className="absolute top-1/2 right-4 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                              {cooldown}s
+                            </span>
                           )}
+                        </div>
+                      </div>
 
-                          {sixOtpMessage && sixOtpResultType && (
-                            <div>
-                              {sixOtpResultType === 'error' && (
-                                <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-center text-sm text-rose-50">
-                                  <XCircle className="mb-2 h-7 w-7 text-rose-400" />
-                                  <p className="text-sm font-medium text-rose-100">
-                                    {sixOtpMessage}
-                                  </p>
-                                </div>
-                              )}
-                              {sixOtpResultType === 'info' && (
-                                <div className="rounded-xl bg-slate-800/70 px-4 py-3 text-xs text-slate-300 ring-1 ring-slate-700">
-                                  {sixOtpMessage}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </form>
-                      </section>
-                    )}
-                  </div>
-                </div>
+                      {/* Result */}
+                      {!loading && status && (
+                        <ResultDisplay
+                          resultType={activeTab.resultType}
+                          status={status}
+                          message={message}
+                          code={code}
+                          link={link}
+                          color={activeTab.color}
+                          onReset={resetResult}
+                          onCopy={handleCopy}
+                          copied={copied}
+                          copying={copying}
+                        />
+                      )}
 
-                <BookSidePanel
-                  panel={
-                    NETFLIX_PANELS[
-                      (NETFLIX_PANELS.findIndex((panel) => panel.mode === activeMode) + 1) %
-                        NETFLIX_PANELS.length
-                    ]
-                  }
-                  side="right"
-                  onSelect={setActiveMode}
-                />
+                      {/* Submit button */}
+                      <button
+                        type="submit"
+                        disabled={loading || cooldown > 0}
+                        className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${ac.gradient} ${ac.gradientHover} px-4 text-sm font-bold text-white shadow-lg ${ac.shadow} transition-all disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <TabIcon id={activeTab.id} className="h-4 w-4" />
+                        )}
+                        {loading
+                          ? 'Đang xử lý...'
+                          : cooldown > 0
+                          ? `Chờ ${cooldown}s`
+                          : activeTab.submitLabel}
+                      </button>
+                    </form>
+                  </section>
+                )}
               </div>
             </div>
 
+            {/* Footer note */}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 text-center text-[11px] text-slate-600">
               <span>© 2026 Netflix OTP Tool by {APP_CONFIG.name}</span>
               <span className="text-slate-700">·</span>
@@ -838,33 +679,8 @@ export default function NetflixPage() {
 
       <Footer />
 
-      {/* ── Styles ── */}
+      {/* Styles */}
       <style>{`
-        @keyframes nf-float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes nf-float-d {
-          0%, 100% { transform: translateY(0px) rotate(45deg); }
-          50% { transform: translateY(-8px) rotate(45deg); }
-        }
-        .animate-nf-float  { animation: nf-float   3s ease-in-out infinite; }
-        .animate-nf-float-d { animation: nf-float-d 3s ease-in-out infinite 0.5s; }
-
-        @keyframes nf-slide-in-left {
-          from { opacity: 0; transform: translateX(-30px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes nf-slide-in-right {
-          from { opacity: 0; transform: translateX(30px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @media (max-width: 1023px) {
-          .nf-panel-left-active  { animation: nf-slide-in-left  0.4s ease-out forwards; }
-          .nf-panel-right-active { animation: nf-slide-in-right 0.4s ease-out forwards; }
-          .nf-panel-hidden       { display: none !important; }
-        }
-
         @keyframes anim-check-circle {
           0%        { transform: scale(0);    opacity: 0; }
           18%       { transform: scale(1.18); opacity: 1; }
